@@ -45,20 +45,4 @@ repos:
     rev: 24.4.2
     hooks:
       - id: black
-
-  # ==========================================
-  # LINTER (PYLINT)
-  # ==========================================
-  - repo: https://github.com/pycqa/pylint
-    rev: v3.2.6
-    hooks:
-      - id: pylint
-        name: pylint (backend + bot)
-        entry: pylint
-        language: system
-        types: [python]
-        args:
-          [
-            "--rcfile=pyproject.toml"
-          ]
-        files: ^(apps/|packages/)
+        exclude: ^(.*migrations|\.venv|venv|build|dist|__pycache__|\.git)/

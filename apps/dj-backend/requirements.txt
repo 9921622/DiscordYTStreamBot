@@ -1,6 +1,6 @@
 -r requirements-production.txt
 
-# 
+#
 markdown  # django browseable api (REST FRAMEWORK)
 
 # testing
@@ -12,4 +12,5 @@ pre-commit
 # linters, formatters, ...
 Pylint          # linter
 pylint-mccabe
+pylint-django
 black           # reformatter

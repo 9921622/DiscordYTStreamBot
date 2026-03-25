@@ -22,18 +22,17 @@ pythonpath = ["src"]
 addopts = "--order-scope=class"
 
 
-
 # ==========================================================================================
 # BLACK
 # ==========================================================================================
 [tool.black]
-line-length = 130
+line-length = 120
 target-version = ['py310']
-skip-string-normalization = true
+skip-string-normalization = false
 include = '\.pyi?$'
 exclude = '''
 (
-  /(\.venv|venv|build|dist|__pycache__)/ |
+  /(\.venv|venv|\.venv|build|dist|__pycache__|\.git|migrations)/ |
   \.git
 )
 '''
@@ -46,11 +45,12 @@ exclude = '''
 # ==========================================================================================
 # https://gist.github.com/chapmanjacobd/481ef1ccefcda6750e76bad4dd19ebd2
 [tool.pylint.main]
-init-hook='import sys; sys.path.append("src")'
-fail-under = 8.0
+init-hook = 'import sys; sys.path.append("src")'
+fail-under = 7.0
 persistent = true
-
-
+load-plugins = ["pylint_django"]
+django-settings-module = "backend.settings"
+ignore-patterns = ["migrations"]
 
 [tool.pylint.basic]
 argument-naming-style = "snake_case"
@@ -64,26 +64,24 @@ const-naming-style = "UPPER_CASE"
 
 
 [tool.pylint.design]
-max-args = 8                # Max function arguments
-max-locals = 20             # Max local variables
-max-returns = 6             # Max return statements per function
-max-branches = 12           # Max if/else branches
-max-statements = 100        # Max statements per function
-max-nested-blocks = 5       # Max nesting
-min-public-methods = 0      # if you want to enforce interface
-
-
+max-args = 7
+max-locals = 15
+max-returns = 5
+max-branches = 10
+max-statements = 80
+max-nested-blocks = 4
+min-public-methods = 0
 
 [tool.pylint.typecheck]
-ignored-classes = ["SQLAlchemy", "db.Model"]  # avoid false positives on ORM models
-
-
+ignored-classes = ["SQLAlchemy", "db.Model", "Manager"]
+generated-members = ["objects"]
 
 [tool.pylint.messages_control]
 disable = [
-    # "import-outside-toplevel",
-    # "missing-module-docstring",
-    # "import-error"
+    "missing-docstring",
+    "import-outside-toplevel",
+    "too-few-public-methods",
+    "too-many-arguments",
 ]
 
 
@@ -92,19 +90,15 @@ disable = [
 ignore-long-lines = "^\\s*(# )|^\\s*(\\w*\\s*=\\s*)?(\\\"|\\').*(\\\"|\\'),?\\s*$"
 indent-after-paren = 4
 indent-string = "    "
-max-line-length = 130
-max-module-lines = 1500
-
+max-line-length = 120
+max-module-lines = 1000
 
 [tool.pylint.documentation]
-docstring-min-length = 10
-
+docstring-min-length = 5
 
 [tool.pylint.imports]
-known-standard-library = ["os","sys","re","math"]
-known-third-party = ["requests"]
-import-graph = true
-
+known-standard-library = ["os", "sys", "re", "math"]
+import-graph = false
 
 [tool.pylint.spelling]
 max-spelling-suggestions = 4

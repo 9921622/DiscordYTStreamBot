@@ -1,0 +1,8 @@
+# main
+Django==5.2.12
+djangorestframework
+django-allauth
+
+# utils
+python-dotenv
+yt-dlp

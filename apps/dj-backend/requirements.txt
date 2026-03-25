@@ -1,0 +1,15 @@
+-r requirements-production.txt
+
+# 
+markdown  # django browseable api (REST FRAMEWORK)
+
+# testing
+mock
+model_bakery
+
+pre-commit
+
+# linters, formatters, ...
+Pylint          # linter
+pylint-mccabe
+black           # reformatter

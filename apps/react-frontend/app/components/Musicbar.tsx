@@ -1,3 +1,7 @@
+import type { YoutubeVideo } from "~/api/youtube/youtube-types";
+import { youtubeAPI, extractYoutubeId } from "~/api/youtube/youtube-wrapper";
+import { useEffect, useState } from "react";
+
 import { PlayIcon, PauseIcon, PrevIcon, NextIcon, VolumeIcon, LoopIcon, ShuffleIcon } from "./utilities/Icons";
 
 
@@ -50,24 +54,44 @@ function SongProgressBar({ currentTime, duration }: { currentTime: number; durat
             type="range"
             min={0}
             max={100}
-            defaultValue={30}
+            defaultValue={progress}
             className="range range-xs range-primary flex-1"
             />
-            <span>3:45</span>
+            <span>{Math.floor(duration / 60)}:{String(duration % 60).padStart(2, '0')}</span>
         </div>
     );
 }
 
 
 export default function Musicbar() {
+    const [video, setVideo] = useState<YoutubeVideo | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Artist info
-    const songTitle = "Song Title";
-    const songDuration = 225;
-    const artistName = "Artist Name";
-    const albumArtUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQWNhdWPsAYJHHDhghY7c25HzzZdP1FTeahew&s";
+    useEffect(() => {
+        (async () => {
+            try {
+                const id = extractYoutubeId("https://www.youtube.com/watch?v=e0XBIicJmAE&list=RDO1-Ims-3RJU&index=2") || "";
+                // const id = extractYoutubeId("https://www.youtube.com/watch?v=dei1SgfaQ-E&list=RDdei1SgfaQ-E&start_radio=1") || "";
+                const fetchedVideo = await youtubeAPI.video.retrieve(id);
+                setVideo(fetchedVideo);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : "Failed to fetch video");
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
 
+    if (loading) return <div className="bg-gray-900 text-white px-4 py-2 fixed bottom-0 w-full">Loading...</div>;
+    if (error || !video) return <div className="bg-gray-900 text-white px-4 py-2 fixed bottom-0 w-full">Error: {error}</div>;
 
+    const songTitle = video.title;
+    const songDuration = video.duration;
+    const artistName = video.creator;
+    const albumArtUrl = video.thumbnail || "";
+    const tags = video.tags || [];
+    const url = video.source_url;
     const currentTime = 90;
 
     return (
@@ -84,7 +108,16 @@ export default function Musicbar() {
                 <SongProgressBar currentTime={currentTime} duration={songDuration} />
             </div>
 
+            {/* Tags */}
+            <div className="flex items-center gap-2 flex-wrap max-w-xs">
+                {tags.map((tag) => (
+                    <span key={tag.id} className="badge badge-sm badge-primary">
+                        {tag.name}
+                    </span>
+                ))}
+            </div>
 
+            {/* Volume Control */}
             <div className="flex items-center gap-3">
                 <button className="btn btn-ghost btn-circle hover:bg-gray-800">
                 <VolumeIcon />

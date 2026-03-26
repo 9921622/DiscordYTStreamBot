@@ -25,6 +25,18 @@ DEBUG = os.getenv("DEBUG") == "True"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",") if os.getenv("ALLOWED_HOSTS") else []
 
 
+# Build CORS origins with proper schemes
+CORS_ALLOWED_ORIGINS = []
+for host in os.getenv("CORS_ALLOWED_ORIGINS").split(","):
+    host = host.strip()
+    if host == "*":
+        CORS_ALLOWED_ORIGINS.append(host)
+    elif host.startswith(("http://", "https://")):
+        CORS_ALLOWED_ORIGINS.append(host)
+    else:
+        # Add both http and https variants for bare hostnames
+        CORS_ALLOWED_ORIGINS.extend([f"http://{host}", f"https://{host}"])
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -38,6 +50,7 @@ INSTALLED_APPS = [
     "youtube",
     #
     "rest_framework",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -48,6 +61,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    #
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "backend.urls"

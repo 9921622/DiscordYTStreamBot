@@ -1,0 +1,14 @@
+-r requirements-production.txt
+
+# testing
+factory_boy
+pytest
+pytest-order
+
+pre-commit
+
+#
+Pylint          # linter
+pylint-mccabe
+pylint-django
+black           # reformatter

@@ -1,0 +1,7 @@
+# main
+fastapi[standard]
+uvicorn
+nextcord[voice]
+
+# utils
+pydantic-settings

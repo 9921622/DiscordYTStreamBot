@@ -1,0 +1,105 @@
+# [project]
+# name = "backend"
+# version = "0.1.0"
+# dependencies = [
+#     "django",
+#     "djangorestframework",
+#     "psycopg2-binary"
+# ]
+
+
+# [tool.setuptools.packages.find]
+# where = [
+#     "apps/dj_backend/src",
+#     # "apps/bot/src",
+# ]
+
+# ==========================================================================================
+# PYTEST
+# ==========================================================================================
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "--order-scope=class"
+
+
+# ==========================================================================================
+# BLACK
+# ==========================================================================================
+[tool.black]
+line-length = 120
+target-version = ['py310']
+skip-string-normalization = false
+include = '\.pyi?$'
+exclude = '''
+(
+  /(\.venv|venv|\.venv|build|dist|__pycache__|\.git|migrations)/ |
+  \.git
+)
+'''
+
+
+
+
+# ==========================================================================================
+# PYLINT
+# ==========================================================================================
+# https://gist.github.com/chapmanjacobd/481ef1ccefcda6750e76bad4dd19ebd2
+[tool.pylint.main]
+init-hook = 'import sys; sys.path.append("src")'
+fail-under = 7.0
+persistent = true
+load-plugins = ["pylint_django"]
+django-settings-module = "backend.settings"
+ignore-patterns = ["migrations"]
+
+[tool.pylint.basic]
+argument-naming-style = "snake_case"
+attr-naming-style = "snake_case"
+bad-names = ["foo", "bar", "baz", "toto", "tutu", "tata"]
+class-attribute-naming-style = "any"
+class-const-naming-style = "UPPER_CASE"
+class-naming-style = "PascalCase"
+const-naming-style = "UPPER_CASE"
+
+
+
+[tool.pylint.design]
+max-args = 7
+max-locals = 15
+max-returns = 5
+max-branches = 10
+max-statements = 80
+max-nested-blocks = 4
+min-public-methods = 0
+
+[tool.pylint.typecheck]
+ignored-classes = ["SQLAlchemy", "db.Model", "Manager"]
+generated-members = ["objects"]
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-docstring",
+    "import-outside-toplevel",
+    "too-few-public-methods",
+    "too-many-arguments",
+]
+
+
+
+[tool.pylint.format]
+ignore-long-lines = "^\\s*(# )|^\\s*(\\w*\\s*=\\s*)?(\\\"|\\').*(\\\"|\\'),?\\s*$"
+indent-after-paren = 4
+indent-string = "    "
+max-line-length = 120
+max-module-lines = 1000
+
+[tool.pylint.documentation]
+docstring-min-length = 5
+
+[tool.pylint.imports]
+known-standard-library = ["os", "sys", "re", "math"]
+import-graph = false
+
+[tool.pylint.spelling]
+max-spelling-suggestions = 4
+spelling-ignore-comment-directives = "fmt: on,fmt: off,noqa:,noqa,nosec,isort:skip,mypy:"

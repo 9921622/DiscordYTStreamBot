@@ -3,7 +3,7 @@ import { youtubeAPI, extractYoutubeId } from "~/api/youtube/youtube-wrapper";
 import { useEffect, useState } from "react";
 
 import { PlayIcon, PauseIcon, PrevIcon, NextIcon, VolumeIcon, LoopIcon, ShuffleIcon } from "./utilities/Icons";
-
+import { NumToTime } from "./utilities/misc";
 
 
 function ArtistInfo({ songTitle, artistName, albumArtUrl }: { songTitle: string; artistName: string; albumArtUrl: string }) {
@@ -57,7 +57,7 @@ function SongProgressBar({ currentTime, duration }: { currentTime: number; durat
             defaultValue={progress}
             className="range range-xs range-primary flex-1"
             />
-            <span>{Math.floor(duration / 60)}:{String(duration % 60).padStart(2, '0')}</span>
+            <span>{NumToTime(duration)}</span>
         </div>
     );
 }

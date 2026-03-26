@@ -120,3 +120,93 @@ class YoutubePlaylistViewSetTests(TestCase):
         video = YoutubeVideo.objects.get(youtube_id="abc123")
         item = YoutubePlaylistItem.objects.get(playlist=playlist, video=video)
         self.assertEqual(item.order, 1)
+
+
+class YoutubeSearchViewTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    @mock.patch("youtube.views.YoutubeSearchView._search_youtube")
+    def test_search_with_query(self, mock_search):
+        """Test basic YouTube search with query parameter."""
+        # Mock the search results
+        mock_search.return_value = [
+            {
+                "youtube_id": "vid1",
+                "title": "Test Video 1",
+                "creator": "Test Channel",
+                "thumbnail": "https://example.com/thumb1.jpg",
+                "duration": 300,
+            },
+            {
+                "youtube_id": "vid2",
+                "title": "Test Video 2",
+                "creator": "Test Channel",
+                "thumbnail": "https://example.com/thumb2.jpg",
+                "duration": 400,
+            },
+        ]
+
+        # Make the request
+        response = self.client.get(reverse("youtube:search"), {"q": "test query"})
+
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["query"], "test query")
+        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(response.data["results"][0]["youtube_id"], "vid1")
+        self.assertEqual(response.data["results"][1]["youtube_id"], "vid2")
+
+        # Verify the search was called with correct parameters
+        mock_search.assert_called_once_with("test query", 10)
+
+    @mock.patch("youtube.views.YoutubeSearchView._search_youtube")
+    def test_search_with_max_results(self, mock_search):
+        """Test YouTube search with custom max_results parameter."""
+        mock_search.return_value = []
+
+        # Make the request with max_results
+        response = self.client.get(reverse("youtube:search"), {"q": "test query", "max_results": "20"})
+
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify the search was called with custom max_results
+        mock_search.assert_called_once_with("test query", 20)
+
+    @mock.patch("youtube.views.YoutubeSearchView._search_youtube")
+    def test_search_max_results_capped_at_50(self, mock_search):
+        """Test that max_results is capped at 50."""
+        mock_search.return_value = []
+
+        # Try to request more than 50 results
+        response = self.client.get(reverse("youtube:search"), {"q": "test query", "max_results": "100"})
+
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify the search was called with max_results capped at 50
+        mock_search.assert_called_once_with("test query", 50)
+
+    def test_search_missing_query_parameter(self):
+        """Test that search without query parameter returns 400 Bad Request."""
+        response = self.client.get(reverse("youtube:search"))
+
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.data)
+        self.assertIn("Query parameter 'q' is required", response.data["error"])
+
+    @mock.patch("youtube.views.YoutubeSearchView._search_youtube")
+    def test_search_failure_handling(self, mock_search):
+        """Test that search failures return 500 Internal Server Error."""
+        # Mock the search to raise an exception
+        mock_search.side_effect = Exception("yt-dlp error")
+
+        # Make the request
+        response = self.client.get(reverse("youtube:search"), {"q": "test query"})
+
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertIn("error", response.data)
+        self.assertIn("Failed to search YouTube", response.data["error"])

@@ -4,6 +4,9 @@ from django.http import Http404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
+import yt_dlp
 
 from youtube.models import YoutubeVideo, YoutubePlaylist, YoutubePlaylistItem
 from youtube.serializers import YoutubeVideoSerializer, YoutubePlaylistSerializer
@@ -67,3 +70,68 @@ class YoutubePlaylistViewSet(viewsets.ModelViewSet):
         last_order = playlist.items.aggregate(models.Max("order"))["order__max"] or 0
         item = YoutubePlaylistItem.objects.create(playlist=playlist, video=video, order=last_order + 1)
         return Response({"id": item.id, "order": item.order})
+
+
+class YoutubeSearchView(APIView):
+    """
+    Search for YouTube videos using yt-dlp.
+    GET /api/youtube/search/?q=<query>&max_results=<count>
+    """
+
+    MAX_RESULTS = 50
+
+    def get(self, request):
+        """
+        Search YouTube for videos.
+        Query parameters:
+            - q: search query (required)
+            - max_results: maximum number of results (default: 10, max: 50)
+        """
+        query = request.query_params.get("q")
+        max_results = int(request.query_params.get("max_results", 10))
+        max_results = min(max_results, self.MAX_RESULTS)
+
+        if not query:
+            return Response({"error": "Query parameter 'q' is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            results = self._search_youtube(query, max_results)
+            return Response({"query": query, "results": results})
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to search YouTube: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def _search_youtube(self, query: str, max_results: int = 10) -> list:
+        """
+        Search YouTube using yt-dlp and return basic video info.
+        Returns a list of video data with id, title, creator, thumbnail, duration.
+        """
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "default_search": "ytsearch",
+            "extract_flat": "in_playlist",
+        }
+
+        # ISSUE: THIS SHOULD BE PUT IN THE YOUTUBE VIDEO MODEL
+        results = []
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(f"ytsearch{max_results}:{query}", download=False)
+
+                if info and "entries" in info:
+                    for entry in info["entries"]:
+                        results.append(
+                            {
+                                "youtube_id": entry.get("id"),
+                                "title": entry.get("title"),
+                                "creator": entry.get("uploader"),
+                                "thumbnail": entry["thumbnails"][0]["url"],  # this is the small thumbnail
+                                "duration": entry.get("duration"),
+                            }
+                        )
+        except Exception as e:
+            raise Exception(f"yt-dlp search error: {str(e)}")
+
+        return results

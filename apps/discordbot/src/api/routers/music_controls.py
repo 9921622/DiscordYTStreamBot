@@ -4,7 +4,7 @@ from bot.discord_service import discord_service
 router = APIRouter(prefix="/music-control", tags=["music-control"])
 
 
-@router.get("/play")
+@router.get("/play", name="mc-play")
 async def play(request: Request, song_id: str | None = None):
     """Play a song (or resume if no song_id)"""
     await discord_service.send(407313499090321409, f"Play called for song_id: {song_id}")
@@ -12,7 +12,7 @@ async def play(request: Request, song_id: str | None = None):
     return {"ok": True}
 
 
-@router.get("/pause")
+@router.get("/pause", name="mc-pause")
 async def pause(request: Request):
     """Pause the currently playing song"""
     await discord_service.send(407313499090321409, "Pause called")
@@ -20,7 +20,7 @@ async def pause(request: Request):
     return {"ok": True}
 
 
-@router.get("/stop")
+@router.get("/stop", name="mc-stop")
 async def stop(request: Request):
     """Stop playback completely"""
     await discord_service.send(407313499090321409, "Stop called")
@@ -28,7 +28,7 @@ async def stop(request: Request):
     return {"ok": True}
 
 
-@router.get("/seek")
+@router.get("/seek", name="mc-seek")
 async def seek(request: Request, time: int):
     """Seek to a specific time in the current song (seconds)"""
     await discord_service.send(407313499090321409, f"Seek called: {time}s")
@@ -36,7 +36,7 @@ async def seek(request: Request, time: int):
     return {"ok": True, "time": time}
 
 
-@router.get("/volume")
+@router.get("/volume", name="mc-volume")
 async def volume(request: Request, level: int | None = None):
     """
     Get or set volume.

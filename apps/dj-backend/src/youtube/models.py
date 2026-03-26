@@ -43,6 +43,8 @@ class YoutubeVideo(models.Model):
         created_at (datetime): Timestamp when the record was created.
     """
 
+    URL_TEMPLATE = "https://www.youtube.com/watch?v={youtube_id}"
+
     youtube_id = models.CharField(primary_key=True, max_length=20, unique=True)  # primary key
     title = models.CharField(max_length=255)
     creator = models.CharField(max_length=255)

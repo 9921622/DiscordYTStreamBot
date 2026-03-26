@@ -36,6 +36,46 @@ class YoutubeVideoViewSetTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["title"], self.video1.title)
 
+    @mock.patch("youtube.models.YoutubeVideo.from_url")
+    def test_retrieve_video_auto_fetch_from_youtube(self, mock_from_url):
+        """Test that retrieving a non-existent video auto-fetches it from YouTube."""
+        # Create a video instance to return from the mocked from_url
+        # (not saved to database - the mock replaces the actual from_url)
+        mock_video = YoutubeVideo(
+            youtube_id="new_video_id",
+            title="Auto-Fetched Video",
+            creator="Auto-Fetched Creator",
+            source_url="https://example.com/stream",
+            duration=300,
+            thumbnail="https://example.com/thumb.jpg",
+        )
+        mock_from_url.return_value = mock_video
+
+        # Try to retrieve a video that doesn't exist in the database
+        response = self.client.get(reverse("youtube:video-detail", kwargs={"youtube_id": "new_video_id"}))
+
+        # Should return 200 and the video data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["youtube_id"], "new_video_id")
+        self.assertEqual(response.data["title"], "Auto-Fetched Video")
+
+        # Verify from_url was called with the correct YouTube URL
+        mock_from_url.assert_called_once_with("https://www.youtube.com/watch?v=new_video_id", save=True)
+
+    @mock.patch("youtube.models.YoutubeVideo.from_url")
+    def test_retrieve_video_auto_fetch_failure(self, mock_from_url):
+        """Test that auto-fetch returns 404 when YouTube fetch fails."""
+        # Mock from_url to raise an exception
+        mock_from_url.side_effect = Exception("YouTube fetch failed")
+
+        # Try to retrieve a video that doesn't exist and will fail to fetch
+        response = self.client.get(reverse("youtube:video-detail", kwargs={"youtube_id": "invalid_id"}))
+
+        # Should return 404 with error message
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("error", response.data)
+        self.assertIn("Failed to fetch video from YouTube", response.data["error"])
+
 
 class YoutubePlaylistViewSetTests(TestCase):
     def setUp(self):

@@ -1,4 +1,5 @@
 from django.db import models
+from django.http import Http404
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -11,11 +12,33 @@ from youtube.serializers import YoutubeVideoSerializer, YoutubePlaylistSerialize
 class YoutubeVideoViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API to list or retrieve cached YouTube videos.
+    If a video is not found, it will automatically fetch and cache it from YouTube.
     """
 
     queryset = YoutubeVideo.objects.all()
     serializer_class = YoutubeVideoSerializer
     lookup_field = "youtube_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Override retrieve to auto-fetch videos from YouTube if not in cache.
+        """
+        youtube_id = kwargs.get(self.lookup_field)
+
+        try:
+            # Try to get from database
+            return super().retrieve(request, *args, **kwargs)
+        except Http404:
+            # If not found, fetch from YouTube and create it
+            try:
+                youtube_url = YoutubeVideo.URL_TEMPLATE.format(youtube_id=youtube_id)
+                video = YoutubeVideo.from_url(youtube_url, save=True)
+                serializer = self.get_serializer(video)
+                return Response(serializer.data)
+            except Exception as e:
+                return Response(
+                    {"error": f"Failed to fetch video from YouTube: {str(e)}"}, status=status.HTTP_404_NOT_FOUND
+                )
 
 
 class YoutubePlaylistViewSet(viewsets.ModelViewSet):

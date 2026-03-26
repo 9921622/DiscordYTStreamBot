@@ -63,6 +63,9 @@ class YoutubeVideo(models.Model):
     def __str__(self):
         return f"{self.title} ({self.creator})"
 
+    def get_url(self):
+        return self.URL_TEMPLATE.format(youtube_id=self.youtube_id)
+
     # ==========================================
     # HELPERS
     # ==========================================

@@ -42,9 +42,6 @@ export default function Navbar(
   { SongSearchBarOnClick } :
   { SongSearchBarOnClick : ( item : YoutubeVideo) => void; }) {
 
-  function SongOnClick(item : YoutubeVideo) {
-    console.log(item);
-  }
 
   return (
     <nav className="text-white px-4 py-2 flex items-center relative shadow-md">
@@ -54,7 +51,7 @@ export default function Navbar(
       </div>
 
       <div className="absolute left-1/2 transform -translate-x-1/2">
-        <SongSearchbar onItemClick={SongOnClick}/>
+        <SongSearchbar onItemClick={SongSearchBarOnClick}/>
       </div>
 
       <div className="flex items-center gap-3 ml-auto">

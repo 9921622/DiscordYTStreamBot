@@ -1,0 +1,59 @@
+import os
+
+import nextcord
+from nextcord.ext import commands
+
+from settings import settings
+
+
+class EventsMixin:
+
+    # GUILDS
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: nextcord.Guild):
+        pass
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild: nextcord.Guild):
+        pass
+
+    # CONNECTION
+    @commands.Cog.listener()
+    async def on_connect(self):
+        pass
+
+    @commands.Cog.listener()
+    async def on_disconnect(self):
+        pass
+
+    # GATEWAY
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print(f"Logged in as {self.bot.user}")
+
+    # @commands.Cog.listener()
+    # async def on_message(self, message):
+    #     if self.bot.user.mentioned_in(message):
+    #         reaction_path = os.path.join(Settings.instance().ASSET_PATH, 'intrigued.jpg')
+    #         file = discord.File(reaction_path, filename="intrigued.jpg")
+
+    #         embed = discord.Embed()
+    #         embed.set_image(url="attachment://intrigued.jpg")
+
+    #         await message.channel.send(file=file)
+
+
+class CommandsMixin:
+
+    @commands.command(name="ping")
+    async def ping(self, ctx: commands.Context):
+        await ctx.send("pong")
+
+
+class GenericCog(commands.Cog, CommandsMixin, EventsMixin):
+    def __init__(self, bot: commands.bot):
+        self.bot = bot
+
+
+async def setup(bot):
+    await bot.add_cog(GenericCog(bot))

@@ -1,6 +1,8 @@
 import nextcord
 from nextcord.ext import commands
 
+from bot.cogs import generic, voice
+
 from settings import settings
 
 
@@ -20,7 +22,8 @@ class DiscordBot(commands.Bot):
         """called before the websocket connection
         https://discordpy.readthedocs.io/en/latest/api.html?highlight=setup_hook#discord.Client.setup_hook
         """
-        pass
+        await generic.setup(self)
+        await voice.setup(self)
 
     async def on_ready(self):
         # this happens with listener event on_ready

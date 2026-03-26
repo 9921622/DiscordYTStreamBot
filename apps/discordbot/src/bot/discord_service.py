@@ -3,7 +3,16 @@ from bot.bot import bot
 """  creates a global instance to use discord bot """
 
 
-class DiscordService:
+class DiscordServiceVCMixin:
+
+    async def connect(self):
+        await self.bot.wait_until_ready()
+
+    async def disconnect(self):
+        await self.bot.wait_until_ready()
+
+
+class DiscordService(DiscordServiceVCMixin):
     """wrapper to simplify commands"""
 
     def __init__(self):

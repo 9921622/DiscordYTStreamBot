@@ -5,6 +5,27 @@ import asyncio
 import yt_dlp
 
 
+class YoutubeTag(models.Model):
+    """Represents a tag associated with a YouTube video.
+
+    Stores individual tags that can be linked to videos for categorization
+    and search purposes. Tags are simple text labels that describe the content
+    of the video.
+
+    Attributes:
+        name (str): The text of the tag, unique across all tags.
+    """
+
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        self.name = self.name.lower()
+        super().save(*args, **kwargs)
+
+
 class YoutubeVideo(models.Model):
     """Represents a YouTube video.
 
@@ -29,6 +50,7 @@ class YoutubeVideo(models.Model):
     duration = models.PositiveIntegerField(default=0)
     thumbnail = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    tags = models.ManyToManyField(YoutubeTag, related_name="videos", blank=True)
 
     class Meta:
         indexes = [
@@ -72,7 +94,10 @@ class YoutubeVideo(models.Model):
     # ==========================================
     @classmethod
     def from_ydl_info(cls, info_dict, save=False):
+        tag_names = info_dict.get("tags", [])
+
         instance = cls(
+            youtube_id=info_dict.get("id"),
             title=info_dict.get("title") or info_dict.get("fulltitle", "Unknown title"),
             creator=info_dict.get("uploader", "Unknown channel"),
             source_url=cls.extract_source_url(info_dict),
@@ -82,6 +107,10 @@ class YoutubeVideo(models.Model):
 
         if save:
             instance.save()
+            # Add tags after saving (required for ManyToManyField)
+            for tag_name in tag_names:
+                tag, _ = YoutubeTag.objects.get_or_create(name=tag_name.lower())
+                instance.tags.add(tag)
 
         return instance
 

@@ -3,7 +3,7 @@ from unittest import mock
 from model_bakery import baker
 
 from django.contrib.auth import get_user_model
-from youtube.models import YoutubeVideo, YoutubePlaylist, YoutubePlaylistItem
+from youtube.models import YoutubeVideo, YoutubePlaylist, YoutubePlaylistItem, YoutubeTag
 
 User = get_user_model()
 
@@ -51,6 +51,51 @@ class YoutubeVideoModelTests(TestCase):
         mock_get_info.assert_called_once_with("https://fake.url", None)
         self.assertEqual(video.title, "Mock")
         self.assertEqual(video.source_url, "http://mock")
+
+    def test_real(self):
+        """Test that from_url can create a real video instance from an actual YouTube URL."""
+        url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        video = YoutubeVideo.from_url(url, save=False)
+
+        self.assertEqual(video.youtube_id, "dQw4w9WgXcQ")
+        self.assertEqual(video.title, "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)")
+        self.assertEqual(video.creator, "Rick Astley")
+        self.assertTrue(video.source_url.startswith("https://"))
+        self.assertGreater(video.duration, 0)
+        self.assertTrue(video.thumbnail.startswith("https://"))
+
+    def test_tags_lowercase_enforcement(self):
+        """Test that tags are stored in lowercase."""
+        mock_info = {
+            "title": "Test Video",
+            "uploader": "Test Channel",
+            "url": "https://example.com/video",
+            "duration": 100,
+            "tags": ["Music", "POP", "Rock"],
+        }
+
+        video = YoutubeVideo.from_ydl_info(mock_info, save=True)
+        tags = video.tags.all()
+
+        self.assertEqual(tags.count(), 3)
+        tag_names = sorted([tag.name for tag in tags])
+        self.assertEqual(tag_names, ["music", "pop", "rock"])
+
+    def test_tag_deduplication(self):
+        """Test that duplicate tags are deduplicated."""
+        mock_info = {
+            "title": "Test Video",
+            "uploader": "Test Channel",
+            "url": "https://example.com/video",
+            "duration": 100,
+            "tags": ["Music", "music", "MUSIC"],
+        }
+
+        video = YoutubeVideo.from_ydl_info(mock_info, save=True)
+        tags = video.tags.all()
+
+        self.assertEqual(tags.count(), 1)
+        self.assertEqual(tags.first().name, "music")
 
 
 class YoutubePlaylistModelTests(TestCase):

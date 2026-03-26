@@ -7,7 +7,6 @@ import type {
   YoutubePlaylistItem,
   YoutubeVideo,
   YoutubeSearch,
-  YoutubeSearchItem,
 } from "./youtube-types";
 
 
@@ -150,12 +149,16 @@ class YoutubeSearchAPI {
     try {
       const q = stringify(queryParams);
       const response = await axios.get<YoutubeSearch>(`${this.baseURL}?${q}`);
-      const results: YoutubeSearchItem[] = (response.data.results || []).map((item: any) => ({
-        id: item.youtube_id,
+      const results: YoutubeVideo[] = (response.data.results || []).map((item: any) => ({
+        youtube_id: item.youtube_id,
         title: item.title,
         creator: item.creator,
         thumbnail: item.thumbnail,
         duration: item.duration,
+
+        source_url: '',
+        created_at: '',
+        tags: [],
       }));
 
       return {

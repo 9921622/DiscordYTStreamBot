@@ -1,4 +1,5 @@
 import SongSearchbar from "./SongSearchbar";
+import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 
 
 function ProfileDropdown() {
@@ -37,9 +38,11 @@ function ProfileDropdown() {
   );
 }
 
-export default function Navbar() {
+export default function Navbar(
+  { SongSearchBarOnClick } :
+  { SongSearchBarOnClick : ( item : YoutubeVideo) => void; }) {
 
-  function SongOnClick(item : any) {
+  function SongOnClick(item : YoutubeVideo) {
     console.log(item);
   }
 

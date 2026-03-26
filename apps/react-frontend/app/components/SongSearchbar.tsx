@@ -5,7 +5,7 @@ import { CrossIcon } from "./utilities/Icons";
 import SongSearchbarCard from "./SongSearchbarCard";
 
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
-import type { YoutubeSearch, YoutubeSearchItem } from "~/api/youtube/youtube-types";
+import type { YoutubeSearch, YoutubeVideo } from "~/api/youtube/youtube-types";
 
 
 function SongSearchbarDropdownExtra({ query }: { query: string }) {
@@ -21,9 +21,9 @@ function SongSearchbarDropdownExtra({ query }: { query: string }) {
   );
 }
 
-export default function SongSearchbar( { onItemClick } : { onItemClick? : (item: YoutubeSearchItem) => void } ) {
+export default function SongSearchbar( { onItemClick } : { onItemClick? : (item: YoutubeVideo) => void } ) {
     const [search, setSearch] = useState("");
-    const [results, setResults] = useState<YoutubeSearchItem[]>([]);
+    const [results, setResults] = useState<YoutubeVideo[]>([]);
 
     useEffect(() => {
         if (!search) {
@@ -63,7 +63,7 @@ export default function SongSearchbar( { onItemClick } : { onItemClick? : (item:
             >
 
             {results.map((item, i) => (
-            <li key={item.id}>
+            <li key={item.youtube_id}>
                 <SongSearchbarCard item={item} onClick={() => onItemClick?.(item)}/>
             </li>
             ))}

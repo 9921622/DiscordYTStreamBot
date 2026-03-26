@@ -106,7 +106,8 @@ function SideBar({navbar, content, sidebar}: {navbar: React.ReactNode, content: 
 
 
 
-function Main() {
+
+export default function Home() {
 
 
   const [songs, setSongs] = useState<YoutubeVideo[]>([]);
@@ -118,30 +119,28 @@ function Main() {
       })();
   }, []);
 
+  // ================
 
-  return (
-    <div>
-
-        <div className="bg-zinc-900 p-5 rounded-md">
-          <p className="text-xl font-bold mb-3">All Songs</p>
-          <SongContainer songs={songs} />
-        </div>
-
-    </div>
-  );
-}
-
-
-
-
-export default function Home() {
-
+  function SongOnClick(item : any) {
+    console.log(item);
+  }
 
   return (
     <>
       <SideBar
-        navbar={<Navbar />}
-        content={<Main />}
+        navbar={<Navbar SongSearchBarOnClick={SongOnClick}/>}
+        content={
+
+          <div>
+
+            <div className="bg-zinc-900 p-5 rounded-md">
+              <p className="text-xl font-bold mb-3">All Songs</p>
+              <SongContainer songs={songs} onItemClick={SongOnClick} />
+            </div>
+
+        </div>
+
+        }
         sidebar={<SideBarContent />}
       />
 

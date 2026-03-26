@@ -3,7 +3,7 @@ import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 
 
 
-export default function SongContainer({ songs, className } : { songs : YoutubeVideo[], className? : string }) {
+export default function SongContainer({ songs, className, onItemClick } : { songs : YoutubeVideo[], className? : string, onItemClick? : (item: YoutubeVideo) => void; }) {
 
     return (
         <div className={className}>
@@ -16,6 +16,7 @@ export default function SongContainer({ songs, className } : { songs : YoutubeVi
                     songTitle={song.title}
                     artistName={song.creator}
                     albumArtUrl={song.thumbnail || ""}
+                    onClick={() => onItemClick?.(song)}
                     />
                 ))}
                 </div>

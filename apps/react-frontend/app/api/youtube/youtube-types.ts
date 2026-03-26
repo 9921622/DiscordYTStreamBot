@@ -34,13 +34,5 @@ export interface YoutubePlaylistItem {
 
 export interface YoutubeSearch {
   query : string;
-  results? : YoutubeSearchItem[];
-}
-
-export interface YoutubeSearchItem {
-  id : string;
-  title : string;
-  creator : string;
-  thumbnail : string;
-  duration : number;
+  results? : YoutubeVideo[];
 }

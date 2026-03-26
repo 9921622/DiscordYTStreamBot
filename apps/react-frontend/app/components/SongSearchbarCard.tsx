@@ -1,10 +1,10 @@
 import { PlayIcon } from "./utilities/Icons";
 import { NumToTime } from "./utilities/misc";
 
-import type { YoutubeSearchItem } from "~/api/youtube/youtube-types";
+import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 
 
-export default function SongSearchbarCard({ item, onClick }: { item: YoutubeSearchItem, onClick?: () => void; }) {
+export default function SongSearchbarCard({ item, onClick }: { item: YoutubeVideo, onClick?: () => void; }) {
   return (
     <div className="flex items-center gap-3 p-2 rounded-md hover:bg-zinc-800 transition cursor-pointer group"
          onClick={onClick}>

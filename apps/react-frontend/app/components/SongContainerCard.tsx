@@ -2,7 +2,7 @@ import { PlayIcon } from "./utilities/Icons";
 
 
 
-export default function SongCard({ songTitle, artistName, albumArtUrl }: { songTitle: string; artistName: string; albumArtUrl: string }) {
+export default function SongCard({ songTitle, artistName, albumArtUrl, onClick }: { songTitle: string; artistName: string; albumArtUrl: string; onClick?: () => void; }) {
     return (
         <div className="card bg-base-100 w-50 h-50 shadow-sm relative overflow-hidden group">
             <figure className="h-full">
@@ -18,7 +18,7 @@ export default function SongCard({ songTitle, artistName, albumArtUrl }: { songT
                 <p className="text-gray-300 text-sm">{artistName}</p>
 
                 <div className="card-actions justify-end mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="btn btn-primary btn-sm">
+                    <button className="btn btn-primary btn-sm" onClick={onClick}>
                         <PlayIcon />
                     </button>
                 </div>

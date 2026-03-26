@@ -1,4 +1,4 @@
-import SongCard from "~/components/SongCard";
+import SongContainerCard from "~/components/SongContainerCard";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 
 
@@ -11,7 +11,7 @@ export default function SongContainer({ songs, className } : { songs : YoutubeVi
             songs && songs.length > 0 ? (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,180px))] gap-12 justify-start">
                 {songs.map((song) => (
-                    <SongCard
+                    <SongContainerCard
                     key={song.youtube_id}
                     songTitle={song.title}
                     artistName={song.creator}

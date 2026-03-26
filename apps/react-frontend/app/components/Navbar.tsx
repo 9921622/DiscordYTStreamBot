@@ -1,3 +1,4 @@
+import SongSearchbar from "./SongSearchbar";
 
 
 function ProfileDropdown() {
@@ -37,23 +38,22 @@ function ProfileDropdown() {
 }
 
 export default function Navbar() {
+
+  function SongOnClick(item : any) {
+    console.log(item);
+  }
+
   return (
     <nav className="text-white px-4 py-2 flex items-center relative shadow-md">
-      {/* Left Section */}
+
       <div className="flex items-center gap-4">
         <a className="text-2xl font-bold">Boombox</a>
       </div>
 
-      {/* Center Section: Search Bar */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
-        <input
-          type="text"
-          placeholder="Search"
-          className="input input-sm input-bordered rounded-full bg-gray-900 border-gray-700 placeholder-gray-400 text-white w-24 md:w-64"
-        />
+        <SongSearchbar onItemClick={SongOnClick}/>
       </div>
 
-      {/* Right Section */}
       <div className="flex items-center gap-3 ml-auto">
         <ProfileDropdown />
       </div>

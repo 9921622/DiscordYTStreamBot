@@ -1,9 +1,13 @@
 import axios from "axios";
 
+import { stringify } from "../../utils/misc";
+
 import type {
   YoutubePlaylist,
   YoutubePlaylistItem,
   YoutubeVideo,
+  YoutubeSearch,
+  YoutubeSearchItem,
 } from "./youtube-types";
 
 
@@ -133,15 +137,49 @@ class YoutubePlaylistAPI {
 }
 
 
+class YoutubeSearchAPI {
+
+  private baseURL: string;
+
+  constructor(baseURL: string) {
+    this.baseURL = baseURL;
+  }
+
+  async search(queryParams : {q : string, max_results? : number}): Promise<YoutubeSearch> {
+    // Get a list of searches for search string
+    try {
+      const q = stringify(queryParams);
+      const response = await axios.get<YoutubeSearch>(`${this.baseURL}?${q}`);
+      const results: YoutubeSearchItem[] = (response.data.results || []).map((item: any) => ({
+        id: item.youtube_id,
+        title: item.title,
+        creator: item.creator,
+        thumbnail: item.thumbnail,
+        duration: item.duration,
+      }));
+
+      return {
+        query: response.data.query,
+        results,
+      };
+    } catch (error) {
+      throw new Error(`Failed to search: ${queryParams.q}`);
+    }
+  }
+
+}
+
 
 class YoutubeAPI {
   public video: YoutubeVideoAPI;
   public playlist: YoutubePlaylistAPI;
+  public search: YoutubeSearchAPI;
 
   constructor() {
     const baseURL = `${import.meta.env.VITE_API_URL}/youtube`;
     this.video = new YoutubeVideoAPI(`${baseURL}/videos`);
     this.playlist = new YoutubePlaylistAPI(`${baseURL}/playlists`);
+    this.search = new YoutubeSearchAPI(`${baseURL}/search`);
   }
 }
 

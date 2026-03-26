@@ -1,0 +1,78 @@
+import { useEffect, useState } from "react";
+
+import { CrossIcon } from "./utilities/Icons";
+
+import SongSearchbarCard from "./SongSearchbarCard";
+
+import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
+import type { YoutubeSearch, YoutubeSearchItem } from "~/api/youtube/youtube-types";
+
+
+function SongSearchbarDropdownExtra({ query }: { query: string }) {
+  return (
+    <div className="border-t border-zinc-800 mt-1 pt-1">
+
+        <button className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-md transition join">
+        <span className="mr-2"> Show full results for "{query}" </span>
+        <CrossIcon />
+        </button>
+
+    </div>
+  );
+}
+
+export default function SongSearchbar( { onItemClick } : { onItemClick? : (item: YoutubeSearchItem) => void } ) {
+    const [search, setSearch] = useState("");
+    const [results, setResults] = useState<YoutubeSearchItem[]>([]);
+
+    useEffect(() => {
+        if (!search) {
+            setResults([]);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            const res: YoutubeSearch = await youtubeAPI.search.search({
+                q: search,
+                max_results: 5,
+            });
+            setResults(res.results || []);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    return (
+
+
+        <div className="dropdown relative w-80 md:w-96">
+
+        <input
+            tabIndex={0}
+            type="text"
+            placeholder="Search from Youtube"
+            className="input input-sm input-bordered rounded-full bg-gray-900 border-gray-700 placeholder-gray-400 text-white w-24 md:w-64"
+            onChange={e => setSearch(e.target.value.trim())}
+            />
+
+
+        {search && results.length > 0 && (
+        <ul
+            tabIndex={0}
+            className="dropdown-content absolute left-0 mt-2 w-96 bg-zinc-900 rounded-lg shadow-lg z-[100] p-1"
+            >
+
+            {results.map((item, i) => (
+            <li key={item.id}>
+                <SongSearchbarCard item={item} onClick={() => onItemClick?.(item)}/>
+            </li>
+            ))}
+
+            <SongSearchbarDropdownExtra query={search}/>
+
+        </ul>
+        )}
+
+        </div>
+    );
+}

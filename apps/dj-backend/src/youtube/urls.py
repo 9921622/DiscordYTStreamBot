@@ -10,5 +10,5 @@ router.register(r"playlists", YoutubePlaylistViewSet, basename="playlist")
 app_name = "youtube"
 urlpatterns = [
     path("", include(router.urls)),
-    path("search/", YoutubeSearchView.as_view(), name="search"),
+    path("search", YoutubeSearchView.as_view(), name="search"),
 ]

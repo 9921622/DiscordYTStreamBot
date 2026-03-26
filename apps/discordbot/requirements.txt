@@ -1,9 +1,8 @@
 -r requirements-production.txt
 
 # testing
-factory_boy
 pytest
-pytest-order
+httpx  # https://fastapi.tiangolo.com/tutorial/testing/#using-testclient
 
 pre-commit
 

@@ -33,5 +33,8 @@ class DiscordBot(commands.Bot):
     def run_bot(self):
         self.run(token=self._token)
 
+    def get_voice_client(self, guild_id: int) -> nextcord.VoiceClient:
+        return nextcord.get_guild(id=guild_id).voice_client
+
 
 bot = DiscordBot(token=settings.DISCORD_TOKEN)

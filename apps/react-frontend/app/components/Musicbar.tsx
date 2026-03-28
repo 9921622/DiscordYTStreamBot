@@ -6,7 +6,19 @@ import { PlayIcon, PauseIcon, PrevIcon, NextIcon, VolumeIcon, LoopIcon, ShuffleI
 import { NumToTime } from "./utilities/misc";
 
 
-function ArtistInfo({ songTitle, artistName, albumArtUrl }: { songTitle: string; artistName: string; albumArtUrl: string }) {
+function ArtistInfo({ songTitle, artistName, albumArtUrl, loading }: { songTitle: string; artistName: string; albumArtUrl: string, loading : boolean }) {
+    if (loading) {
+        return (
+            <>
+                <div className="skeleton w-12 h-12 rounded" />
+                <div className="flex flex-col gap-2">
+                    <div className="skeleton h-4 w-32" />
+                    <div className="skeleton h-3 w-24" />
+                </div>
+            </>
+        );
+    }
+
     return (
         <>
             <img
@@ -45,17 +57,37 @@ function SongControls() {
     );
 }
 
-function SongProgressBar({ currentTime, duration }: { currentTime: number; duration: number }) {
-    const progress = (currentTime / duration) * 100;
+function SongProgressBar({ currentTime, setCurrentTime, duration }: { currentTime: number; duration: number; setCurrentTime: (value: number) => void; }) {
+    const [localValue, setLocalValue] = useState((currentTime / duration) * 100);
+    const [dragging, setDragging] = useState(false);
+
+    useEffect(() => {
+        if (!dragging) setLocalValue((currentTime / duration) * 100);
+    }, [currentTime, duration]);
+
+    function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+        setLocalValue(Number(e.target.value));
+    }
+
+    function handleRelease() {
+        setDragging(false);
+        setCurrentTime((localValue / 100) * duration);
+    }
+
     return (
         <div className="flex items-center gap-2 text-xs text-gray-400 w-64">
             <span>0:00</span>
             <input
-            type="range"
-            min={0}
-            max={100}
-            defaultValue={progress}
-            className="range range-xs range-primary flex-1"
+                type="range"
+                min={0}
+                max={100}
+                value={localValue}
+                onChange={handleChange}
+                onMouseDown={() => setDragging(true)}
+                onTouchStart={() => setDragging(true)}
+                onMouseUp={handleRelease}
+                onTouchEnd={handleRelease}
+                className="range range-xs range-primary flex-1"
             />
             <span>{NumToTime(duration)}</span>
         </div>
@@ -68,10 +100,13 @@ export default function Musicbar() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [currentTime, setCurrentTime] = useState<number>(90);
+
+
     useEffect(() => {
         (async () => {
             try {
-                const id = extractYoutubeId("https://www.youtube.com/watch?v=e0XBIicJmAE&list=RDO1-Ims-3RJU&index=2") || "";
+                const id = extractYoutubeId("https://www.youtube.com/watch?v=iNxCLMKGZ0o&list=RDiNxCLMKGZ0o&start_radio=1") || "";
                 // const id = extractYoutubeId("https://www.youtube.com/watch?v=dei1SgfaQ-E&list=RDdei1SgfaQ-E&start_radio=1") || "";
                 const fetchedVideo = await youtubeAPI.video.retrieve(id);
                 setVideo(fetchedVideo);
@@ -83,32 +118,33 @@ export default function Musicbar() {
         })();
     }, []);
 
-    if (loading) return <div className="bg-gray-900 text-white px-4 py-2 fixed bottom-0 w-full">Loading...</div>;
-    if (error || !video) return <div className="bg-gray-900 text-white px-4 py-2 fixed bottom-0 w-full">Error: {error}</div>;
+    if (!loading && (error || !video))
+        return <div className="bg-gray-900 text-white px-4 py-2 fixed bottom-0 w-full">Error: {error}</div>;
 
-    const songTitle = video.title;
-    const songDuration = video.duration;
-    const artistName = video.creator;
-    const albumArtUrl = video.thumbnail || "";
-    const tags = video.tags || [];
-    const url = video.source_url;
-    const currentTime = 90;
+    const songTitle = video?.title ?? "";
+    const songDuration = video?.duration ?? 0;
+    const artistName = video?.creator ?? "";
+    const albumArtUrl = video?.thumbnail ?? "";
+    const tags = video?.tags ?? [];
 
     return (
         <div className="bg-gray-900 text-white px-4 py-2 flex items-center justify-between shadow-inner fixed bottom-0 w-full">
 
 
             <div className="flex items-center gap-3">
-                <ArtistInfo songTitle={songTitle} artistName={artistName} albumArtUrl={albumArtUrl} />
+                <ArtistInfo
+                    songTitle={songTitle} artistName={artistName} albumArtUrl={albumArtUrl}
+                    loading={loading}
+                    />
             </div>
 
 
             <div className="flex flex-col items-center gap-2">
                 <SongControls />
-                <SongProgressBar currentTime={currentTime} duration={songDuration} />
+                <SongProgressBar
+                    currentTime={currentTime} setCurrentTime={setCurrentTime} duration={songDuration}/>
             </div>
 
-            {/* Tags */}
             <div className="flex items-center gap-2 flex-wrap max-w-xs">
                 {tags.map((tag) => (
                     <span key={tag.id} className="badge badge-sm badge-primary">
@@ -117,7 +153,6 @@ export default function Musicbar() {
                 ))}
             </div>
 
-            {/* Volume Control */}
             <div className="flex items-center gap-3">
                 <button className="btn btn-ghost btn-circle hover:bg-gray-800">
                 <VolumeIcon />

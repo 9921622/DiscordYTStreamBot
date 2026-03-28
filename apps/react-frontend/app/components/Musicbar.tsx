@@ -18,7 +18,18 @@ export default function Musicbar({ video, loading }: { video: YoutubeVideo | nul
     const [isPlaying, setIsPlaying] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
 
-    // Poll playback status from the bot
+    // Local tick
+    useEffect(() => {
+        if (!isPlaying || isPaused) return;
+
+        const timer = setInterval(() => {
+            setCurrentTime(t => t + 1);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [isPlaying, isPaused]);
+
+    // Poll the music position from server
     useEffect(() => {
         if (!video) return;
 
@@ -28,15 +39,14 @@ export default function Musicbar({ video, loading }: { video: YoutubeVideo | nul
                 setCurrentTime(status.position);
                 setIsPlaying(status.playing);
                 setIsPaused(status.paused);
-            } catch {
-
-            }
+            } catch {}
         };
 
         poll();
-        const interval = setInterval(poll, 1000);
+        const interval = setInterval(poll, 5000);
         return () => clearInterval(interval);
     }, [video]);
+
     const handlePause = async () => {
         await discordBotAPI.musicControl.pause(GUILD_ID);
         setIsPaused(p => !p); // optimistic update, poll will correct it

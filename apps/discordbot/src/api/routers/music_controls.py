@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 import httpx
 
 import api.api_backend_wrapper as backend
@@ -16,7 +16,11 @@ async def play(request: Request, guild_id: int, video_id: str, offset: float = 0
             raise HTTPException(status_code=502, detail="Failed to fetch source URL")
         source_url = response.json()["source_url"]
 
-    await bot.vc_play(guild_id, source_url, offset=offset)
+    try:
+        await bot.vc_play(guild_id, source_url, offset=offset)
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail="Bot not connected to vc")
+
     return {"ok": True}
 
 

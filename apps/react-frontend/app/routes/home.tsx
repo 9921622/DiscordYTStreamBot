@@ -1,8 +1,11 @@
 import type { Route } from "./+types/home";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
+
 
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
+import { discordBotAPI } from "~/api/discord/discord-wrapper";
 
 import Navbar from "~/components/Navbar";
 import Musicbar from "~/components/Musicbar";
@@ -12,94 +15,94 @@ import { HomeIcon, GearIcon, MenuIcon } from "~/components/utilities/Icons";
 
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Boombox" },
-    { name: "description", content: "Welcome to Boombox!" },
-  ];
+	return [
+		{ title: "Boombox" },
+		{ name: "description", content: "Welcome to Boombox!" },
+	];
 }
 
 
 
 
 function SideBarContent() {
-  const sidebarItems = [
-    { label: "Home", icon: MenuIcon },
-    { label: "History", icon: GearIcon },
-    { label: "Library", icon: GearIcon },
-    { label: "Liked Songs", icon: GearIcon },
-    { label: "Artists", icon: GearIcon },
-    { label: "Albums", icon: GearIcon },
-    { label: "Playlists", icon: GearIcon },
-  ];
-  return (
-    <ul className="menu w-full grow">
-      {sidebarItems.map((item) => (
-        <li key={item.label}>
-          <button
-            className="is-drawer-close:tooltip is-drawer-close:tooltip-right"
-            data-tip={item.label}
-          >
-            <item.icon />
-            <span className="is-drawer-close:hidden">{item.label}</span>
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
+	const sidebarItems = [
+		{ label: "Home", icon: MenuIcon },
+		{ label: "History", icon: GearIcon },
+		{ label: "Library", icon: GearIcon },
+		{ label: "Liked Songs", icon: GearIcon },
+		{ label: "Artists", icon: GearIcon },
+		{ label: "Albums", icon: GearIcon },
+		{ label: "Playlists", icon: GearIcon },
+	];
+	return (
+		<ul className="menu w-full grow">
+			{sidebarItems.map((item) => (
+				<li key={item.label}>
+					<button
+						className="is-drawer-close:tooltip is-drawer-close:tooltip-right"
+						data-tip={item.label}
+					>
+						<item.icon />
+						<span className="is-drawer-close:hidden">{item.label}</span>
+					</button>
+				</li>
+			))}
+		</ul>
+	);
 }
 
 function SideBar({navbar, content, sidebar}: {navbar: React.ReactNode, content: React.ReactNode, sidebar: React.ReactNode}) {
-  return (
-    <div className="drawer lg:drawer-open">
-        <input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
+	return (
+		<div className="drawer lg:drawer-open">
+				<input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
 
 
 
 
-        <div className="drawer-content">
-          <nav className="navbar w-full bg-base-300">
-            <label
-              htmlFor="my-drawer-4"
-              aria-label="open sidebar"
-              className="btn btn-square btn-ghost"
-            >
-              <MenuIcon />
-            </label>
-            <div className="flex-1">
-              {navbar}
-            </div>
-          </nav>
+				<div className="drawer-content">
+					<nav className="navbar w-full bg-base-300">
+						<label
+							htmlFor="my-drawer-4"
+							aria-label="open sidebar"
+							className="btn btn-square btn-ghost"
+						>
+							<MenuIcon />
+						</label>
+						<div className="flex-1">
+							{navbar}
+						</div>
+					</nav>
 
 
 
-          {/* Page content */}
-          <div className="p-4">
+					{/* Page content */}
+					<div className="p-4">
 
 
-            {content}
+						{content}
 
 
-          </div>
-        </div>
+					</div>
+				</div>
 
-        {/* Sidebar */}
-        <div className="drawer-side is-drawer-close:overflow-visible">
-          <label
-            htmlFor="my-drawer-4"
-            aria-label="close sidebar"
-            className="drawer-overlay"
-          ></label>
+				{/* Sidebar */}
+				<div className="drawer-side is-drawer-close:overflow-visible">
+					<label
+						htmlFor="my-drawer-4"
+						aria-label="close sidebar"
+						className="drawer-overlay"
+					></label>
 
-          <div className="flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64">
-            <div>&nbsp;</div>
-            <div>&nbsp;</div>
-            <div>&nbsp;</div>
-            {sidebar}
+					<div className="flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64">
+						<div>&nbsp;</div>
+						<div>&nbsp;</div>
+						<div>&nbsp;</div>
+						{sidebar}
 
-          </div>
-        </div>
-      </div>
-  );
+					</div>
+				</div>
+			</div>
+	);
 }
 
 
@@ -108,45 +111,74 @@ function SideBar({navbar, content, sidebar}: {navbar: React.ReactNode, content: 
 
 
 export default function Home() {
+	const GUILD_ID = "407313498658439180";
 
+	const [searchParams, setSearchParams] = useSearchParams();
+	const [songs, setSongs] = useState<YoutubeVideo[]>([]);
+	const [video, setVideo] = useState<YoutubeVideo | null>(null);
+	const [videoLoading, setVideoLoading] = useState(false);
 
-  const [songs, setSongs] = useState<YoutubeVideo[]>([]);
+	useEffect(() => {
+		(async () => {
+			let songs: YoutubeVideo[] = await youtubeAPI.video.list();
+			setSongs(songs);
+		})();
+	}, []);
 
-  useEffect(() => {
-      (async () => {
-        let songs : YoutubeVideo[] = await youtubeAPI.video.list();
-        setSongs(songs);
-      })();
-  }, []);
+	useEffect(() => {
+		const videoId = searchParams.get("v");
+		if (!videoId) {
+			(async () => {
+				await discordBotAPI.musicControl.stop(GUILD_ID);
+			})();
+			return;
+		};
 
-  // ================
+		(async () => {
+			await discordBotAPI.musicControl.play(GUILD_ID, videoId);
+		})();
 
-  function SongOnClick(item : any) {
-    console.log(item);
-  }
+		(async () => {
+			setVideoLoading(true);
+			try {
+				const fetchedVideo = await youtubeAPI.video.retrieve(videoId);
+				setVideo(fetchedVideo);
+			} catch {
+				setVideo(null);
+			} finally {
+				setVideoLoading(false);
+			}
+		})();
+	}, [searchParams]);
 
-  return (
-    <>
-      <SideBar
-        navbar={<Navbar SongSearchBarOnClick={SongOnClick}/>}
-        content={
+	function SongOnClick(item: YoutubeVideo) {
+		setVideo(null);
+		setVideoLoading(true);
+		setSearchParams({ v: item.youtube_id });
+	}
 
-          <div>
+	return (
+		<>
+			<SideBar
+				navbar={<Navbar SongSearchBarOnClick={SongOnClick}/>}
+				content={
 
-            <div className="bg-zinc-900 p-5 rounded-md">
-              <p className="text-xl font-bold mb-3">All Songs</p>
-              <SongContainer songs={songs} onItemClick={SongOnClick} />
-            </div>
+				<div>
 
-        </div>
+					<div className="bg-zinc-900 p-5 rounded-md">
+						<p className="text-xl font-bold mb-3">All Songs</p>
+						<SongContainer songs={songs} onItemClick={SongOnClick} />
+					</div>
 
-        }
-        sidebar={<SideBarContent />}
-      />
+				</div>
 
-      <div className="fixed bottom-0 left-0 w-full z-50">
-        <Musicbar />
-      </div>
-    </>
-  );
+				}
+				sidebar={<SideBarContent />}
+			/>
+
+			<div className="fixed bottom-0 left-0 w-full z-50">
+				<Musicbar video={video} loading={videoLoading} />
+			</div>
+		</>
+	);
 }

@@ -118,7 +118,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             raise RuntimeError("Nothing is playing")
         vc = self.get_voice_client(guild_id)
         volume = vc.source.volume if vc and isinstance(vc.source, discord.PCMVolumeTransformer) else 1.0
-        await self.play(guild_id, state.source_url, offset=position, volume=volume)
+        await self.vc_play(guild_id, state.source_url, offset=position, volume=volume)
 
     def vc_get_status(self, guild_id: int) -> dict:
         """returns the status of playback"""

@@ -59,7 +59,7 @@ export default function SongSearchbar( { onItemClick } : { onItemClick? : (item:
         {search && results.length > 0 && (
         <ul
             tabIndex={0}
-            className="dropdown-content absolute left-0 mt-2 w-96 bg-zinc-900 rounded-lg shadow-lg z-[100] p-1"
+            className="dropdown-content absolute left-0 mt-2 w-96 bg-zinc-900 rounded-lg shadow-lg z-[999] p-1"
             >
 
             {results.map((item, i) => (

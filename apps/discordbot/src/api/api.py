@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, Request
+from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 
 from bot.bot import bot
@@ -12,6 +13,14 @@ app.include_router(voice.router)
 app.include_router(music_controls.router)
 app.include_router(admin.router)
 app.include_router(debug.router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_HOSTS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")

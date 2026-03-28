@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     APP_HOST: str
     APP_PORT: int
     BACKEND_HOST: str
+    CORS_HOSTS: list[str]
 
     # Flags
     DEBUG: bool = False

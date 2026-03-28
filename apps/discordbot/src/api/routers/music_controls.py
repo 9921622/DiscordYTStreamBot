@@ -62,7 +62,7 @@ async def seek(request: Request, guild_id: int, time: float):
 @router.get("/status", name="mc-status")
 async def status(request: Request, guild_id: int):
     """Get current playback position and state"""
-    return bot.get_status(guild_id)
+    return bot.vc_get_status(guild_id)
 
 
 @router.get("/volume", name="mc-volume")

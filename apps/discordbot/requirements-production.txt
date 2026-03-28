@@ -1,7 +1,9 @@
 # main
 fastapi[standard]
 uvicorn
-nextcord[voice]
+discord.py[voice]
+
+httpx
 
 # utils
 pydantic-settings

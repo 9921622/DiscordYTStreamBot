@@ -1,20 +1,20 @@
 import os
 
-import nextcord
-from nextcord.ext import commands
+import discord
+from discord.ext import commands
 
-from settings import settings
+from settings import Settings
 
 
 class EventsMixin:
 
     # GUILDS
     @commands.Cog.listener()
-    async def on_guild_join(self, guild: nextcord.Guild):
+    async def on_guild_join(self, guild: discord.Guild):
         pass
 
     @commands.Cog.listener()
-    async def on_guild_remove(self, guild: nextcord.Guild):
+    async def on_guild_remove(self, guild: discord.Guild):
         pass
 
     # CONNECTION

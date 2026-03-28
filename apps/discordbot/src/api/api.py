@@ -4,12 +4,14 @@ import asyncio
 from bot.bot import bot
 from settings import settings
 
-from api.routers import misc, music_controls, admin
+from api.routers import misc, music_controls, admin, voice, debug
 
 app = FastAPI()
 app.include_router(misc.router)
+app.include_router(voice.router)
 app.include_router(music_controls.router)
-app.include_router(admin)
+app.include_router(admin.router)
+app.include_router(debug.router)
 
 
 @app.on_event("startup")

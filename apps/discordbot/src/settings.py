@@ -4,11 +4,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # Discord
     DISCORD_TOKEN: str
-    DISCORD_DEBUG_SERVER: str | None = None
+    DISCORD_DEBUG_SERVER: int | None = None
+    DISCORD_DEBUG_VC: int | None = None
+    DISCORD_DEBUG_CHANNEL: int | None = None
 
     # App
     APP_HOST: str
     APP_PORT: int
+    BACKEND_HOST: str
 
     # Flags
     DEBUG: bool = False

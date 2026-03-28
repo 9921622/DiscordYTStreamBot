@@ -1,5 +1,5 @@
 import functools
-from nextcord.ext import commands
+from discord.ext import commands
 
 # https://stackoverflow.com/a/78668962
 

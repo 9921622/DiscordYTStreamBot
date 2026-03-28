@@ -43,6 +43,21 @@ class YoutubeVideoViewSet(viewsets.ReadOnlyModelViewSet):
                     {"error": f"Failed to fetch video from YouTube: {str(e)}"}, status=status.HTTP_404_NOT_FOUND
                 )
 
+    @action(detail=True, methods=["get"], url_path="get-source")
+    def get_source(self, request, youtube_id=None):
+        """Get the streamable source URL for a video."""
+        try:
+            video = YoutubeVideo.objects.get(youtube_id=youtube_id)
+        except YoutubeVideo.DoesNotExist:
+            return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            url = video.get_url()
+            source_url = YoutubeVideo.get_source_url(url=url)
+            return Response({"source_url": source_url})
+        except Exception as e:
+            return Response({"error": f"Failed to extract source URL: {str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+
 
 class YoutubePlaylistViewSet(viewsets.ModelViewSet):
     """

@@ -76,6 +76,16 @@ class YoutubeVideoViewSetTests(TestCase):
         self.assertIn("error", response.data)
         self.assertIn("Failed to fetch video from YouTube", response.data["error"])
 
+    @mock.patch("youtube.views.yt_dlp.YoutubeDL")
+    def test_get_source(self, mock_ydl_class):
+        mock_ydl_class.return_value.__enter__.return_value.extract_info.return_value = {
+            "url": "https://example.com/stream.mp4"
+        }
+
+        response = self.client.get(reverse("youtube:video-get-source", kwargs={"youtube_id": self.video1.youtube_id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["source_url"], "https://example.com/stream.mp4")
+
 
 class YoutubePlaylistViewSetTests(TestCase):
     def setUp(self):

@@ -94,6 +94,11 @@ class YoutubeVideo(models.Model):
             return info_dict["requested_formats"][0].get("url")
         return None
 
+    @classmethod
+    def get_source_url(cls, url):
+        info_dict = cls.get_info(url)
+        return cls.extract_source_url(info_dict)
+
     # ==========================================
     # FACTORY METHODS
     # ==========================================

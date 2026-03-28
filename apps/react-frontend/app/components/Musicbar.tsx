@@ -1,13 +1,14 @@
+import { useSearchParams } from "react-router";
+import { useEffect, useState } from "react";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 import { youtubeAPI, extractYoutubeId } from "~/api/youtube/youtube-wrapper";
 import { discordBotAPI } from "~/api/discord/discord-wrapper";
-import { useEffect, useState } from "react";
 
 import ArtistInfo from "./MusicbarArtistInfo";
 import SongProgressBar from "./MusicbarSongProgressBar";
 import { VolumeIcon } from "./utilities/Icons";
 import SongControls from "./MusicbarSongControls";
-import { useSearchParams } from "react-router";
+import MusicbarTags from "./MusicbarTags";
 
 
 
@@ -82,12 +83,8 @@ export default function Musicbar({ video, loading }: { video: YoutubeVideo | nul
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap max-w-xs">
-                {tags.map((tag) => (
-                    <span key={tag.id} className="badge badge-sm badge-primary">
-                        {tag.name}
-                    </span>
-                ))}
+            <div className="flex items-center gap-2">
+                <MusicbarTags tags={tags} />
             </div>
 
             <div className="flex items-center gap-3">

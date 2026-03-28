@@ -6,14 +6,8 @@ export interface YoutubeVideo {
   duration: number;
   thumbnail?: string;
   created_at: string;
-  tags: YoutubeTag[];
+  tags: string[];
 }
-
-export interface YoutubeTag {
-  id: number;
-  name: string;
-}
-
 export interface YoutubePlaylist {
   id: number;
   name: string;

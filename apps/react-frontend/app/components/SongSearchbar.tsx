@@ -45,13 +45,13 @@ export default function SongSearchbar( { onItemClick } : { onItemClick? : (item:
     return (
 
 
-        <div className="dropdown relative w-80 md:w-96">
+        <div className="dropdown relative w-full md:w-[600px]">
 
         <input
             tabIndex={0}
             type="text"
             placeholder="Search from Youtube"
-            className="input input-sm input-bordered rounded-full bg-gray-900 border-gray-700 placeholder-gray-400 text-white w-24 md:w-64"
+            className="input input-md input-bordered rounded-full bg-gray-900 border-gray-700 placeholder-gray-400 text-white w-full"
             onChange={e => setSearch(e.target.value.trim())}
             />
 
@@ -59,7 +59,7 @@ export default function SongSearchbar( { onItemClick } : { onItemClick? : (item:
         {search && results.length > 0 && (
         <ul
             tabIndex={0}
-            className="dropdown-content absolute left-0 mt-2 w-96 bg-zinc-900 rounded-lg shadow-lg z-[999] p-1"
+            className="dropdown-content absolute left-0 mt-2 w-full bg-zinc-900 rounded-lg shadow-lg z-[999] p-2 flex flex-col gap-1"
             >
 
             {results.map((item, i) => (

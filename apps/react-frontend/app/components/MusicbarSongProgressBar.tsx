@@ -5,6 +5,7 @@ import { NumToTime } from "./utilities/misc";
 export default  function SongProgressBar({ className, currentTime, setCurrentTime, duration }: { className? : string, currentTime: number; duration: number; setCurrentTime: (value: number) => void; }) {
     const [localValue, setLocalValue] = useState((currentTime / duration) * 100);
     const [dragging, setDragging] = useState(false);
+    const displayTime = dragging ? (localValue / 100) * duration : currentTime;
 
     useEffect(() => {
         if (!dragging) setLocalValue((currentTime / duration) * 100);
@@ -21,7 +22,7 @@ export default  function SongProgressBar({ className, currentTime, setCurrentTim
 
     return (
         <div className={`${className} flex items-center gap-2 text-xs text-gray-400 w-64`}>
-            <span>{NumToTime(currentTime)}</span>
+            <span>{NumToTime(displayTime)}</span>
             <input
                 type="range"
                 min={0}

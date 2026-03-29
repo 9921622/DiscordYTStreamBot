@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 
 import os
+import json
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,20 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG") == "True"
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",") if os.getenv("ALLOWED_HOSTS") else []
-
-
-# Build CORS origins with proper schemes
-CORS_ALLOWED_ORIGINS = []
-for host in os.getenv("CORS_ALLOWED_ORIGINS").split(","):
-    host = host.strip()
-    if host == "*":
-        CORS_ALLOWED_ORIGINS.append(host)
-    elif host.startswith(("http://", "https://")):
-        CORS_ALLOWED_ORIGINS.append(host)
-    else:
-        # Add both http and https variants for bare hostnames
-        CORS_ALLOWED_ORIGINS.extend([f"http://{host}", f"https://{host}"])
+ALLOWED_HOSTS = json.loads(os.getenv("ALLOWED_HOSTS", "[]"))
+CORS_ALLOWED_ORIGINS = json.loads(os.getenv("CORS_ALLOWED_ORIGINS", "[]"))
 
 # Application definition
 

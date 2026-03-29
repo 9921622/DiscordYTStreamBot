@@ -61,29 +61,31 @@ export default function Musicbar({ video, loading }: { video: YoutubeVideo | nul
     const tags = video?.tags ?? [];
 
     return (
-        <div className="bg-gray-900 text-white px-4 py-2 flex items-center justify-between shadow-inner fixed bottom-0 w-full">
+        <div className="bg-gray-900 text-white px-4 py-5 flex items-center justify-between shadow-inner fixed bottom-0 w-full">
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-1/4 min-w-0">
                 <ArtistInfo
                     video={video}
                     loading={loading}
                     />
             </div>
 
-            <div className={!video ? "cursor-not-allowed" : ""}>
-                <div className={`flex flex-col items-center gap-2 ${!video ? "opacity-40 pointer-events-none" : ""}`}>
+            <div className={`absolute left-1/2 -translate-x-1/2 ${!video ? "cursor-not-allowed" : ""}`}>
+                <div className={`flex flex-col items-center gap-2 w-150 ${!video ? "opacity-40 pointer-events-none" : ""}`}>
                     <SongControls
+                        className="w-1/2"
                         isPlaying={isPlaying}
                         isPaused={isPaused}
                         onPause={handlePause}/>
                     <SongProgressBar
+                        className="w-full"
                         currentTime={currentTime}
                         setCurrentTime={handleSeek}
                         duration={video?.duration ?? 0}/>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-1/6 justify-end ml-auto">
                 <MusicbarTags tags={tags} />
             </div>
 

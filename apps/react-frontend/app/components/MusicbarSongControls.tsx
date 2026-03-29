@@ -2,6 +2,7 @@
 import { PlayIcon, PauseIcon, PrevIcon, NextIcon, VolumeIcon, LoopIcon, ShuffleIcon } from "./utilities/Icons";
 
 interface SongControlsProps {
+    className? : string;
     isPlaying: boolean;
     isPaused: boolean;
     onPause: () => void;
@@ -10,9 +11,9 @@ interface SongControlsProps {
     onShuffle?: () => void;
     onLoop?: () => void;
 }
-export default function SongControls({ isPlaying, isPaused, onPause, onPrev, onNext, onShuffle, onLoop }: SongControlsProps) {
+export default function SongControls({ className, isPlaying, isPaused, onPause, onPrev, onNext, onShuffle, onLoop }: SongControlsProps) {
     return (
-        <div className="flex items-center gap-4">
+        <div className={`${className} flex items-center gap-4`}>
             <button className="btn btn-ghost btn-circle hover:bg-gray-800" onClick={onShuffle}>
                 <ShuffleIcon />
             </button>

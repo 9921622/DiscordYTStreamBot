@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NumToTime } from "./utilities/misc";
 
 
-export default  function SongProgressBar({ currentTime, setCurrentTime, duration }: { currentTime: number; duration: number; setCurrentTime: (value: number) => void; }) {
+export default  function SongProgressBar({ className, currentTime, setCurrentTime, duration }: { className? : string, currentTime: number; duration: number; setCurrentTime: (value: number) => void; }) {
     const [localValue, setLocalValue] = useState((currentTime / duration) * 100);
     const [dragging, setDragging] = useState(false);
 
@@ -20,7 +20,7 @@ export default  function SongProgressBar({ currentTime, setCurrentTime, duration
     }
 
     return (
-        <div className="flex items-center gap-2 text-xs text-gray-400 w-64">
+        <div className={`${className} flex items-center gap-2 text-xs text-gray-400 w-64`}>
             <span>{NumToTime(currentTime)}</span>
             <input
                 type="range"

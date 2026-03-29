@@ -30,19 +30,17 @@ export default function Musicbar({ video, loading }: { video: YoutubeVideo | nul
         return () => clearInterval(timer);
     }, [isPlaying, isPaused]);
 
-    // Poll the music position from server
+    const poll = async () => {
+        try {
+            const status = await discordBotAPI.musicControl.status(GUILD_ID);
+            setCurrentTime(status.position);
+            setIsPlaying(status.playing);
+            setIsPaused(status.paused);
+        } catch {}
+    };
+
     useEffect(() => {
         if (!video) return;
-
-        const poll = async () => {
-            try {
-                const status = await discordBotAPI.musicControl.status(GUILD_ID);
-                setCurrentTime(status.position);
-                setIsPlaying(status.playing);
-                setIsPaused(status.paused);
-            } catch {}
-        };
-
         poll();
         const interval = setInterval(poll, 5000);
         return () => clearInterval(interval);
@@ -50,12 +48,14 @@ export default function Musicbar({ video, loading }: { video: YoutubeVideo | nul
 
     const handlePause = async () => {
         await discordBotAPI.musicControl.pause(GUILD_ID);
-        setIsPaused(p => !p); // optimistic update, poll will correct it
+        setIsPaused(p => !p);
+        await poll();
     };
 
     const handleSeek = async (time: number) => {
         setCurrentTime(time);
         await discordBotAPI.musicControl.seek(GUILD_ID, time);
+        await poll();
     };
 
     const tags = video?.tags ?? [];

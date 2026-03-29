@@ -83,6 +83,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._playback: dict[int, Playback] = {}
+        self.VOLUME_SCALE = 0.25
 
     def create_audio_source(
         self, source_url: str, offset: float = 0.0, volume: float = 1.0
@@ -93,7 +94,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
                 before_options=f"-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -ss {offset}",
                 options="-vn",
             ),
-            volume=volume,
+            volume=volume * self.VOLUME_SCALE,
         )
 
     def get_voice_client(self, guild_id: int) -> discord.VoiceClient:
@@ -127,7 +128,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             return None
 
         if level is not None:
-            vc.source.volume = max(0.0, min(1.0, level))
+            vc.source.volume = max(0.0, min(1.0, level)) * self.VOLUME_SCALE
 
         return vc.source.volume
 
@@ -136,7 +137,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
         if not state:
             raise RuntimeError("Nothing is playing")
         vc = self.get_voice_client(guild_id)
-        volume = vc.source.volume if vc and isinstance(vc.source, discord.PCMVolumeTransformer) else 1.0
+        volume = vc.source.volume if vc and isinstance(vc.source, discord.PCMVolumeTransformer) else self.VOLUME_SCALE
         await self.vc_play(guild_id, state.source_url, offset=position, volume=volume)
 
     def vc_get_status(self, guild_id: int) -> dict:

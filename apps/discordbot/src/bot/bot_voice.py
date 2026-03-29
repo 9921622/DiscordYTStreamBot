@@ -36,6 +36,14 @@ class PlaybackMixin:
             return state.offset
         return state.offset + (time.monotonic() - state.started_at)
 
+    async def on_song_start(self):
+        """custom event listener. triggered when song starts"""
+        pass
+
+    async def on_song_end(self):
+        """custom event listener. triggered when song ends"""
+        pass
+
 
 class ConnectionMixin:
 
@@ -97,9 +105,18 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
         if vc.is_playing():
             vc.stop()
 
+        def _after(error):
+            async def _run():
+                await self.on_song_end(guild_id)
+                if after:
+                    after(error)
+
+            asyncio.run_coroutine_threadsafe(_run(), self.loop)
+
         source = self.create_audio_source(source_url, offset=offset, volume=volume)
-        vc.play(source, after=after)
+        vc.play(source, after=_after)
         self._create_playback(guild_id, source_url, offset)
+        await self.on_song_start(guild_id)
 
     async def vc_volume(self, guild_id: int, level: float | None = None) -> float | None:
         """Get or set volume (0.0–1.0). Returns current volume, or None if not playing."""

@@ -8,7 +8,7 @@ router = APIRouter(prefix="/music-control", tags=["music-control"])
 
 
 @router.get("/play", name="mc-play")
-async def play(request: Request, guild_id: int, video_id: str, offset: float = 0.0):
+async def play(request: Request, guild_id: int, video_id: str, offset: float = 0.0, volume: float = 0.5):
     """Play a song by video ID"""
     async with httpx.AsyncClient() as client:
         response = await client.get(backend.play_url(video_id=video_id))
@@ -17,7 +17,7 @@ async def play(request: Request, guild_id: int, video_id: str, offset: float = 0
         source_url = response.json()["source_url"]
 
     try:
-        await bot.vc_play(guild_id, source_url, offset=offset)
+        await bot.vc_play(guild_id, source_url, offset=offset, volume=volume)
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail="Bot not connected to vc")
 

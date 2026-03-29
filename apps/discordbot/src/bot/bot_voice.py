@@ -14,15 +14,17 @@ class Playback:
     started_at: float
     offset: int
     paused_at: float | None = None
+    volume: float = 0.5
 
 
 class PlaybackMixin:
 
-    def _create_playback(self, guild_id: int, source_url: str, offset: float = 0.0):
+    def _create_playback(self, guild_id: int, source_url: str, offset: float = 0.0, volume: float = 0.5):
         self._playback[guild_id] = Playback(
             source_url=source_url,
             started_at=time.monotonic(),
             offset=offset,
+            volume=volume,
         )
 
     def _delete_playback(self, guild_id: int):
@@ -97,7 +99,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
     def get_voice_client(self, guild_id: int) -> discord.VoiceClient:
         return discord.utils.get(self.voice_clients, guild__id=guild_id)
 
-    async def vc_play(self, guild_id: int, source_url: str, offset: float = 0.0, volume: float = 1.0, after=None):
+    async def vc_play(self, guild_id: int, source_url: str, offset: float = 0.0, volume: float = 0.5, after=None):
         vc = self.get_voice_client(guild_id)
         if not vc or not vc.is_connected():
             raise RuntimeError("Bot is not connected to a voice channel")
@@ -115,7 +117,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
 
         source = self.create_audio_source(source_url, offset=offset, volume=volume)
         vc.play(source, after=_after)
-        self._create_playback(guild_id, source_url, offset)
+        self._create_playback(guild_id, source_url, offset, volume)
         await self.on_song_start(guild_id)
 
     async def vc_volume(self, guild_id: int, level: float | None = None) -> float | None:
@@ -148,4 +150,5 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             "paused": vc.is_paused(),
             "position": self._get_position(guild_id),
             "source_url": state.source_url,
+            "volume": vc.source.volume,
         }

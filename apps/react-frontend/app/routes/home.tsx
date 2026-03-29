@@ -119,6 +119,8 @@ export default function Home() {
 	const [videoLoading, setVideoLoading] = useState(false);
 	const [playError, setPlayError] = useState<string | null>(null);
 
+	const videoId = searchParams.get("v");
+
 	// get song list
 	useEffect(() => {
 		(async () => {
@@ -129,7 +131,6 @@ export default function Home() {
 
 	// get song from id
 	useEffect(() => {
-		const videoId = searchParams.get("v");
 		if (!videoId) {
 			(async () => {
 				await discordBotAPI.musicControl.stop(GUILD_ID);
@@ -140,8 +141,9 @@ export default function Home() {
 		setPlayError(null);
 
 		(async () => {
+			const volume_level = Number(searchParams.get("vol") ?? 1.0)
 			try {
-				await discordBotAPI.musicControl.play(GUILD_ID, videoId);
+				await discordBotAPI.musicControl.play(GUILD_ID, videoId, 0, volume_level);
 			} catch (err: any) {
 				const message = err?.response?.data?.detail || "Failed to play track";
 				setPlayError(message);
@@ -161,12 +163,15 @@ export default function Home() {
 				setVideoLoading(false);
 			}
 		})();
-	}, [searchParams]);
+	}, [videoId]);
 
 	function SongOnClick(item: YoutubeVideo) {
 		setVideo(null);
 		setVideoLoading(true);
-		setSearchParams({ v: item.youtube_id });
+		setSearchParams(prev => {
+			prev.set("v", item.youtube_id);
+			return prev;
+		});
 	}
 
 	return (

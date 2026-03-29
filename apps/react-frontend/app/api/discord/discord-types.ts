@@ -4,4 +4,5 @@ export interface PlaybackStatus {
     paused : boolean;
     position : number;
     source_url : string;
+    volume : number;
 }

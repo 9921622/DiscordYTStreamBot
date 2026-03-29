@@ -11,9 +11,9 @@ class MusicControlAPI {
     this.baseURL = baseURL;
   }
 
-  async play(guild_id: string, video_id: string, offset: number = 0.0): Promise<{ ok: boolean }> {
+  async play(guild_id: string, video_id: string, offset: number = 0.0, volume : number=1): Promise<{ ok: boolean }> {
     const response = await axios.get(`${this.baseURL}/play`, {
-      params: { guild_id, video_id, offset },
+      params: { guild_id, video_id, offset, volume },
     });
     return response.data;
   }

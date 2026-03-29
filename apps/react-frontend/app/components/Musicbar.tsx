@@ -9,12 +9,15 @@ import SongProgressBar from "./MusicbarSongProgressBar";
 import { VolumeIcon } from "./utilities/Icons";
 import SongControls from "./MusicbarSongControls";
 import MusicbarTags from "./MusicbarTags";
+import VolumeControl from "./MusicbarVolumeControl";
 
 
 
 export default function Musicbar({ video, loading, error }: { video: YoutubeVideo | null, loading: boolean, error: string | null }) {
     const GUILD_ID = `${import.meta.env.VITE_DEBUG_GUILD}`;
+    const [searchParams, setSearchParams] = useSearchParams();
 
+    const [volume, setVolume] = useState<number>(Number(searchParams.get("vol") ?? 1.0));
     const [currentTime, setCurrentTime] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -36,8 +39,16 @@ export default function Musicbar({ video, loading, error }: { video: YoutubeVide
             setCurrentTime(status.position);
             setIsPlaying(status.playing);
             setIsPaused(status.paused);
+            setVolume(status.volume);
         } catch {}
     };
+
+    // update poll when search params changes
+    useEffect(() => {
+        (async ()=>{
+            await poll();
+        })();
+    }, [searchParams])
 
     useEffect(() => {
         if (!video) return;
@@ -56,6 +67,15 @@ export default function Musicbar({ video, loading, error }: { video: YoutubeVide
         setCurrentTime(time);
         await discordBotAPI.musicControl.seek(GUILD_ID, time);
         await poll();
+    };
+
+    const handleVolume = async (level: number) => {
+        await discordBotAPI.musicControl.setVolume(GUILD_ID, level);
+        setVolume(level);
+        setSearchParams(prev => {
+            prev.set("vol", String(level));
+            return prev;
+        }, { replace: true });
     };
 
     const tags = video?.tags ?? [];
@@ -93,9 +113,7 @@ export default function Musicbar({ video, loading, error }: { video: YoutubeVide
             </div>
 
             <div className="flex items-center gap-3">
-                <button className="btn btn-ghost btn-circle hover:bg-gray-800">
-                <VolumeIcon />
-                </button>
+                <VolumeControl volume={volume} onVolumeChange={handleVolume} />
             </div>
 
 

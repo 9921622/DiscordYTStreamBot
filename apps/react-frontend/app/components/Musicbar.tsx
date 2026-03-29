@@ -12,7 +12,7 @@ import MusicbarTags from "./MusicbarTags";
 
 
 
-export default function Musicbar({ video, loading }: { video: YoutubeVideo | null, loading: boolean }) {
+export default function Musicbar({ video, loading, error }: { video: YoutubeVideo | null, loading: boolean, error: string | null }) {
     const GUILD_ID = `${import.meta.env.VITE_DEBUG_GUILD}`;
 
     const [currentTime, setCurrentTime] = useState<number>(0);
@@ -59,6 +59,9 @@ export default function Musicbar({ video, loading }: { video: YoutubeVideo | nul
     };
 
     const tags = video?.tags ?? [];
+
+    if (error)
+        return <p>ERROR {error}</p>
 
     return (
         <div className="bg-gray-900 text-white px-4 py-5 flex items-center justify-between shadow-inner fixed bottom-0 w-full">

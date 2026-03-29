@@ -117,7 +117,9 @@ export default function Home() {
 	const [songs, setSongs] = useState<YoutubeVideo[]>([]);
 	const [video, setVideo] = useState<YoutubeVideo | null>(null);
 	const [videoLoading, setVideoLoading] = useState(false);
+	const [playError, setPlayError] = useState<string | null>(null);
 
+	// get song list
 	useEffect(() => {
 		(async () => {
 			let songs: YoutubeVideo[] = await youtubeAPI.video.list();
@@ -125,6 +127,7 @@ export default function Home() {
 		})();
 	}, []);
 
+	// get song from id
 	useEffect(() => {
 		const videoId = searchParams.get("v");
 		if (!videoId) {
@@ -132,10 +135,19 @@ export default function Home() {
 				await discordBotAPI.musicControl.stop(GUILD_ID);
 			})();
 			return;
-		};
+		}
+
+		setPlayError(null);
 
 		(async () => {
-			await discordBotAPI.musicControl.play(GUILD_ID, videoId);
+			try {
+				await discordBotAPI.musicControl.play(GUILD_ID, videoId);
+			} catch (err: any) {
+				const message = err?.response?.data?.detail || "Failed to play track";
+				setPlayError(message);
+				setVideo(null);
+				setVideoLoading(false);
+			}
 		})();
 
 		(async () => {
@@ -177,7 +189,7 @@ export default function Home() {
 			/>
 
 			<div className="fixed bottom-0 left-0 w-full z-50">
-				<Musicbar video={video} loading={videoLoading} />
+				<Musicbar video={video} loading={videoLoading} error={playError} />
 			</div>
 		</>
 	);

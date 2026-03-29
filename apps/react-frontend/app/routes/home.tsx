@@ -16,8 +16,8 @@ import { HomeIcon, GearIcon, MenuIcon } from "~/components/utilities/Icons";
 
 export function meta({}: Route.MetaArgs) {
 	return [
-		{ title: "Boombox" },
-		{ name: "description", content: "Welcome to Boombox!" },
+		{ title: `${import.meta.env.VITE_APP_NAME}` },
+		{ name: "description", content: `Welcome to ${import.meta.env.VITE_APP_NAME}!` },
 	];
 }
 

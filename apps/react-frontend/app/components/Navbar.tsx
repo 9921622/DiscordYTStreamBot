@@ -47,7 +47,7 @@ export default function Navbar(
     <nav className="text-white px-4 py-2 flex items-center relative shadow-md z-50">
 
       <div className="flex items-center gap-4">
-        <a className="text-2xl font-bold">Boombox</a>
+        <a className="text-2xl font-bold">{import.meta.env.VITE_APP_NAME}</a>
       </div>
 
       <div className="absolute left-1/2 transform -translate-x-1/2">

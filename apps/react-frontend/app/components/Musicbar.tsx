@@ -13,7 +13,7 @@ import MusicbarTags from "./MusicbarTags";
 
 
 export default function Musicbar({ video, loading }: { video: YoutubeVideo | null, loading: boolean }) {
-    const GUILD_ID = "407313498658439180";
+    const GUILD_ID = `${import.meta.env.VITE_DEBUG_GUILD}`;
 
     const [currentTime, setCurrentTime] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState(false);

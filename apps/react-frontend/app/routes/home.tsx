@@ -111,7 +111,7 @@ function SideBar({navbar, content, sidebar}: {navbar: React.ReactNode, content: 
 
 
 export default function Home() {
-	const GUILD_ID = "407313498658439180";
+	const GUILD_ID = `${import.meta.env.VITE_DEBUG_GUILD}`;
 
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [songs, setSongs] = useState<YoutubeVideo[]>([]);

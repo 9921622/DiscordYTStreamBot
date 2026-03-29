@@ -36,11 +36,11 @@ class PlaybackMixin:
             return state.offset
         return state.offset + (time.monotonic() - state.started_at)
 
-    async def on_song_start(self):
+    async def on_song_start(self, guild_id: int):
         """custom event listener. triggered when song starts"""
         pass
 
-    async def on_song_end(self):
+    async def on_song_end(self, guild_id: int):
         """custom event listener. triggered when song ends"""
         pass
 

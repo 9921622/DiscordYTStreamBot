@@ -44,6 +44,10 @@ class BackendAPI {
     const baseURL = `${import.meta.env.VITE_API_URL}`;
     this.discord = new DiscordAPI(`${baseURL}/discord`);
   }
+
+  refresh_token_uri() {
+    return `${import.meta.env.VITE_API_URL}/token/refresh/`
+  }
 }
 
 export const backendAPI = new BackendAPI();

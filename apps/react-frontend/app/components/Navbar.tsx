@@ -100,18 +100,10 @@ function JoinChannel({ discordUser }: { discordUser?: DiscordUser }) {
 }
 
 export default function Navbar(
-  { SongSearchBarOnClick } :
-  { SongSearchBarOnClick : ( item : YoutubeVideo) => void; }) {
-
-  const [ discordUser, setDiscordUser ] = useState<DiscordUser>();
-
-  useEffect(() => {
-    (async () => {
-      let u = await backendAPI.discord.get_user();
-      setDiscordUser(u);
-    })();
-  }, []);
-
+  { SongSearchBarOnClick, discordUser } :
+  { SongSearchBarOnClick : ( item : YoutubeVideo) => void;
+    discordUser? : DiscordUser;
+   }) {
 
 
   return (

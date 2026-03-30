@@ -6,6 +6,7 @@ import type { DiscordUser } from "~/api/backend-types";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useUser } from "~/contexts/UserContext";
+import { useBotContext } from "~/contexts/BotContext";
 
 function ProfileDropdown({ profile } : { profile? : DiscordUser }) {
   const navigate = useNavigate()
@@ -39,16 +40,16 @@ function ProfileDropdown({ profile } : { profile? : DiscordUser }) {
 }
 
 
-function JoinChannel({ discordUser }: { discordUser?: DiscordUser }) {
+function JoinChannel() {
+  const discordUser = useUser()
+  const { botInChannel, setBotInChannel, guildID } = useBotContext()
   const [loading, setLoading] = useState(false)
   const [inVC, setInVC] = useState<boolean | null>(null)
-  const [botInChannel, setBotInChannel] = useState(false)
 
   useEffect(() => {
     if (!discordUser) return
     discordBotAPI.voice.get_user_vc(discordUser.discord_id).then(data => {
       setInVC(!!data.channel_id)
-      setBotInChannel(data.bot_in_channel ?? false)
     })
   }, [discordUser])
 
@@ -103,7 +104,7 @@ export default function Navbar(
       </div>
 
       <div className="flex items-center gap-3 ml-auto">
-        <JoinChannel discordUser={discordUser} />
+        <JoinChannel />
         <ProfileDropdown profile={discordUser}/>
       </div>
     </nav>

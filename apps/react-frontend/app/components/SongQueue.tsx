@@ -112,7 +112,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
 }
 
 export default function QueueSidebar() {
-    const { queue, playFromQueue, popQueue, reorderQueue } = usePlayback()
+    const { video, queue, playFromQueue, popQueue, reorderQueue } = usePlayback()
 
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: { distance: 5 } // prevents accidental drags on click
@@ -131,6 +131,32 @@ export default function QueueSidebar() {
 
     return (
         <div className="w-72 bg-zinc-900 h-full flex flex-col border-l border-zinc-700">
+
+            {video && (
+                <div className="p-3 border-b border-zinc-800">
+                    <p className="text-xs text-zinc-400 mb-2">Now Playing</p>
+
+                    <div className="flex items-center gap-3 bg-zinc-800/60 rounded-md p-2">
+                        <img
+                            src={video.thumbnail ?? ""}
+                            alt={video.title}
+                            className="w-10 h-10 rounded object-cover flex-shrink-0"
+                        />
+
+                        <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm truncate">{video.title}</p>
+                            <p className="text-zinc-400 text-xs truncate">{video.creator}</p>
+                        </div>
+
+                        <div className="flex gap-[2px] items-end h-4">
+                            <span className="w-[2px] bg-green-400 animate-eq-fast" />
+                            <span className="w-[2px] bg-green-400 animate-eq [animation-delay:-0.2s]" />
+                            <span className="w-[2px] bg-green-400 animate-eq-slow [animation-delay:-0.4s]" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="p-4 border-b border-zinc-700 flex items-center justify-between">
                 <p className="font-bold text-white">Queue</p>
                 <span className="badge badge-neutral">{queue.length}</span>

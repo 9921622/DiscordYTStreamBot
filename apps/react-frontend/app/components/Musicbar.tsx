@@ -13,8 +13,7 @@ import VolumeControl from "./MusicbarVolumeControl";
 
 
 
-export default function Musicbar({ video, loading, error }: { video: YoutubeVideo | null, loading: boolean, error: string | null }) {
-    const GUILD_ID = `${import.meta.env.VITE_DEBUG_GUILD}`;
+export default function Musicbar({ guildID, video, loading, error }: { guildID : string | null; video: YoutubeVideo | null, loading: boolean, error: string | null }) {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [volume, setVolume] = useState<number>(Number(searchParams.get("vol") ?? 1.0));
@@ -34,8 +33,9 @@ export default function Musicbar({ video, loading, error }: { video: YoutubeVide
     }, [isPlaying, isPaused]);
 
     const poll = async () => {
+        if (!guildID) return;
         try {
-            const status = await discordBotAPI.musicControl.status(GUILD_ID);
+            const status = await discordBotAPI.musicControl.status(guildID);
             setCurrentTime(status.position);
             setIsPlaying(status.playing);
             setIsPaused(status.paused);
@@ -58,19 +58,22 @@ export default function Musicbar({ video, loading, error }: { video: YoutubeVide
     }, [video]);
 
     const handlePause = async () => {
-        await discordBotAPI.musicControl.pause(GUILD_ID);
+        if (!guildID) return;
+        await discordBotAPI.musicControl.pause(guildID);
         setIsPaused(p => !p);
         await poll();
     };
 
     const handleSeek = async (time: number) => {
+        if (!guildID) return;
         setCurrentTime(time);
-        await discordBotAPI.musicControl.seek(GUILD_ID, time);
+        await discordBotAPI.musicControl.seek(guildID, time);
         await poll();
     };
 
     const handleVolume = async (level: number) => {
-        await discordBotAPI.musicControl.setVolume(GUILD_ID, level);
+        if (!guildID) return;
+        await discordBotAPI.musicControl.setVolume(guildID, level);
         setVolume(level);
         setSearchParams(prev => {
             prev.set("vol", String(level));

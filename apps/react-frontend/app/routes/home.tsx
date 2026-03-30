@@ -6,6 +6,8 @@ import { useSearchParams } from "react-router";
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 import { discordBotAPI } from "~/api/discord/discord-wrapper";
+import type { DiscordUser } from "~/api/backend-types";
+import { backendAPI } from "~/api/backend-wrapper";
 
 import Navbar from "~/components/Navbar";
 import Musicbar from "~/components/Musicbar";
@@ -111,15 +113,35 @@ function SideBar({navbar, content, sidebar}: {navbar: React.ReactNode, content: 
 
 
 export default function Home() {
-	const GUILD_ID = `${import.meta.env.VITE_DEBUG_GUILD}`;
-
 	const [searchParams, setSearchParams] = useSearchParams();
+	const [discordUser, setDiscordUser ] = useState<DiscordUser>();
+	const [guildID, setGuildID] = useState<string | null>(null)
+
 	const [songs, setSongs] = useState<YoutubeVideo[]>([]);
+
 	const [video, setVideo] = useState<YoutubeVideo | null>(null);
 	const [videoLoading, setVideoLoading] = useState(false);
 	const [playError, setPlayError] = useState<string | null>(null);
 
 	const videoId = searchParams.get("v");
+
+	// get user data
+	useEffect(() => {
+		(async () => {
+			let u = await backendAPI.discord.get_user();
+			setDiscordUser(u);
+		})();
+	}, []);
+
+	// get guild id
+	useEffect(() => {
+		if (!discordUser) return
+			discordBotAPI.voice.get_user_vc(discordUser.discord_id).then(data => {
+			if (data.guild_id) setGuildID(data.guild_id)
+
+			console.log(data)
+		})
+	}, [discordUser])
 
 	// get song list
 	useEffect(() => {
@@ -131,9 +153,10 @@ export default function Home() {
 
 	// get song from id
 	useEffect(() => {
+		if (!guildID) return;
 		if (!videoId) {
 			(async () => {
-				await discordBotAPI.musicControl.stop(GUILD_ID);
+				await discordBotAPI.musicControl.stop(guildID);
 			})();
 			return;
 		}
@@ -143,7 +166,7 @@ export default function Home() {
 		(async () => {
 			const volume_level = Number(searchParams.get("vol") ?? 1.0)
 			try {
-				await discordBotAPI.musicControl.play(GUILD_ID, videoId, 0, volume_level);
+				await discordBotAPI.musicControl.play(guildID, videoId, 0, volume_level);
 			} catch (err: any) {
 				const message = err?.response?.data?.detail || "Failed to play track";
 				setPlayError(message);
@@ -194,7 +217,7 @@ export default function Home() {
 			/>
 
 			<div className="fixed bottom-0 left-0 w-full z-50">
-				<Musicbar video={video} loading={videoLoading} error={playError} />
+				<Musicbar guildID={guildID} video={video} loading={videoLoading} error={playError} />
 			</div>
 		</>
 	);

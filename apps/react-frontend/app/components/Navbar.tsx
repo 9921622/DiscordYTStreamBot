@@ -1,8 +1,11 @@
 import SongSearchbar from "./SongSearchbar";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
+import { discordBotAPI } from "~/api/discord/discord-wrapper";
+import { backendAPI } from "~/api/backend-wrapper";
+import type { DiscordUser } from "~/api/backend-types";
+import { useEffect, useState } from "react";
 
-
-function ProfileDropdown() {
+function ProfileDropdown({ profile } : { profile? : DiscordUser }) {
   return (
     <div className="dropdown dropdown-end">
           <div
@@ -13,7 +16,7 @@ function ProfileDropdown() {
             <div className="w-10 rounded-full">
               <img
                 alt="Profile"
-                src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                src={profile?.avatar || ""}
               />
             </div>
           </div>
@@ -38,9 +41,65 @@ function ProfileDropdown() {
   );
 }
 
+
+function JoinChannel({ discordUser }: { discordUser?: DiscordUser }) {
+  const [loading, setLoading] = useState(false)
+  const [inVC, setInVC] = useState<boolean | null>(null)
+  const [botInChannel, setBotInChannel] = useState(false)
+
+  useEffect(() => {
+    if (!discordUser) return
+    discordBotAPI.voice.get_user_vc(discordUser.discord_id).then(data => {
+      setInVC(!!data.channel_id)
+      setBotInChannel(data.bot_in_channel ?? false)
+    })
+  }, [discordUser])
+
+  const handleJoin = async () => {
+    if (!discordUser) return
+    setLoading(true)
+    await discordBotAPI.voice.join_user_vc(discordUser.discord_id)
+    setBotInChannel(true)
+    setLoading(false)
+  }
+
+  if (inVC === null) return null
+
+  if (!inVC) return (
+    <div className="tooltip tooltip-bottom" data-tip="You're not in a voice channel">
+      <button className="btn btn-sm btn-disabled gap-2">
+        <span>🔇</span> Not in VC
+      </button>
+    </div>
+  )
+
+  if (botInChannel) return (
+    <div className="badge badge-success gap-1 p-3">
+      <span>🔊</span> In your channel
+    </div>
+  )
+
+  return (
+    <button className="btn btn-sm btn-primary gap-2" onClick={handleJoin} disabled={loading}>
+      {loading ? <span className="loading loading-spinner loading-xs" /> : <span>🎙️</span>}
+      Join my VC
+    </button>
+  )
+}
+
 export default function Navbar(
   { SongSearchBarOnClick } :
   { SongSearchBarOnClick : ( item : YoutubeVideo) => void; }) {
+
+  const [ discordUser, setDiscordUser ] = useState<DiscordUser>();
+
+  useEffect(() => {
+    (async () => {
+      let u = await backendAPI.discord.get_user();
+      setDiscordUser(u);
+    })();
+  }, []);
+
 
 
   return (
@@ -55,7 +114,8 @@ export default function Navbar(
       </div>
 
       <div className="flex items-center gap-3 ml-auto">
-        <ProfileDropdown />
+        <JoinChannel discordUser={discordUser} />
+        <ProfileDropdown profile={discordUser}/>
       </div>
     </nav>
   );

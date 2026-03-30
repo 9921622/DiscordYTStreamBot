@@ -5,6 +5,11 @@ from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.models import User
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
 from backend.mixins import RefreshTokenMixin
 from discord.api import DiscordAPIClient, DiscordCDNAPI
 from discord.models import DiscordUser
@@ -124,3 +129,19 @@ class DiscordOAuthView(View):
             "redirect_uri": get_oauth_redirect(request),
         }
         return f"{self.OAUTH2_AUTHORIZE_ENDPOINT}?{urlencode(params)}"
+
+
+class DiscordProfileView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        discord_user = request.user.discord
+        return Response(
+            {
+                "discord_id": discord_user.discord_id,
+                "username": discord_user.username,
+                "global_name": discord_user.global_name,
+                "avatar": discord_user.get_avatar_uri(),
+            }
+        )

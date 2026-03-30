@@ -17,3 +17,35 @@ async def disconnect(request: Request, guild_id: int):
     """disconnect from a guild"""
     await bot.vc_disconnect(guild_id)
     return {"ok": True}
+
+
+@router.get("/user-voice-channel", name="voice-user-channel")
+async def get_user_voice_channel(request: Request, user_id: int):
+    """get the voice channel a user is currently in"""
+    for guild in bot.guilds:
+        member = guild.get_member(user_id)
+        if member and member.voice and member.voice.channel:
+            channel = member.voice.channel
+            vc = guild.voice_client
+            bot_in_same_channel = vc is not None and vc.channel == channel
+            return {
+                "channel_id": str(channel.id),
+                "channel_name": channel.name,
+                "guild_id": str(guild.id),
+                "guild_name": guild.name,
+                "bot_in_channel": bot_in_same_channel,
+            }
+    return {"channel_id": None}
+
+
+@router.get("/join-user", name="voice-join-user")
+async def join_user_voice_channel(request: Request, user_id: int):
+    """join the voice channel a user is currently in"""
+    for guild in bot.guilds:
+        member = guild.get_member(user_id)
+        if member and member.voice and member.voice.channel:
+            await bot.vc_connect(member.voice.channel)
+            return {
+                "ok": True,
+            }
+    return {"ok": False, "error": "User is not in a voice channel"}

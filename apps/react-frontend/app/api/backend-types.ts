@@ -1,5 +1,6 @@
-export interface User {
-    name : string;
-    profile : string;
-
+export interface DiscordUser {
+    discord_id : string;
+    username : string;
+    global_name : string;
+    avatar : string;
 }

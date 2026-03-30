@@ -30,6 +30,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     const [videoLoading, setVideoLoading] = useState(false);
     const [playError, setPlayError] = useState<string | null>(null);
 
+    // get video
     useEffect(() => {
         if (!guildID || !videoId || !botInChannel) return
 
@@ -48,6 +49,17 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
 
         youtubeAPI.video.retrieve(videoId).then(setVideo).catch(() => setVideo(null)).finally(() => setVideoLoading(false))
     }, [videoId, guildID, botInChannel])
+
+    // if no video use status to see if currently playing an update video
+    useEffect(() => {
+        if (!guildID || !botInChannel || videoId) return
+
+        discordBotAPI.musicControl.status(guildID).then(async status => {
+            if (!status.playing || !status.video_id) return
+            const fetchedVideo = await youtubeAPI.video.retrieve(status.video_id)
+            setVideo(fetchedVideo)
+        }).catch(() => {})
+    }, [guildID, botInChannel])
 
     function SongOnClick(item: YoutubeVideo) {
         setSearchParams(prev => { prev.set("v", item.youtube_id); return prev })

@@ -186,7 +186,7 @@ export default function Home() {
 				setVideoLoading(false);
 			}
 		})();
-	}, [videoId]);
+	}, [videoId, guildID]);
 
 	function SongOnClick(item: YoutubeVideo) {
 		setVideo(null);

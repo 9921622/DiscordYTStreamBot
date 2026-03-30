@@ -113,7 +113,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
 
 
 function CurrentSong() {
-    const { video, videoLoading } = usePlayback()
+    const { video, videoLoading, stopCurrent } = usePlayback()
 
     return (
         <div className="p-3 border-b border-zinc-800">
@@ -154,6 +154,14 @@ function CurrentSong() {
                             <span className="w-[2px] bg-green-400 animate-eq [animation-delay:-0.2s]" />
                             <span className="w-[2px] bg-green-400 animate-eq-slow [animation-delay:-0.4s]" />
                         </div>
+
+                        <button
+                            onClick={stopCurrent}
+                            className="btn btn-xs btn-ghost text-red-400 hover:bg-red-500/20"
+                            title="Stop"
+                        >
+                            ■
+                        </button>
                     </>
                 ) : (
                     <p className="text-zinc-500 text-sm">Nothing playing</p>

@@ -22,6 +22,7 @@ interface PlaybackContextType {
     queue: QueueItem[]
     SongOnClick: (item: YoutubeVideo) => void
     nextQueue: () => void
+    stopCurrent: () => void
     popQueue: (index: number) => void
     playFromQueue: (index: number) => void
     reorderQueue: (fromIndex: number, toIndex: number) => void
@@ -34,6 +35,7 @@ const PlaybackContext = createContext<PlaybackContextType>({
     queue: [],
     SongOnClick: () => {},
     nextQueue: () => {},
+    stopCurrent: () => {},
     popQueue: () => {},
     playFromQueue: () => {},
     reorderQueue: () => {},
@@ -186,8 +188,20 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
         await backendAPI.queue.reorder(guildID, realIds).catch(() => refreshQueue())
     }
 
+    async function stopCurrent() {
+        if (!guildID) return
+
+        try {
+            await discordBotAPI.musicControl.stop(guildID)
+        } catch {
+        }
+
+        setVideo(null)
+        setVideoLoading(false)
+    }
+
     return (
-        <PlaybackContext.Provider value={{ video, videoLoading, playError, queue, SongOnClick, nextQueue, popQueue, playFromQueue, reorderQueue }}>
+        <PlaybackContext.Provider value={{ video, videoLoading, playError, queue, SongOnClick, nextQueue, stopCurrent, popQueue, playFromQueue, reorderQueue }}>
             {children}
         </PlaybackContext.Provider>
     )

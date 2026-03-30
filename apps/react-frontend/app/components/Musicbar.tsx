@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 import { discordBotAPI } from "~/api/discord/discord-wrapper";
 import { useBotContext } from "~/contexts/BotContext"
@@ -9,6 +9,7 @@ import SongProgressBar from "./MusicbarSongProgressBar";
 import SongControls from "./MusicbarSongControls";
 import MusicbarTags from "./MusicbarTags";
 import VolumeControl from "./MusicbarVolumeControl";
+import { usePlayback } from "~/contexts/PlaybackContext";
 
 
 function usePlaybackStatus(guildID: string | null, video: YoutubeVideo | null) {
@@ -16,6 +17,16 @@ function usePlaybackStatus(guildID: string | null, video: YoutubeVideo | null) {
     const [isPlaying, setIsPlaying] = useState(false)
     const [isPaused, setIsPaused] = useState(false)
     const [volume, setVolume] = useState(1.0)
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+    const stopPolling = () => {
+        if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+
+    const startPolling = () => {
+        stopPolling()
+        intervalRef.current = setInterval(poll, 5000)
+    }
 
     const poll = async () => {
         if (!guildID) return
@@ -28,30 +39,36 @@ function usePlaybackStatus(guildID: string | null, video: YoutubeVideo | null) {
         } catch {}
     }
 
-    // local tick
     useEffect(() => {
         if (!isPlaying || isPaused) return
         const timer = setInterval(() => setCurrentTime(t => t + 1), 1000)
         return () => clearInterval(timer)
     }, [isPlaying, isPaused])
 
-    // poll on video change
     useEffect(() => {
+        setCurrentTime(0)
+        setIsPlaying(false)
+        setIsPaused(false)
         if (!video) return
         poll()
-        const interval = setInterval(poll, 5000)
-        return () => clearInterval(interval)
+        startPolling()
+        return () => stopPolling()
     }, [video])
 
-    return { currentTime, setCurrentTime, isPlaying, isPaused, setIsPaused, volume, setVolume, poll }
+    return { currentTime, setCurrentTime, isPlaying, isPaused, setIsPaused, volume, setVolume, poll, stopPolling, startPolling }
 }
 
 
-export default function Musicbar({ video, loading, error }: { video: YoutubeVideo | null; loading: boolean; error: string | null }) {
+export default function Musicbar() {
+    const { video, videoLoading, playError } = usePlayback()
     const [searchParams, setSearchParams] = useSearchParams()
     const { guildID, botInChannel } = useBotContext()
 
-    const { currentTime, setCurrentTime, isPlaying, isPaused, setIsPaused, volume, setVolume, poll } = usePlaybackStatus(guildID, video)
+    const {
+        currentTime, setCurrentTime,
+        isPlaying, isPaused, setIsPaused,
+        volume, setVolume,
+        poll, stopPolling, startPolling } = usePlaybackStatus(guildID, video)
 
     // poll on searchParams change
     useEffect(() => { poll() }, [searchParams])
@@ -65,9 +82,11 @@ export default function Musicbar({ video, loading, error }: { video: YoutubeVide
 
     const handleSeek = async (time: number) => {
         if (!guildID) return
+        stopPolling()
         setCurrentTime(time)
         await discordBotAPI.musicControl.seek(guildID, time)
         await poll()
+        startPolling()
     }
 
     const handleVolume = async (level: number) => {
@@ -77,10 +96,10 @@ export default function Musicbar({ video, loading, error }: { video: YoutubeVide
         setSearchParams(prev => { prev.set("vol", String(level)); return prev }, { replace: true })
     }
 
-    if (error) return (
+    if (playError) return (
         <div className="bg-gray-900 text-white px-4 py-5 fixed bottom-0 w-full flex items-center justify-center">
             <div className="alert alert-error w-auto">
-                <span>⚠️ {error}</span>
+                <span>⚠️ {playError}</span>
             </div>
         </div>
     )
@@ -91,7 +110,7 @@ export default function Musicbar({ video, loading, error }: { video: YoutubeVide
         <div className="bg-gray-900 text-white px-4 py-5 flex items-center justify-between shadow-inner fixed bottom-0 w-full">
 
             <div className="flex items-center gap-3 w-1/4 min-w-0">
-                <ArtistInfo video={video} loading={loading} />
+                <ArtistInfo video={video} loading={videoLoading} />
             </div>
 
             <div className={`absolute left-1/2 -translate-x-1/2 ${disabled ? "cursor-not-allowed" : ""}`}>

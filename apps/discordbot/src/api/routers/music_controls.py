@@ -23,7 +23,7 @@ async def play(
         source_url = response.json()["source_url"]
 
     try:
-        await bot.vc_play(guild_id, source_url, offset=offset, volume=volume)
+        await bot.vc_play(guild_id, video_id, source_url, offset=offset, volume=volume)
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail="Bot not connected to vc")
 

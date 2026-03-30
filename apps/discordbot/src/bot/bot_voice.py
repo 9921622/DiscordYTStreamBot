@@ -10,6 +10,7 @@ from settings import settings
 
 @dataclass
 class Playback:
+    video_id: str
     source_url: str
     started_at: float
     offset: int
@@ -19,8 +20,9 @@ class Playback:
 
 class PlaybackMixin:
 
-    def _create_playback(self, guild_id: int, source_url: str, offset: float = 0.0, volume: float = 0.5):
+    def _create_playback(self, guild_id: int, video_id: str, source_url: str, offset: float = 0.0, volume: float = 0.5):
         self._playback[guild_id] = Playback(
+            video_id=video_id,
             source_url=source_url,
             started_at=time.monotonic(),
             offset=offset,
@@ -100,7 +102,9 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
     def get_voice_client(self, guild_id: int) -> discord.VoiceClient:
         return discord.utils.get(self.voice_clients, guild__id=guild_id)
 
-    async def vc_play(self, guild_id: int, source_url: str, offset: float = 0.0, volume: float = 0.5, after=None):
+    async def vc_play(
+        self, guild_id: int, video_id: str, source_url: str, offset: float = 0.0, volume: float = 0.5, after=None
+    ):
         vc = self.get_voice_client(guild_id)
         if not vc or not vc.is_connected():
             raise RuntimeError("Bot is not connected to a voice channel")
@@ -118,7 +122,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
 
         source = self.create_audio_source(source_url, offset=offset, volume=volume)
         vc.play(source, after=_after)
-        self._create_playback(guild_id, source_url, offset, volume)
+        self._create_playback(guild_id, video_id, source_url, offset, volume)
         await self.on_song_start(guild_id)
 
     async def vc_volume(self, guild_id: int, level: float | None = None) -> float | None:
@@ -138,7 +142,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             raise RuntimeError("Nothing is playing")
         vc = self.get_voice_client(guild_id)
         volume = vc.source.volume if vc and isinstance(vc.source, discord.PCMVolumeTransformer) else self.VOLUME_SCALE
-        await self.vc_play(guild_id, state.source_url, offset=position, volume=volume)
+        await self.vc_play(guild_id, state.video_id, state.source_url, offset=position, volume=volume)
 
     def vc_get_status(self, guild_id: int) -> dict:
         """returns the status of playback"""
@@ -152,4 +156,5 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             "position": self._get_position(guild_id),
             "source_url": state.source_url,
             "volume": vc.source.volume,
+            "video_id": state.video_id,
         }

@@ -13,6 +13,7 @@ import Musicbar from "~/components/Musicbar";
 import SongContainer from "~/components/SongContainer";
 import SideBar from "~/components/SideBar";
 import { BotProvider, useBotContext } from "~/contexts/BotContext"
+import { UserProvider, useUser } from "~/contexts/UserContext";
 
 
 export function meta({}: Route.MetaArgs) {
@@ -24,16 +25,6 @@ export function meta({}: Route.MetaArgs) {
 
 
 // Hooks ================================================================================
-
-function useDiscordUser() {
-	const [discordUser, setDiscordUser] = useState<DiscordUser>()
-
-	useEffect(() => {
-		backendAPI.discord.get_user().then(setDiscordUser).catch(() => {})
-	}, [])
-
-	return discordUser
-}
 
 function useSongs() {
 	const [songs, setSongs] = useState<YoutubeVideo[]>([])
@@ -91,7 +82,6 @@ function HomePage() {
 	const [searchParams, setSearchParams] = useSearchParams()
 	const videoId = searchParams.get("v")
 
-	const discordUser = useDiscordUser()
 	const { guildID } = useBotContext()
 	const songs = useSongs()
 	const { video, videoLoading, playError } = usePlayback(guildID, videoId, searchParams)
@@ -103,7 +93,7 @@ function HomePage() {
 	return (
 		<>
 			<SideBar
-				navbar={<Navbar SongSearchBarOnClick={SongOnClick} discordUser={discordUser} />}
+				navbar={<Navbar SongSearchBarOnClick={SongOnClick} />}
 				content={
 					<div className="bg-zinc-900 p-5 rounded-md">
 						<p className="text-xl font-bold mb-3">All Songs</p>
@@ -118,12 +108,19 @@ function HomePage() {
 	)
 }
 
-export default function Home() {
-    const discordUser = useDiscordUser()
-
+function HomeContextWrapper() {
+    const discordUser = useUser()
     return (
         <BotProvider discordUser={discordUser}>
             <HomePage />
         </BotProvider>
+    )
+}
+
+export default function Home() {
+    return (
+        <UserProvider>
+            <HomeContextWrapper />
+        </UserProvider>
     )
 }

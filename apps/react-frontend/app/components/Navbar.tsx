@@ -5,6 +5,7 @@ import { backendAPI } from "~/api/backend-wrapper";
 import type { DiscordUser } from "~/api/backend-types";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useUser } from "~/contexts/UserContext";
 
 function ProfileDropdown({ profile } : { profile? : DiscordUser }) {
   const navigate = useNavigate()
@@ -84,11 +85,11 @@ function JoinChannel({ discordUser }: { discordUser?: DiscordUser }) {
 }
 
 export default function Navbar(
-  { SongSearchBarOnClick, discordUser } :
+  { SongSearchBarOnClick } :
   { SongSearchBarOnClick : ( item : YoutubeVideo) => void;
-    discordUser? : DiscordUser;
    }) {
 
+  const discordUser = useUser();
 
   return (
     <nav className="text-white px-4 py-2 flex items-center relative shadow-md z-50">

@@ -70,7 +70,6 @@ export default function Musicbar() {
         volume, setVolume,
         poll, stopPolling, startPolling } = usePlaybackStatus(guildID, video)
 
-    // poll on searchParams change
     useEffect(() => { poll() }, [searchParams])
 
     const handlePause = async () => {
@@ -108,8 +107,33 @@ export default function Musicbar() {
 
     return (
         <div className="bg-gray-900 text-white px-4 py-5 flex items-center justify-between shadow-inner fixed bottom-0 w-full">
+            {video?.thumbnail && (
+                <>
+                    <style>{`
+                        @keyframes bgDrift {
+                            0%   { transform: scale(1.1) translate(0%, 0%)    skew(0deg, 0deg); }
+                            25%  { transform: scale(1.2) translate(-2%, 1%)   skew(1deg, 0.5deg); }
+                            50%  { transform: scale(1.15) translate(2%, -1%)  skew(-1deg, 1deg); }
+                            75%  { transform: scale(1.2) translate(-1%, 2%)   skew(0.5deg, -1deg); }
+                            100% { transform: scale(1.1) translate(0%, 0%)    skew(0deg, 0deg); }
+                        }
+                    `}</style>
+                    <div
+                        className="absolute inset-0 transition-all duration-1000"
+                        style={{
+                            backgroundImage: `url(${video?.thumbnail})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            filter: 'blur(20px) brightness(0.4)',
+                            animation: 'bgDrift 12s ease-in-out infinite',
+                        }}
+                    />
+                    <div className="absolute inset-0 bg-black/50" />
+                </>
+            )}
+            {!video?.thumbnail && <div className="absolute inset-0 bg-gray-900" />}
 
-            <div className="flex items-center gap-3 w-1/4 min-w-0">
+            <div className="relative z-10 flex items-center gap-3 w-1/4 min-w-0">
                 <ArtistInfo video={video} loading={videoLoading} />
             </div>
 
@@ -133,11 +157,11 @@ export default function Musicbar() {
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 w-1/6 justify-end ml-auto">
+            <div className="relative z-10 flex items-center gap-2 w-1/6 justify-end ml-auto">
                 <MusicbarTags tags={video?.tags ?? []} />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="relative z-10 flex items-center gap-3">
                 <VolumeControl volume={volume} onVolumeChange={handleVolume} />
             </div>
 

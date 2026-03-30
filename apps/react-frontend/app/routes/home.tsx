@@ -36,7 +36,7 @@ function useSongs() {
 	return songs
 }
 
-function usePlayback(guildID: string | null, videoId: string | null, searchParams: URLSearchParams) {
+function usePlayback(guildID: string | null, videoId: string | null, volume: number) {
 	const { botInChannel } = useBotContext()
 	const [video, setVideo] = useState<YoutubeVideo | null>(null)
 	const [videoLoading, setVideoLoading] = useState(false)
@@ -46,29 +46,20 @@ function usePlayback(guildID: string | null, videoId: string | null, searchParam
 		if (!guildID || !videoId || !botInChannel) return
 
 		setPlayError(null)
+		setVideo(null)
+		setVideoLoading(true)
 
-		const volume_level = Number(searchParams.get("vol") ?? 1.0);
+		discordBotAPI.musicControl.play(guildID, videoId, 0, volume).catch((err: any) => {
+			const message = err?.response?.data?.detail?.error
+				|| (typeof err?.response?.data?.detail === 'string' ? err?.response?.data?.detail : null)
+				|| "Failed to play track"
+			setPlayError(message)
+			setVideo(null)
+			setVideoLoading(false)
+		})
 
-		(async () => {
-			try {
-				await discordBotAPI.musicControl.play(guildID, videoId, 0, volume_level)
-			} catch (err: any) {
-				setPlayError(err?.response?.data?.detail || "Failed to play track")
-				setVideo(null)
-				setVideoLoading(false)
-			}
-		})();
+		youtubeAPI.video.retrieve(videoId).then(setVideo).catch(() => setVideo(null)).finally(() => setVideoLoading(false))
 
-		(async () => {
-			setVideoLoading(true)
-			try {
-				setVideo(await youtubeAPI.video.retrieve(videoId))
-			} catch {
-				setVideo(null)
-			} finally {
-				setVideoLoading(false)
-			}
-		})()
 	}, [videoId, guildID, botInChannel])
 
 	return { video, setVideo, videoLoading, setVideoLoading, playError }
@@ -79,17 +70,18 @@ function usePlayback(guildID: string | null, videoId: string | null, searchParam
 // Page ================================================
 
 function HomePage() {
+
 	const [searchParams, setSearchParams] = useSearchParams()
 	const videoId = searchParams.get("v")
-
+	const volume = Number(searchParams.get("vol") ?? 1.0)
 	const { guildID } = useBotContext()
-	const songs = useSongs()
-	const { video, videoLoading, playError } = usePlayback(guildID, videoId, searchParams)
+	const { video, videoLoading, playError } = usePlayback(guildID, videoId, volume)
 
 	function SongOnClick(item: YoutubeVideo) {
 		setSearchParams(prev => { prev.set("v", item.youtube_id); return prev })
 	}
 
+	const songs = useSongs()
 	return (
 		<>
 			<SideBar

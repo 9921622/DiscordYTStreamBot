@@ -45,7 +45,9 @@ class YoutubeVideo(models.Model):
 
     URL_TEMPLATE = "https://www.youtube.com/watch?v={youtube_id}"
 
-    youtube_id = models.CharField(primary_key=True, max_length=20, unique=True)  # primary key
+    youtube_id = models.CharField(
+        primary_key=True, max_length=20, unique=True
+    )  # primary key
     title = models.CharField(max_length=255)
     creator = models.CharField(max_length=255)
     source_url = models.URLField()
@@ -104,25 +106,35 @@ class YoutubeVideo(models.Model):
     # ==========================================
     @classmethod
     def from_ydl_info(cls, info_dict, save=False):
-        tag_names = info_dict.get("tags", [])
-
-        instance = cls(
-            youtube_id=info_dict.get("id"),
-            title=info_dict.get("title") or info_dict.get("fulltitle", "Unknown title"),
-            creator=info_dict.get("uploader", "Unknown channel"),
-            source_url=cls.extract_source_url(info_dict),
-            duration=info_dict.get("duration") or 0,
-            thumbnail=info_dict.get("thumbnail"),
-        )
+        tag_names = info_dict.get("tags", []) or []
+        source_url = cls.extract_source_url(info_dict) or ""
+        youtube_id = info_dict.get("id")
 
         if save:
-            instance.save()
-            # Add tags after saving (required for ManyToManyField)
+            instance, _ = cls.objects.get_or_create(
+                youtube_id=youtube_id,
+                defaults={
+                    "title": info_dict.get("title")
+                    or info_dict.get("fulltitle", "Unknown title"),
+                    "creator": info_dict.get("uploader", "Unknown channel"),
+                    "source_url": source_url,
+                    "duration": info_dict.get("duration") or 0,
+                    "thumbnail": info_dict.get("thumbnail"),
+                },
+            )
             for tag_name in tag_names:
                 tag, _ = YoutubeTag.objects.get_or_create(name=tag_name.lower())
                 instance.tags.add(tag)
+            return instance
 
-        return instance
+        return cls(
+            youtube_id=youtube_id,
+            title=info_dict.get("title") or info_dict.get("fulltitle", "Unknown title"),
+            creator=info_dict.get("uploader", "Unknown channel"),
+            source_url=source_url,
+            duration=info_dict.get("duration") or 0,
+            thumbnail=info_dict.get("thumbnail"),
+        )
 
     @classmethod
     def from_url(cls, url, ydl_opts=None, save=False):
@@ -132,7 +144,9 @@ class YoutubeVideo(models.Model):
     @classmethod
     async def from_url_async(cls, url, ydl_opts=None, save=False):
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, lambda: cls.from_url(url, ydl_opts, save))
+        return await loop.run_in_executor(
+            None, lambda: cls.from_url(url, ydl_opts, save)
+        )
 
 
 class YoutubePlaylist(models.Model):
@@ -161,7 +175,9 @@ class YoutubePlaylist(models.Model):
         choices=PlaylistType.choices,
         default=PlaylistType.PUBLIC,
     )
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="playlists")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="playlists"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -187,7 +203,9 @@ class YoutubePlaylistItem(models.Model):
         added_at (datetime): Timestamp when the video was added to the playlist.
     """
 
-    playlist = models.ForeignKey(YoutubePlaylist, on_delete=models.CASCADE, related_name="items")
+    playlist = models.ForeignKey(
+        YoutubePlaylist, on_delete=models.CASCADE, related_name="items"
+    )
     video = models.ForeignKey(YoutubeVideo, on_delete=models.CASCADE)
     order = models.PositiveIntegerField(default=0)  # position in the playlist
     added_at = models.DateTimeField(auto_now_add=True)

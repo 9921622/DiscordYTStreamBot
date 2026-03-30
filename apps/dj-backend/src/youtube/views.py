@@ -40,23 +40,34 @@ class YoutubeVideoViewSet(viewsets.ReadOnlyModelViewSet):
                 return Response(serializer.data)
             except Exception as e:
                 return Response(
-                    {"error": f"Failed to fetch video from YouTube: {str(e)}"}, status=status.HTTP_404_NOT_FOUND
+                    {"error": f"Failed to fetch video from YouTube: {str(e)}"},
+                    status=status.HTTP_404_NOT_FOUND,
                 )
 
     @action(detail=True, methods=["get"], url_path="get-source")
     def get_source(self, request, youtube_id=None):
-        """Get the streamable source URL for a video."""
+        """Get the streamable source URL for a video, auto-fetching if not cached."""
         try:
             video = YoutubeVideo.objects.get(youtube_id=youtube_id)
         except YoutubeVideo.DoesNotExist:
-            return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+            try:
+                youtube_url = YoutubeVideo.URL_TEMPLATE.format(youtube_id=youtube_id)
+                video = YoutubeVideo.from_url(youtube_url, save=True)
+                return Response({"source_url": video.source_url})
+            except Exception as e:
+                return Response(
+                    {"error": f"Failed to fetch video from YouTube: {str(e)}"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
         try:
-            url = video.get_url()
-            source_url = YoutubeVideo.get_source_url(url=url)
+            source_url = YoutubeVideo.get_source_url(video.get_url())
             return Response({"source_url": source_url})
         except Exception as e:
-            return Response({"error": f"Failed to extract source URL: {str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response(
+                {"error": f"Failed to extract source URL: {str(e)}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
 
 class YoutubePlaylistViewSet(viewsets.ModelViewSet):
@@ -78,12 +89,16 @@ class YoutubePlaylistViewSet(viewsets.ModelViewSet):
         playlist = self.get_object()
         youtube_id = request.data.get("youtube_id")
         if not youtube_id:
-            return Response({"error": "youtube_id required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "youtube_id required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         video, _ = YoutubeVideo.objects.get_or_create(youtube_id=youtube_id)
         # Determine order automatically
         last_order = playlist.items.aggregate(models.Max("order"))["order__max"] or 0
-        item = YoutubePlaylistItem.objects.create(playlist=playlist, video=video, order=last_order + 1)
+        item = YoutubePlaylistItem.objects.create(
+            playlist=playlist, video=video, order=last_order + 1
+        )
         return Response({"id": item.id, "order": item.order})
 
 
@@ -107,14 +122,18 @@ class YoutubeSearchView(APIView):
         max_results = min(max_results, self.MAX_RESULTS)
 
         if not query:
-            return Response({"error": "Query parameter 'q' is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Query parameter 'q' is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             results = self._search_youtube(query, max_results)
             return Response({"query": query, "results": results})
         except Exception as e:
             return Response(
-                {"error": f"Failed to search YouTube: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": f"Failed to search YouTube: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     def _search_youtube(self, query: str, max_results: int = 10) -> list:
@@ -133,7 +152,9 @@ class YoutubeSearchView(APIView):
         results = []
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(f"ytsearch{max_results}:{query}", download=False)
+                info = ydl.extract_info(
+                    f"ytsearch{max_results}:{query}", download=False
+                )
 
                 if info and "entries" in info:
                     for entry in info["entries"]:
@@ -142,7 +163,9 @@ class YoutubeSearchView(APIView):
                                 "youtube_id": entry.get("id"),
                                 "title": entry.get("title"),
                                 "creator": entry.get("uploader"),
-                                "thumbnail": entry["thumbnails"][0]["url"],  # this is the small thumbnail
+                                "thumbnail": entry["thumbnails"][0][
+                                    "url"
+                                ],  # this is the small thumbnail
                                 "duration": entry.get("duration"),
                             }
                         )

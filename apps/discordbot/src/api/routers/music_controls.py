@@ -8,12 +8,18 @@ router = APIRouter(prefix="/music-control", tags=["music-control"])
 
 
 @router.get("/play", name="mc-play")
-async def play(request: Request, guild_id: int, video_id: str, offset: float = 0.0, volume: float = 0.5):
+async def play(
+    request: Request,
+    guild_id: int,
+    video_id: str,
+    offset: float = 0.0,
+    volume: float = 0.5,
+):
     """Play a song by video ID"""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.get(backend.play_url(video_id=video_id))
         if response.status_code != 200:
-            raise HTTPException(status_code=502, detail="Failed to fetch source URL")
+            raise HTTPException(status_code=502, detail=response.json())
         source_url = response.json()["source_url"]
 
     try:

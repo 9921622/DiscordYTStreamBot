@@ -32,7 +32,11 @@ class YoutubeVideoViewSetTests(TestCase):
 
     def test_retrieve_video(self):
         """Test retrieving a single video by its YouTube ID."""
-        response = self.client.get(reverse("youtube:video-detail", kwargs={"youtube_id": self.video1.youtube_id}))
+        response = self.client.get(
+            reverse(
+                "youtube:video-detail", kwargs={"youtube_id": self.video1.youtube_id}
+            )
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["title"], self.video1.title)
 
@@ -52,7 +56,9 @@ class YoutubeVideoViewSetTests(TestCase):
         mock_from_url.return_value = mock_video
 
         # Try to retrieve a video that doesn't exist in the database
-        response = self.client.get(reverse("youtube:video-detail", kwargs={"youtube_id": "new_video_id"}))
+        response = self.client.get(
+            reverse("youtube:video-detail", kwargs={"youtube_id": "new_video_id"})
+        )
 
         # Should return 200 and the video data
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -60,7 +66,9 @@ class YoutubeVideoViewSetTests(TestCase):
         self.assertEqual(response.data["title"], "Auto-Fetched Video")
 
         # Verify from_url was called with the correct YouTube URL
-        mock_from_url.assert_called_once_with("https://www.youtube.com/watch?v=new_video_id", save=True)
+        mock_from_url.assert_called_once_with(
+            "https://www.youtube.com/watch?v=new_video_id", save=True
+        )
 
     @mock.patch("youtube.models.YoutubeVideo.from_url")
     def test_retrieve_video_auto_fetch_failure(self, mock_from_url):
@@ -69,7 +77,9 @@ class YoutubeVideoViewSetTests(TestCase):
         mock_from_url.side_effect = Exception("YouTube fetch failed")
 
         # Try to retrieve a video that doesn't exist and will fail to fetch
-        response = self.client.get(reverse("youtube:video-detail", kwargs={"youtube_id": "invalid_id"}))
+        response = self.client.get(
+            reverse("youtube:video-detail", kwargs={"youtube_id": "invalid_id"})
+        )
 
         # Should return 404 with error message
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -82,9 +92,53 @@ class YoutubeVideoViewSetTests(TestCase):
             "url": "https://example.com/stream.mp4"
         }
 
-        response = self.client.get(reverse("youtube:video-get-source", kwargs={"youtube_id": self.video1.youtube_id}))
+        response = self.client.get(
+            reverse(
+                "youtube:video-get-source",
+                kwargs={"youtube_id": self.video1.youtube_id},
+            )
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["source_url"], "https://example.com/stream.mp4")
+
+    @mock.patch("youtube.models.YoutubeVideo.from_url")
+    @mock.patch("youtube.views.yt_dlp.YoutubeDL")
+    def test_get_source_auto_fetch(self, mock_ydl_class, mock_from_url):
+        """Test that get_source auto-fetches a video if not in the database."""
+        mock_video = YoutubeVideo(
+            youtube_id="new_video_id",
+            title="Auto-Fetched Video",
+            creator="Auto-Fetched Creator",
+            source_url="https://example.com/stream",
+            duration=300,
+            thumbnail="https://example.com/thumb.jpg",
+        )
+        mock_from_url.return_value = mock_video
+        mock_ydl_class.return_value.__enter__.return_value.extract_info.return_value = {
+            "url": "https://example.com/stream.mp4"
+        }
+
+        response = self.client.get(
+            reverse("youtube:video-get-source", kwargs={"youtube_id": "new_video_id"})
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["source_url"], "https://example.com/stream")
+        mock_from_url.assert_called_once_with(
+            "https://www.youtube.com/watch?v=new_video_id", save=True
+        )
+
+    @mock.patch("youtube.models.YoutubeVideo.from_url")
+    def test_get_source_auto_fetch_failure(self, mock_from_url):
+        """Test that get_source returns 404 when video not found and YouTube fetch fails."""
+        mock_from_url.side_effect = Exception("YouTube fetch failed")
+
+        response = self.client.get(
+            reverse("youtube:video-get-source", kwargs={"youtube_id": "invalid_id"})
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("error", response.data)
 
 
 class YoutubePlaylistViewSetTests(TestCase):
@@ -123,7 +177,9 @@ class YoutubePlaylistViewSetTests(TestCase):
 
         # Add a video via API
         data = {"youtube_id": "abc123"}
-        response = self.client.post(reverse("youtube:playlist-add-video", kwargs={"pk": playlist.pk}), data)
+        response = self.client.post(
+            reverse("youtube:playlist-add-video", kwargs={"pk": playlist.pk}), data
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Verify the video exists in DB
@@ -176,7 +232,9 @@ class YoutubeSearchViewTests(TestCase):
         mock_search.return_value = []
 
         # Make the request with max_results
-        response = self.client.get(reverse("youtube:search"), {"q": "test query", "max_results": "20"})
+        response = self.client.get(
+            reverse("youtube:search"), {"q": "test query", "max_results": "20"}
+        )
 
         # Verify response
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -190,7 +248,9 @@ class YoutubeSearchViewTests(TestCase):
         mock_search.return_value = []
 
         # Try to request more than 50 results
-        response = self.client.get(reverse("youtube:search"), {"q": "test query", "max_results": "100"})
+        response = self.client.get(
+            reverse("youtube:search"), {"q": "test query", "max_results": "100"}
+        )
 
         # Verify response
         self.assertEqual(response.status_code, status.HTTP_200_OK)

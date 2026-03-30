@@ -8,9 +8,11 @@ import Navbar from "~/components/Navbar";
 import Musicbar from "~/components/Musicbar";
 import SongContainer from "~/components/SongContainer";
 import SideBar from "~/components/SideBar";
+import SongQueue from "~/components/SongQueue";
 import { BotProvider, useBotContext } from "~/contexts/BotContext"
 import { UserProvider, useUser } from "~/contexts/UserContext";
 import { PlaybackProvider, usePlayback } from "~/contexts/PlaybackContext";
+
 
 
 export function meta({}: Route.MetaArgs) {
@@ -42,9 +44,12 @@ function HomePage() {
             <SideBar
                 navbar={<Navbar />}
                 content={
-                    <div className="bg-zinc-900 p-5 rounded-md">
-                        <p className="text-xl font-bold mb-3">All Songs</p>
-                        <SongContainer songs={songs} />
+                    <div className="flex gap-0 h-full">
+                        <div className="flex-1 bg-zinc-900 p-5 rounded-md">
+                            <p className="text-xl font-bold mb-3">All Songs</p>
+                            <SongContainer songs={songs} />
+                        </div>
+                        <SongQueue />
                     </div>
                 }
             />

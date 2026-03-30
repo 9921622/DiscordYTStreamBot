@@ -37,12 +37,51 @@ class DiscordAPI {
 
 }
 
+class DiscordGuildQueueAPI {
+  private baseURL: string
+
+  constructor(baseURL: string) {
+    this.baseURL = baseURL
+  }
+
+  private get headers() {
+    return { Authorization: `Bearer ${localStorage.getItem('access')}` }
+  }
+
+  async get(guild_id: string) {
+    const response = await axios.get(`${this.baseURL}/guild/${guild_id}/queue/`, { headers: this.headers })
+    return response.data
+  }
+
+  async clear(guild_id: string) {
+    const response = await axios.delete(`${this.baseURL}/guild/${guild_id}/queue/`, { headers: this.headers })
+    return response.data
+  }
+
+  async addItem(guild_id: string, youtube_id: string) {
+    const response = await axios.post(`${this.baseURL}/guild/${guild_id}/queue/items/`, { youtube_id }, { headers: this.headers })
+    return response.data
+  }
+
+  async removeItem(guild_id: string, item_id: number) {
+    const response = await axios.delete(`${this.baseURL}/guild/${guild_id}/queue/items/${item_id}/`, { headers: this.headers })
+    return response.data
+  }
+
+  async reorder(guild_id: string, order: number[]) {
+    const response = await axios.patch(`${this.baseURL}/guild/${guild_id}/queue/items/`, { order }, { headers: this.headers })
+    return response.data
+  }
+}
+
 class BackendAPI {
-  public discord : DiscordAPI;
+  public discord: DiscordAPI
+  public queue: DiscordGuildQueueAPI
 
   constructor() {
-    const baseURL = `${import.meta.env.VITE_API_URL}`;
-    this.discord = new DiscordAPI(`${baseURL}/discord`);
+    const baseURL = `${import.meta.env.VITE_API_URL}`
+    this.discord = new DiscordAPI(`${baseURL}/discord`)
+    this.queue = new DiscordGuildQueueAPI(`${baseURL}/discord`)
   }
 
   refresh_token_uri() {

@@ -1,0 +1,162 @@
+import { useBotContext } from "~/contexts/BotContext"
+import { usePlayback } from "~/contexts/PlaybackContext"
+import { PlayIcon } from "./utilities/Icons"
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+    SortableContext,
+    verticalListSortingStrategy,
+    useSortable,
+    arrayMove,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+
+function DragHandle() {
+    return (
+        <svg className="w-3 h-4 text-zinc-600 flex-shrink-0" fill="currentColor" viewBox="0 0 8 16">
+            <circle cx="2" cy="3" r="1.2" /><circle cx="6" cy="3" r="1.2" />
+            <circle cx="2" cy="8" r="1.2" /><circle cx="6" cy="8" r="1.2" />
+            <circle cx="2" cy="13" r="1.2" /><circle cx="6" cy="13" r="1.2" />
+        </svg>
+    )
+}
+
+function SortableItem({ item, index, onPlay, onRemove }: {
+    item: any
+    index: number
+    onPlay: () => void
+    onRemove: (e: React.MouseEvent) => void
+}) {
+    const isSkeleton = 'isSkeleton' in item
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: item.id, disabled: isSkeleton })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 50 : undefined,
+    }
+
+    return (
+        <li
+            ref={setNodeRef}
+            style={style}
+            className={`flex items-center gap-3 px-4 py-3 group
+                ${isSkeleton ? 'opacity-60 cursor-wait' : 'hover:bg-zinc-800 cursor-pointer'}
+                ${isDragging ? 'bg-zinc-800' : ''}
+            `}
+            onClick={() => !isSkeleton && onPlay()}
+        >
+            {/* Drag handle — only on real items */}
+            {!isSkeleton && (
+                <span
+                    className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition"
+                    {...attributes}
+                    {...listeners}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <DragHandle />
+                </span>
+            )}
+
+            <span className="text-zinc-500 text-xs w-4">{index + 1}</span>
+
+            {isSkeleton ? (
+                <>
+                    <div className="w-10 h-10 rounded bg-zinc-700 animate-pulse flex-shrink-0" />
+                    <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                        <div className="h-3 bg-zinc-700 animate-pulse rounded w-3/4" />
+                        <div className="h-2.5 bg-zinc-800 animate-pulse rounded w-1/2" />
+                    </div>
+                </>
+            ) : (
+                <>
+                    <div className="relative w-10 h-10 flex-shrink-0">
+                        <img
+                            src={item.video.thumbnail ?? ""}
+                            alt={item.video.title}
+                            className="w-10 h-10 rounded object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded transition">
+                            <PlayIcon />
+                        </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm truncate">{item.video.title}</p>
+                        <p className="text-zinc-400 text-xs truncate">{item.video.creator}</p>
+                    </div>
+                    <button
+                        className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-400"
+                        onClick={onRemove}
+                    >
+                        ✕
+                    </button>
+                </>
+            )}
+        </li>
+    )
+}
+
+export default function QueueSidebar() {
+    const { queue, playFromQueue, popQueue, reorderQueue } = usePlayback()
+
+    const sensors = useSensors(useSensor(PointerSensor, {
+        activationConstraint: { distance: 5 } // prevents accidental drags on click
+    }))
+
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event
+        if (!over || active.id === over.id) return
+
+        const fromIndex = queue.findIndex(q => q.id === active.id)
+        const toIndex = queue.findIndex(q => q.id === over.id)
+        if (fromIndex !== -1 && toIndex !== -1) {
+            reorderQueue(fromIndex, toIndex)
+        }
+    }
+
+    return (
+        <div className="w-72 bg-zinc-900 h-full flex flex-col border-l border-zinc-700">
+            <div className="p-4 border-b border-zinc-700 flex items-center justify-between">
+                <p className="font-bold text-white">Queue</p>
+                <span className="badge badge-neutral">{queue.length}</span>
+            </div>
+
+            {queue.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-zinc-500 text-sm">
+                    Queue is empty
+                </div>
+            ) : (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={queue.map(q => q.id)} strategy={verticalListSortingStrategy}>
+                        <ul className="flex-1 overflow-y-auto divide-y divide-zinc-800">
+                            {queue.map((item, index) => (
+                                <SortableItem
+                                    key={item.id}
+                                    item={item}
+                                    index={index}
+                                    onPlay={() => playFromQueue(index)}
+                                    onRemove={(e) => { e.stopPropagation(); popQueue(index) }}
+                                />
+                            ))}
+                        </ul>
+                    </SortableContext>
+                </DndContext>
+            )}
+        </div>
+    )
+}

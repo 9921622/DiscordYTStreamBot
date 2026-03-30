@@ -25,7 +25,7 @@ function usePlaybackStatus(guildID: string | null, video: YoutubeVideo | null) {
 
     const startPolling = () => {
         stopPolling()
-        intervalRef.current = setInterval(poll, 5000)
+        intervalRef.current = setInterval(poll, 2000)
     }
 
     const poll = async () => {
@@ -60,7 +60,7 @@ function usePlaybackStatus(guildID: string | null, video: YoutubeVideo | null) {
 
 
 export default function Musicbar() {
-    const { video, videoLoading, playError } = usePlayback()
+    const { video, videoLoading, playError, nextQueue } = usePlayback()
     const [searchParams, setSearchParams] = useSearchParams()
     const { guildID, botInChannel } = useBotContext()
 
@@ -147,6 +147,7 @@ export default function Musicbar() {
                         isPlaying={isPlaying}
                         isPaused={isPaused}
                         onPause={handlePause}
+                        onNext={nextQueue}
                     />
                     <SongProgressBar
                         className="w-full"

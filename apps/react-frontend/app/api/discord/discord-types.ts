@@ -6,4 +6,5 @@ export interface PlaybackStatus {
     source_url : string;
     volume : number;
     video_id: string;
+    ended: Boolean;
 }

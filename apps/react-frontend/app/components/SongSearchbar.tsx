@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { CrossIcon } from "./utilities/Icons";
 
@@ -24,7 +24,10 @@ function SongSearchbarDropdownExtra({ query }: { query: string }) {
 export default function SongSearchbar( { onItemClick } : { onItemClick? : (item: YoutubeVideo) => void } ) {
     const [search, setSearch] = useState("");
     const [results, setResults] = useState<YoutubeVideo[]>([]);
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
+    // search handler
     useEffect(() => {
         if (!search) {
             setResults([]);
@@ -42,21 +45,36 @@ export default function SongSearchbar( { onItemClick } : { onItemClick? : (item:
         return () => clearTimeout(timer);
     }, [search]);
 
+    // open handler
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (!containerRef.current?.contains(e.target as Node)) {
+                setIsOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     return (
 
 
-        <div className="dropdown relative w-full md:w-[600px]">
+        <div
+            ref={containerRef}
+            className="dropdown relative w-full md:w-[600px]">
 
         <input
             tabIndex={0}
             type="text"
             placeholder="Search from Youtube"
+            onFocus={() => setIsOpen(true)}
             className="input input-md input-bordered rounded-full bg-gray-900 border-gray-700 placeholder-gray-400 text-white w-full"
             onChange={e => setSearch(e.target.value.trim())}
             />
 
 
-        {search && results.length > 0 && (
+        {isOpen && search && results.length > 0 && (
         <ul
             tabIndex={0}
             className="dropdown-content absolute left-0 mt-2 w-full bg-zinc-900 rounded-lg shadow-lg z-[999] p-2 flex flex-col gap-1"

@@ -14,10 +14,13 @@ function ProfileDropdown({ profile } : { profile? : DiscordUser }) {
             className="btn btn-ghost btn-circle avatar"
           >
             <div className="w-10 rounded-full">
-              <img
-                alt="Profile"
-                src={profile?.avatar || ""}
-              />
+              {
+                profile &&
+                  (<img
+                  alt="Profile"
+                  src={profile.avatar}
+                  />)
+              }
             </div>
           </div>
           <ul

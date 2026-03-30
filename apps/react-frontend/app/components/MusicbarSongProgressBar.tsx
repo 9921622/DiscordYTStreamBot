@@ -3,12 +3,12 @@ import { NumToTime } from "./utilities/misc";
 
 
 export default  function SongProgressBar({ className, currentTime, setCurrentTime, duration }: { className? : string, currentTime: number; duration: number; setCurrentTime: (value: number) => void; }) {
-    const [localValue, setLocalValue] = useState((currentTime / duration) * 100);
+    const [localValue, setLocalValue] = useState(0);
     const [dragging, setDragging] = useState(false);
     const displayTime = dragging ? (localValue / 100) * duration : Math.min(duration, currentTime);
 
     useEffect(() => {
-        if (!dragging) setLocalValue((currentTime / duration) * 100);
+        if (!dragging && duration) setLocalValue((currentTime / duration) * 100);
     }, [currentTime, duration]);
 
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {

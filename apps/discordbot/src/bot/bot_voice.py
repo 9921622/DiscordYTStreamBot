@@ -59,9 +59,7 @@ class PlaybackMixin:
 
 class ConnectionMixin:
 
-    async def vc_connect(
-        self, voice_channel: discord.VoiceChannel
-    ) -> discord.VoiceClient:
+    async def vc_connect(self, voice_channel: discord.VoiceChannel) -> discord.VoiceClient:
         """Join or move within a guild's voice channel."""
         await self.wait_until_ready()
 
@@ -99,7 +97,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._playback: dict[int, Playback] = {}
-        self.VOLUME_SCALE = 0.25
+        self.VOLUME_SCALE = 0.125
 
     def get_voice_client(self, guild_id: int) -> discord.VoiceClient | None:
         return discord.utils.get(self.voice_clients, guild__id=guild_id)
@@ -178,13 +176,9 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             else state.volume
         )
 
-        await self.vc_play(
-            guild_id, state.video_id, state.source_url, offset=position, volume=volume
-        )
+        await self.vc_play(guild_id, state.video_id, state.source_url, offset=position, volume=volume)
 
-    async def vc_volume(
-        self, guild_id: int, level: float | None = None
-    ) -> float | None:
+    async def vc_volume(self, guild_id: int, level: float | None = None) -> float | None:
         """Get or set volume (0.0–1.0). Returns current volume or None if not playing."""
         vc = self.get_voice_client(guild_id)
         if not vc or not isinstance(vc.source, discord.PCMVolumeTransformer):

@@ -12,7 +12,7 @@ import Navbar from "~/components/Navbar";
 import Musicbar from "~/components/Musicbar";
 import SongContainer from "~/components/SongContainer";
 import SideBar from "~/components/SideBar";
-
+import { BotProvider, useBotContext } from "~/contexts/BotContext"
 
 
 export function meta({}: Route.MetaArgs) {
@@ -35,19 +35,6 @@ function useDiscordUser() {
 	return discordUser
 }
 
-function useGuildID(discordUser?: DiscordUser) {
-	const [guildID, setGuildID] = useState<string | null>(null)
-
-	useEffect(() => {
-		if (!discordUser) return
-		discordBotAPI.voice.get_user_vc(discordUser.discord_id).then(data => {
-			if (data.guild_id) setGuildID(data.guild_id)
-		})
-	}, [discordUser])
-
-	return guildID
-}
-
 function useSongs() {
 	const [songs, setSongs] = useState<YoutubeVideo[]>([])
 
@@ -59,12 +46,13 @@ function useSongs() {
 }
 
 function usePlayback(guildID: string | null, videoId: string | null, searchParams: URLSearchParams) {
+	const { botInChannel } = useBotContext()
 	const [video, setVideo] = useState<YoutubeVideo | null>(null)
 	const [videoLoading, setVideoLoading] = useState(false)
 	const [playError, setPlayError] = useState<string | null>(null)
 
 	useEffect(() => {
-		if (!guildID || !videoId) return
+		if (!guildID || !videoId || !botInChannel) return
 
 		setPlayError(null)
 
@@ -90,7 +78,7 @@ function usePlayback(guildID: string | null, videoId: string | null, searchParam
 				setVideoLoading(false)
 			}
 		})()
-	}, [videoId, guildID])
+	}, [videoId, guildID, botInChannel])
 
 	return { video, setVideo, videoLoading, setVideoLoading, playError }
 }
@@ -99,12 +87,12 @@ function usePlayback(guildID: string | null, videoId: string | null, searchParam
 
 // Page ================================================
 
-export default function Home() {
+function HomePage() {
 	const [searchParams, setSearchParams] = useSearchParams()
 	const videoId = searchParams.get("v")
 
 	const discordUser = useDiscordUser()
-	const guildID = useGuildID(discordUser)
+	const { guildID } = useBotContext()
 	const songs = useSongs()
 	const { video, videoLoading, playError } = usePlayback(guildID, videoId, searchParams)
 
@@ -124,8 +112,18 @@ export default function Home() {
 				}
 			/>
 			<div className="fixed bottom-0 left-0 w-full z-50">
-				<Musicbar guildID={guildID} video={video} loading={videoLoading} error={playError} />
+				<Musicbar video={video} loading={videoLoading} error={playError} />
 			</div>
 		</>
 	)
+}
+
+export default function Home() {
+    const discordUser = useDiscordUser()
+
+    return (
+        <BotProvider discordUser={discordUser}>
+            <HomePage />
+        </BotProvider>
+    )
 }

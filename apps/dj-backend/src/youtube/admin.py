@@ -22,9 +22,9 @@ class YoutubeVideoAdmin(admin.ModelAdmin):
 
 @admin.register(YoutubePlaylist)
 class YoutubePlaylistAdmin(admin.ModelAdmin):
-    list_display = ["name", "playlist_type", "user", "created_at"]
-    list_filter = ["playlist_type", "created_at"]
-    search_fields = ["name", "user__username"]
+    list_display = ["title", "youtube_playlist_id", "owned_by", "created_at"]
+    list_filter = ["created_at", "owned_by"]
+    search_fields = ["title", "youtube_playlist_id", "owned_by__username"]
     readonly_fields = ["created_at", "updated_at"]
     ordering = ["-created_at"]
 

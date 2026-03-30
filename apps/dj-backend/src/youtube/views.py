@@ -79,7 +79,7 @@ class YoutubePlaylistViewSet(viewsets.ModelViewSet):
     serializer_class = YoutubePlaylistSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(owned_by=self.request.user)
 
     @action(detail=True, methods=["post"])
     def add_video(self, request, pk=None):
@@ -89,16 +89,12 @@ class YoutubePlaylistViewSet(viewsets.ModelViewSet):
         playlist = self.get_object()
         youtube_id = request.data.get("youtube_id")
         if not youtube_id:
-            return Response(
-                {"error": "youtube_id required"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "youtube_id required"}, status=status.HTTP_400_BAD_REQUEST)
 
         video, _ = YoutubeVideo.objects.get_or_create(youtube_id=youtube_id)
         # Determine order automatically
         last_order = playlist.items.aggregate(models.Max("order"))["order__max"] or 0
-        item = YoutubePlaylistItem.objects.create(
-            playlist=playlist, video=video, order=last_order + 1
-        )
+        item = YoutubePlaylistItem.objects.create(playlist=playlist, video=video, order=last_order + 1)
         return Response({"id": item.id, "order": item.order})
 
 
@@ -152,9 +148,7 @@ class YoutubeSearchView(APIView):
         results = []
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(
-                    f"ytsearch{max_results}:{query}", download=False
-                )
+                info = ydl.extract_info(f"ytsearch{max_results}:{query}", download=False)
 
                 if info and "entries" in info:
                     for entry in info["entries"]:
@@ -163,9 +157,7 @@ class YoutubeSearchView(APIView):
                                 "youtube_id": entry.get("id"),
                                 "title": entry.get("title"),
                                 "creator": entry.get("uploader"),
-                                "thumbnail": entry["thumbnails"][0][
-                                    "url"
-                                ],  # this is the small thumbnail
+                                "thumbnail": entry["thumbnails"][0]["url"],  # this is the small thumbnail
                                 "duration": entry.get("duration"),
                             }
                         )

@@ -27,7 +27,12 @@ class YoutubePlaylistItemSerializer(serializers.ModelSerializer):
 class YoutubePlaylistSerializer(serializers.ModelSerializer):
     class Meta:
         model = YoutubePlaylist
-        fields = ["id", "name", "user", "youtube_playlist_id", "items", "created_at", "updated_at"]
+        fields = ["title", "owned_by", "youtube_playlist_id", "items", "created_at", "updated_at", "playlist_type"]
+        read_only_fields = ["owned_by", "created_at"]
 
     items = YoutubePlaylistItemSerializer(many=True, read_only=True)
-    user = serializers.StringRelatedField(read_only=True)
+    owned_by = serializers.StringRelatedField(read_only=True)
+    playlist_type = serializers.ChoiceField(
+        choices=YoutubePlaylist.PlaylistType.choices,
+        default=YoutubePlaylist.PlaylistType.PUBLIC,
+    )

@@ -45,9 +45,7 @@ class YoutubeVideo(models.Model):
 
     URL_TEMPLATE = "https://www.youtube.com/watch?v={youtube_id}"
 
-    youtube_id = models.CharField(
-        primary_key=True, max_length=20, unique=True
-    )  # primary key
+    youtube_id = models.CharField(primary_key=True, max_length=20, unique=True)  # primary key
     title = models.CharField(max_length=255)
     creator = models.CharField(max_length=255)
     source_url = models.URLField()
@@ -114,8 +112,7 @@ class YoutubeVideo(models.Model):
             instance, _ = cls.objects.get_or_create(
                 youtube_id=youtube_id,
                 defaults={
-                    "title": info_dict.get("title")
-                    or info_dict.get("fulltitle", "Unknown title"),
+                    "title": info_dict.get("title") or info_dict.get("fulltitle", "Unknown title"),
                     "creator": info_dict.get("uploader", "Unknown channel"),
                     "source_url": source_url,
                     "duration": info_dict.get("duration") or 0,
@@ -144,75 +141,80 @@ class YoutubeVideo(models.Model):
     @classmethod
     async def from_url_async(cls, url, ydl_opts=None, save=False):
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, lambda: cls.from_url(url, ydl_opts, save)
-        )
+        return await loop.run_in_executor(None, lambda: cls.from_url(url, ydl_opts, save))
 
 
-class YoutubePlaylist(models.Model):
-    """Represents a user's YouTube playlist.
+class AbstractPlaylist(models.Model):
+    """Abstract base for any ordered collection of videos."""
 
-    Manages playlists created by users, storing metadata about the playlist
-    and its association with the authenticated user. Playlists can be classified
-    as permanent or temporary based on their intended lifespan.
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    Attributes:
-        name (str): Display name of the playlist.
-        playlist_type (str): Type of playlist - PUBLIC or PRIVATE.
-        user (User): Foreign key to the authenticated user who owns the playlist.
-        created_at (datetime): Timestamp when the playlist was created.
-        updated_at (datetime): Timestamp of the last modification.
-        youtube_playlist_id (str, optional): External YouTube playlist identifier.
-    """
+    class Meta:
+        abstract = True
+
+    def clear(self):
+        self.items.all().delete()
+
+    def next(self) -> "AbstractPlaylistItem | None":
+        return self.items.order_by("order").first()
+
+
+class AbstractPlaylistItem(models.Model):
+    """Abstract base for a single video entry in a playlist."""
+
+    video = models.ForeignKey(YoutubeVideo, on_delete=models.CASCADE)
+    order = models.PositiveIntegerField(default=0)
+    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        abstract = True
+        ordering = ["order"]
+
+
+class YoutubePlaylist(AbstractPlaylist):
+    """A saved playlist sourced from or mirroring a YouTube playlist."""
 
     class PlaylistType(models.TextChoices):
         PUBLIC = "public", "Public"
         PRIVATE = "private", "Private"
 
-    name = models.CharField(max_length=255)
+    youtube_playlist_id = models.BigAutoField(primary_key=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    thumbnail = models.URLField(null=True, blank=True)
+    channel_title = models.CharField(max_length=255, blank=True, default="")
+    owned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="youtube_playlists",
+    )
     playlist_type = models.CharField(
         max_length=10,
         choices=PlaylistType.choices,
         default=PlaylistType.PUBLIC,
     )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="playlists"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    youtube_playlist_id = models.CharField(max_length=50, blank=True, null=True)
-
-    class Meta:
-        ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.name} ({self.playlist_type})"
+        return self.title or self.youtube_playlist_id
 
 
-class YoutubePlaylistItem(models.Model):
-    """Represents a link between a playlist and a video.
-
-    Junction model that associates videos with playlists, maintaining the order
-    of videos within each playlist and preventing duplicate video entries.
-
-    Attributes:
-        playlist (YoutubePlaylist): Foreign key to the parent playlist.
-        video (YoutubeVideo): Foreign key to the video in the playlist.
-        order (int): Position of the video within the playlist (0-indexed).
-        added_at (datetime): Timestamp when the video was added to the playlist.
-    """
-
-    playlist = models.ForeignKey(
-        YoutubePlaylist, on_delete=models.CASCADE, related_name="items"
-    )
-    video = models.ForeignKey(YoutubeVideo, on_delete=models.CASCADE)
-    order = models.PositiveIntegerField(default=0)  # position in the playlist
-    added_at = models.DateTimeField(auto_now_add=True)
+class YoutubePlaylistItem(AbstractPlaylistItem):
+    """A video entry in a YoutubePlaylist."""
 
     class Meta:
         ordering = ["order"]
-        unique_together = [["playlist", "video"]]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["playlist", "video"],
+                name="unique_video_per_playlist",
+            )
+        ]
+
+    playlist = models.ForeignKey(YoutubePlaylist, on_delete=models.CASCADE, related_name="items")
 
     def __str__(self):
-        return f"{self.video.title} in {self.playlist.name}"
+        return f"{self.video.title} in {self.playlist.title}"

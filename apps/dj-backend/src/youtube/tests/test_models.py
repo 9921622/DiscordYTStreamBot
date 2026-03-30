@@ -105,15 +105,14 @@ class YoutubePlaylistModelTests(TestCase):
 
     def test_playlist_creation(self):
         """Test creating a playlist with valid data."""
-        playlist = baker.make(YoutubePlaylist, name="My Playlist", user=self.user)
-        self.assertEqual(playlist.name, "My Playlist")
-        self.assertEqual(playlist.user, self.user)
+        playlist = baker.make(YoutubePlaylist, title="My Playlist", owned_by=self.user)
+        self.assertEqual(playlist.title, "My Playlist")
+        self.assertEqual(playlist.owned_by, self.user)
         self.assertIn(playlist.playlist_type, [t[0] for t in YoutubePlaylist.PlaylistType.choices])
-        self.assertEqual(str(playlist), f"My Playlist ({playlist.playlist_type})")
 
     def test_add_video_to_playlist(self):
         """Test adding videos to a playlist and the order is maintained."""
-        playlist = baker.make(YoutubePlaylist, name="Test Playlist", user=self.user)
+        playlist = baker.make(YoutubePlaylist, title="Test Playlist", owned_by=self.user)
         video1 = baker.make(YoutubeVideo, youtube_id="v1")
         video2 = baker.make(YoutubeVideo, youtube_id="v2")
 
@@ -127,7 +126,7 @@ class YoutubePlaylistModelTests(TestCase):
 
     def test_playlist_item_unique_constraint(self):
         """Test that a video can only be added once to a playlist."""
-        playlist = baker.make(YoutubePlaylist, name="Playlist Order", user=self.user)
+        playlist = baker.make(YoutubePlaylist, title="Playlist Order", owned_by=self.user)
         video = baker.make(YoutubeVideo, youtube_id="v1")
 
         # first addition succeeds

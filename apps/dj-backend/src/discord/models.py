@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 
 from discord.api import DiscordCDNAPI
-from youtube.models import YoutubeVideo
+from youtube.models import AbstractPlaylist, AbstractPlaylistItem
 
 
 class DiscordUser(models.Model):
@@ -37,43 +37,19 @@ class DiscordGuild(models.Model):
         return self.name or "Guild"
 
 
-class GuildQueue(models.Model):
-    """Temporary playback queue for a guild.
+class GuildQueue(AbstractPlaylist):
+    """Temporary playback queue for a guild. One queue per guild."""
 
-    One queue per guild. Clear items when done, don't delete the queue itself.
-    """
-
-    guild = models.OneToOneField(
-        DiscordGuild, on_delete=models.CASCADE, related_name="queue"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def clear(self):
-        self.items.all().delete()
-
-    def next(self) -> "GuildQueueItem | None":
-        return self.items.order_by("order").first()
+    guild = models.OneToOneField(DiscordGuild, on_delete=models.CASCADE, related_name="queue")
 
     def __str__(self):
         return f"Queue for {self.guild.name}"
 
 
-class GuildQueueItem(models.Model):
+class GuildQueueItem(AbstractPlaylistItem):
     """A video in a guild's playback queue."""
 
-    queue = models.ForeignKey(
-        GuildQueue, on_delete=models.CASCADE, related_name="items"
-    )
-    video = models.ForeignKey(YoutubeVideo, on_delete=models.CASCADE)
-    order = models.PositiveIntegerField(default=0)
-    added_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
-    )
-    added_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["order"]
+    queue = models.ForeignKey(GuildQueue, on_delete=models.CASCADE, related_name="items")
 
     def __str__(self):
         return f"{self.video.title} in {self.queue.guild.name}"

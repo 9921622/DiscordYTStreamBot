@@ -130,7 +130,7 @@ export default function QueueSidebar() {
     }
 
     return (
-        <div className="w-112 bg-zinc-900 h-full flex flex-col border-l border-zinc-700">
+        <div className="w-112 bg-zinc-900 h-full flex flex-col border-l border-zinc-700 rounded-lg ml-2">
 
             {video && (
                 <div className="p-3 border-b border-zinc-800">

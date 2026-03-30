@@ -4,8 +4,17 @@ import { discordBotAPI } from "~/api/discord/discord-wrapper";
 import { backendAPI } from "~/api/backend-wrapper";
 import type { DiscordUser } from "~/api/backend-types";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 
 function ProfileDropdown({ profile } : { profile? : DiscordUser }) {
+  const navigate = useNavigate()
+
+  if (!profile) return (
+    <button className="btn btn-sm btn-primary" onClick={() => navigate('/login')}>
+      Login
+    </button>
+  )
+
   return (
     <div className="dropdown dropdown-end">
           <div

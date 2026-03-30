@@ -23,8 +23,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG") == "True"
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+
 ALLOWED_HOSTS = json.loads(os.getenv("ALLOWED_HOSTS", "[]"))
 CORS_ALLOWED_ORIGINS = json.loads(os.getenv("CORS_ALLOWED_ORIGINS", "[]"))
+
+DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
+DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
+DISCORD_OAUTH_URL = os.getenv("DISCORD_OAUTH_URL")
+
+if FRONTEND_URL and FRONTEND_URL not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
 
 # Application definition
 
@@ -37,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     #
     "youtube",
+    "discord",
     #
     "rest_framework",
     "corsheaders",

@@ -22,4 +22,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
     path("api/youtube/", include("youtube.urls", namespace="youtube")),
+    path("api/discord/", include("discord.urls", namespace="discord")),
 ]

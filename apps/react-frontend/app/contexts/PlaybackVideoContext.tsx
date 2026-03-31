@@ -83,6 +83,13 @@ export function PlaybackVideoProvider({ children }: { children: ReactNode }) {
             })
     }), [on])
 
+    useEffect(() => on("stop", (data) => {
+        if (data.error) return
+        setVideo(null)
+        setVideoPlaybackStatus(null)
+        setVideoLoading(false)
+    }), [on])
+
     useEffect(() => on("pause", (data) => {
         if (data.error) return
         setVideoPlaybackStatus(prev => prev ? { ...prev, paused: data.paused as boolean } : prev)

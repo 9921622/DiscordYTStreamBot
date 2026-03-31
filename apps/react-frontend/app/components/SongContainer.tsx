@@ -1,11 +1,12 @@
 import SongContainerCard from "~/components/SongContainerCard";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
-import { usePlayback } from "~/contexts/PlaybackContext";
+import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
 
 
 
 export default function SongContainer({ songs, className } : { songs : YoutubeVideo[], className? : string; }) {
-    const { SongOnClick } = usePlayback()
+    const { videoPlay } = usePlaybackVideoContext()
+
     return (
         <div className={className}>
             {
@@ -17,7 +18,7 @@ export default function SongContainer({ songs, className } : { songs : YoutubeVi
                     songTitle={song.title}
                     artistName={song.creator}
                     albumArtUrl={song.thumbnail || ""}
-                    onClick={() => SongOnClick?.(song)}
+                    onClick={() => videoPlay?.(song)}
                     />
                 ))}
                 </div>

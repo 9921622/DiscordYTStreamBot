@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 from bot.bot import bot
+from bot.ws_manager import ws_manager
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 
@@ -14,3 +15,8 @@ async def play(request: Request):
 async def play(request: Request):
     await bot.wait_until_ready()
     return {"playbacks": len(bot._playback)}
+
+
+@router.get("/websockets", name="debug-websockets")
+async def play(request: Request):
+    return {"sockets": len(ws_manager._connections)}

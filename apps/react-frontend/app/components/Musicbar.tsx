@@ -1,104 +1,66 @@
-import { useSearchParams } from "react-router";
-import { useEffect, useRef, useState } from "react";
-import type { YoutubeVideo } from "~/api/youtube/youtube-types";
-import { discordBotAPI } from "~/api/discord/discord-wrapper";
+import { useEffect, useState } from "react";
 import { useBotContext } from "~/contexts/BotContext"
+import { useSocketContext } from "~/contexts/SocketContext"
+import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
+import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
 
 import ArtistInfo from "./MusicbarArtistInfo";
 import SongProgressBar from "./MusicbarSongProgressBar";
 import SongControls from "./MusicbarSongControls";
 import MusicbarTags from "./MusicbarTags";
 import VolumeControl from "./MusicbarVolumeControl";
-import { usePlayback } from "~/contexts/PlaybackContext";
 
 
-function usePlaybackStatus(guildID: string | null, video: YoutubeVideo | null) {
-    const [currentTime, setCurrentTime] = useState(0)
-    const [isPlaying, setIsPlaying] = useState(false)
-    const [isPaused, setIsPaused] = useState(false)
-    const [volume, setVolume] = useState(1.0)
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+export default function Musicbar() {
+    const { send } = useSocketContext();
+    const { video, videoLoading, videoError, videoPlaybackStatus, videoPause, videoVolume } = usePlaybackVideoContext()
+    const { queueNext } = usePlaybackQueueContext()
+    const { guildID, botInChannel } = useBotContext()
 
-    const stopPolling = () => {
-        if (intervalRef.current) clearInterval(intervalRef.current)
-    }
+    const isPlaying = videoPlaybackStatus?.playing ?? false
+    const isPaused  = videoPlaybackStatus?.paused ?? false
+    const volume    = videoPlaybackStatus?.volume ?? 0.5
 
-    const startPolling = () => {
-        stopPolling()
-        intervalRef.current = setInterval(poll, 2000)
-    }
+    const [currentTime, setCurrentTime] = useState(videoPlaybackStatus?.position ?? 0)
 
-    const poll = async () => {
-        if (!guildID) return
-        try {
-            const status = await discordBotAPI.musicControl.status(guildID)
-            setCurrentTime(status.position)
-            setIsPlaying(status.playing)
-            setIsPaused(status.paused)
-            setVolume(status.volume)
-        } catch {}
-    }
+    // keep currentTime in sync when status arrives (seek, play, etc.)
+    useEffect(() => {
+        if (videoPlaybackStatus?.position !== undefined) {
+            setCurrentTime(videoPlaybackStatus.position)
+        }
+    }, [videoPlaybackStatus?.position])
 
+    // local tick between server pushes
     useEffect(() => {
         if (!isPlaying || isPaused) return
         const timer = setInterval(() => setCurrentTime(t => t + 1), 1000)
         return () => clearInterval(timer)
     }, [isPlaying, isPaused])
 
-    useEffect(() => {
-        setCurrentTime(0)
-        setIsPlaying(false)
-        setIsPaused(false)
-        if (!video) return
-        poll()
-        startPolling()
-        return () => stopPolling()
-    }, [video])
+    // ---- handlers ----
 
-    return { currentTime, setCurrentTime, isPlaying, isPaused, setIsPaused, volume, setVolume, poll, stopPolling, startPolling }
-}
-
-
-export default function Musicbar() {
-    const { video, videoLoading, playError, nextQueue } = usePlayback()
-    const [searchParams, setSearchParams] = useSearchParams()
-    const { guildID, botInChannel } = useBotContext()
-
-    const {
-        currentTime, setCurrentTime,
-        isPlaying, isPaused, setIsPaused,
-        volume, setVolume,
-        poll, stopPolling, startPolling } = usePlaybackStatus(guildID, video)
-
-    useEffect(() => { poll() }, [searchParams])
-
-    const handlePause = async () => {
+    const handlePause = () => {
         if (!guildID) return
-        await discordBotAPI.musicControl.pause(guildID)
-        setIsPaused(p => !p)
-        await poll()
+        videoPause()
     }
 
-    const handleSeek = async (time: number) => {
+    const handleSeek = (time: number) => {
         if (!guildID) return
-        stopPolling()
         setCurrentTime(time)
-        await discordBotAPI.musicControl.seek(guildID, time)
-        await poll()
-        startPolling()
+        send({ type: "seek", position: time })
     }
 
-    const handleVolume = async (level: number) => {
+    const handleVolume = (level: number) => {
         if (!guildID) return
-        await discordBotAPI.musicControl.setVolume(guildID, level)
-        setVolume(level)
-        setSearchParams(prev => { prev.set("vol", String(level)); return prev }, { replace: true })
+        videoVolume(level)
     }
 
-    if (playError) return (
+    // ---- render ----
+
+    if (videoError) return (
         <div className="bg-gray-900 text-white px-4 py-5 fixed bottom-0 w-full flex items-center justify-center">
             <div className="alert alert-error w-auto">
-                <span>⚠️ {playError}</span>
+                <span>⚠️ {videoError}</span>
             </div>
         </div>
     )
@@ -147,7 +109,7 @@ export default function Musicbar() {
                         isPlaying={isPlaying}
                         isPaused={isPaused}
                         onPause={handlePause}
-                        onNext={nextQueue}
+                        onNext={queueNext}
                     />
                     <SongProgressBar
                         className="w-full"
@@ -165,7 +127,6 @@ export default function Musicbar() {
             <div className="relative z-10 flex items-center gap-3">
                 <VolumeControl volume={volume} onVolumeChange={handleVolume} />
             </div>
-
         </div>
-    )
+    );
 }

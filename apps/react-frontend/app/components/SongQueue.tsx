@@ -1,5 +1,5 @@
 import { useBotContext } from "~/contexts/BotContext"
-import { usePlayback } from "~/contexts/PlaybackContext"
+import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext"
 import { PlayIcon } from "./utilities/Icons"
 import {
     DndContext,
@@ -16,6 +16,7 @@ import {
     arrayMove,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext"
 
 function DragHandle() {
     return (
@@ -113,7 +114,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
 
 
 function CurrentSong() {
-    const { video, videoLoading, stopCurrent } = usePlayback()
+    const { video, videoLoading, videoStop } = usePlaybackVideoContext();
 
     return (
         <div className="p-3 border-b border-zinc-800">
@@ -156,7 +157,7 @@ function CurrentSong() {
                         </div>
 
                         <button
-                            onClick={stopCurrent}
+                            onClick={videoStop}
                             className="btn btn-xs btn-ghost text-red-400 hover:bg-red-500/20"
                             title="Stop"
                         >
@@ -172,7 +173,8 @@ function CurrentSong() {
 }
 
 export default function QueueSidebar() {
-    const { video, queue, playFromQueue, popQueue, reorderQueue } = usePlayback()
+    const { video } = usePlaybackVideoContext();
+    const { queue, queuePlayFrom, queueRemove, queueSwap } = usePlaybackQueueContext();
 
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: { distance: 5 } // prevents accidental drags on click
@@ -185,7 +187,7 @@ export default function QueueSidebar() {
         const fromIndex = queue.findIndex(q => q.id === active.id)
         const toIndex = queue.findIndex(q => q.id === over.id)
         if (fromIndex !== -1 && toIndex !== -1) {
-            reorderQueue(fromIndex, toIndex)
+            queueSwap(fromIndex, toIndex)
         }
     }
 
@@ -212,8 +214,8 @@ export default function QueueSidebar() {
                                     key={item.id}
                                     item={item}
                                     index={index}
-                                    onPlay={() => playFromQueue(index)}
-                                    onRemove={(e) => { e.stopPropagation(); popQueue(index) }}
+                                    onPlay={() => queuePlayFrom(index)}
+                                    onRemove={(e) => { e.stopPropagation(); queueRemove(index) }}
                                 />
                             ))}
                         </ul>

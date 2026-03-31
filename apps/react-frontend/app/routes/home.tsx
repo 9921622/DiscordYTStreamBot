@@ -11,8 +11,9 @@ import SideBar from "~/components/SideBar";
 import SongQueue from "~/components/SongQueue";
 import { BotProvider, useBotContext } from "~/contexts/BotContext"
 import { UserProvider, useUser } from "~/contexts/UserContext";
-import { PlaybackProvider, usePlayback } from "~/contexts/PlaybackContext";
-
+import { SocketProvider } from "~/contexts/SocketContext";
+import { PlaybackVideoProvider } from "~/contexts/PlaybackVideoContext";
+import { PlaybackQueueProvider } from "~/contexts/PlaybackQueueContext";
 
 
 export function meta({}: Route.MetaArgs) {
@@ -60,13 +61,26 @@ function HomePage() {
     )
 }
 
+function HomeContextWrapperWrapper() {
+    const { guildID } = useBotContext();
+    return (
+        <SocketProvider guildID={guildID ?? undefined}>
+            <PlaybackVideoProvider>
+            <PlaybackQueueProvider>
+
+                <HomePage />
+
+            </PlaybackQueueProvider>
+            </PlaybackVideoProvider>
+        </SocketProvider>
+    )
+}
+
 function HomeContextWrapper() {
     const discordUser = useUser()
     return (
         <BotProvider discordUser={discordUser}>
-		<PlaybackProvider>
-			<HomePage />
-		</PlaybackProvider>
+		    <HomeContextWrapperWrapper />
         </BotProvider>
     )
 }

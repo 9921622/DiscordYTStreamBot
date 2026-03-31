@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useUser } from "~/contexts/UserContext";
 import { useBotContext } from "~/contexts/BotContext";
-import { usePlayback } from "~/contexts/PlaybackContext";
+import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
 
 function ProfileDropdown({ profile } : { profile? : DiscordUser }) {
   const navigate = useNavigate()
@@ -87,7 +87,7 @@ function JoinChannel() {
 }
 
 export default function Navbar() {
-  const { SongOnClick } = usePlayback()
+  const { videoPlay } = usePlaybackVideoContext()
   const discordUser = useUser();
 
   return (
@@ -98,7 +98,7 @@ export default function Navbar() {
       </div>
 
       <div className="absolute left-1/2 transform -translate-x-1/2">
-        <SongSearchbar onItemClick={SongOnClick}/>
+        <SongSearchbar onItemClick={videoPlay}/>
       </div>
 
       <div className="flex items-center gap-3 ml-auto">

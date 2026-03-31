@@ -4,6 +4,9 @@ from bot.bot import bot
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
+# TODO: use an httpx to backend to confirm if the user using this route is an admin/verified user
+# so use token as search param
+
 
 @router.get("/leave", name="admin-leave")
 @admin_only()

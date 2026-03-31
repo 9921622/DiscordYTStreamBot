@@ -3,6 +3,7 @@ fastapi[standard]
 uvicorn
 discord.py[voice]
 
+websockets
 httpx
 
 # utils

@@ -59,6 +59,13 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
 
     async function queueAdd(item: YoutubeVideo, playingNow: boolean) {
         if (!guildID || !botInChannel) return
+
+        const nothingPlaying = !playingNow && queue.length === 0
+        if (nothingPlaying) {
+            videoPlay(item)
+            return
+        }
+
         if (playingNow) {
             const skeleton: SkeletonQueueItem = {
                 id: `skeleton-${item.youtube_id}-${Date.now()}`,
@@ -68,7 +75,6 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
             setQueue(prev => [...prev, skeleton])
         }
         send({ type: "queue-add", youtube_id: item.youtube_id })
-        // broadcast replaces optimistic skeleton with real item
     }
 
     async function queueNext(): Promise<void> {

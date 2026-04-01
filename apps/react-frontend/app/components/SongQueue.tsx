@@ -15,6 +15,7 @@ import {
     useSortable,
     arrayMove,
 } from "@dnd-kit/sortable"
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
 import { CSS } from "@dnd-kit/utilities"
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext"
 
@@ -206,7 +207,11 @@ export default function QueueSidebar() {
                     Queue is empty
                 </div>
             ) : (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                        modifiers={[restrictToVerticalAxis]}>
                     <SortableContext items={queue.map(q => q.id)} strategy={verticalListSortingStrategy}>
                         <ul className="flex-1 overflow-y-auto divide-y divide-zinc-800">
                             {queue.map((item, index) => (

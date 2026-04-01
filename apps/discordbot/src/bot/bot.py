@@ -7,11 +7,10 @@ from utils.event_handler import EventHandler
 
 from bot.bot_generic import DiscordBotGeneric
 from bot.bot_voice import DiscordBotVoice
-from bot.bot_debug import DiscordBotDebug
 from bot.cogs import generic, voice
 
 
-class DiscordBot(EventHandler, DiscordBotGeneric, DiscordBotVoice, DiscordBotDebug, commands.Bot):
+class DiscordBot(EventHandler, DiscordBotGeneric, DiscordBotVoice, commands.Bot):
     """https://discordpy.readthedocs.io/en/stable/ext/commands/api.html?highlight=commands%20bot#discord.ext.commands.Bot"""
 
     def __init__(self, token):

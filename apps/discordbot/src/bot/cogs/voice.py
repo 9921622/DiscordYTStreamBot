@@ -31,6 +31,7 @@ class VoiceCog(commands.Cog, name="voice"):
             if bot_vc and bot_vc.channel == before.channel:
                 if len(bot_vc.channel.members) == 1:  # only the bot remains
                     await bot_vc.disconnect()
+                    await self.bot._emit("on_disconnect", member.guild.id)
                     self.bot._delete_playback(member.guild.id)
 
     @voice_group.command(name="connect")

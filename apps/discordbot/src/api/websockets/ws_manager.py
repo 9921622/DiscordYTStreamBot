@@ -26,6 +26,10 @@ class WebSocketManager:
         if not sockets:
             self._connections.pop(guild_id, None)
 
+    async def disconnect_all(self, guild_id: int):
+        for ws in self._connections.get(guild_id, []).copy():
+            await self.disconnect(guild_id, ws)
+
     async def send(self, guild_id: int, data: dict):
         """Send to all connections in a guild."""
         sockets = self._connections.get(guild_id, [])

@@ -3,7 +3,12 @@ from bot.bot import bot
 from api.api_backend_wrapper import QueueAPI, VideoAPI
 
 from .ws_manager import ws_manager
-from .ws_hooks import hook
+from bot.bot_hooks import hook
+
+
+@hook("on_disconnect")
+async def on_disconnect(guild_id: int):
+    await ws_manager.disconnect_all(guild_id)
 
 
 @hook("on_song_start")

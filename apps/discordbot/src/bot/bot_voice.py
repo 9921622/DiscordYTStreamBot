@@ -95,6 +95,7 @@ class ConnectionMixin:
             await vc.disconnect(force=True)
 
         self._delete_playback(guild_id)
+        await self._emit("on_disconnect", member.guild.id)
 
 
 class DiscordBotVoice(PlaybackMixin, ConnectionMixin):

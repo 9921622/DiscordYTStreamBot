@@ -2,13 +2,18 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { backendAPI } from "~/api/backend-wrapper"
 import { useBotContext } from "~/contexts/BotContext"
 import { useSocketContext } from "~/contexts/SocketContext"
-import type { DiscordGuildQueueItem } from "~/api/backend-types"
+import type { DiscordGuildQueueItem, DiscordGuildQueue } from "~/api/backend-types"
 import type { YoutubeVideo } from "~/api/youtube/youtube-types"
 
 interface SkeletonQueueItem {
     id: string
     isSkeleton: true
     video: Pick<YoutubeVideo, "youtube_id">
+}
+
+interface QueueResponse {
+    queue?: DiscordGuildQueue
+    error?: string
 }
 
 export type QueueItem = DiscordGuildQueueItem | SkeletonQueueItem
@@ -33,28 +38,25 @@ const PlaybackQueueContext = createContext<PlaybackQueueContextType>({
 
 export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     const { guildID } = useBotContext()
-    const { send } = useSocketContext()
-
+    const { send, on, connected } = useSocketContext()
     const [queue, setQueue] = useState<QueueItem[]>([])
 
     // ---- sync ----
-
-    const refreshQueue = async () => {
-        if (!guildID) return
-        const data = await backendAPI.queue.get(guildID)
-        setQueue(data.items)
-    }
+    useEffect(() => on("queue-get",     (data) => { const d = data as QueueResponse; if (d.queue) setQueue(d.queue.items) }), [on])
+    useEffect(() => on("queue-add",     (data) => { const d = data as QueueResponse; if (!d.error && d.queue) setQueue(d.queue.items) }), [on])
+    useEffect(() => on("queue-remove",  (data) => { const d = data as QueueResponse; if (!d.error && d.queue) setQueue(d.queue.items) }), [on])
+    useEffect(() => on("queue-reorder", (data) => { const d = data as QueueResponse; if (!d.error && d.queue) setQueue(d.queue.items) }), [on])
+    useEffect(() => on("queue-clear",   (data) => { const d = data as QueueResponse; if (!d.error) setQueue([]) }), [on])
 
     useEffect(() => {
-        refreshQueue()
-    }, [guildID])
+        if (!guildID || !connected) return
+        send({ type: "queue-get" })
+    }, [guildID, connected])
 
     // ---- actions ----
 
     async function queueAdd(item: YoutubeVideo, playingNow: boolean) {
         if (!guildID) return
-
-        // if something is already playing, add to queue optimistically
         if (playingNow) {
             const skeleton: SkeletonQueueItem = {
                 id: `skeleton-${item.youtube_id}-${Date.now()}`,
@@ -62,74 +64,51 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
                 video: { youtube_id: item.youtube_id },
             }
             setQueue(prev => [...prev, skeleton])
-            try {
-                await backendAPI.queue.addItem(guildID, item.youtube_id)
-                await refreshQueue()
-            } catch {
-                setQueue(prev => prev.filter(q => q.id !== skeleton.id))
-            }
-        } else {
-            await backendAPI.queue.addItem(guildID, item.youtube_id)
-            await refreshQueue()
         }
+        send({ type: "queue-add", youtube_id: item.youtube_id })
+        // broadcast replaces optimistic skeleton with real item
     }
 
     async function queueNext(): Promise<void> {
         if (!guildID) return
-        const data = await backendAPI.queue.get(guildID)
-        const next = data.items[0]
-        if (!next) return
-
+        const next = queue[0]
+        if (!next || 'isSkeleton' in next) return
         send({ type: "play", video_id: next.video.youtube_id, offset: 0, volume: 0.5 })
-        await backendAPI.queue.removeItem(guildID, next.id)
-        setQueue(prev => prev.slice(1))
+        send({ type: "queue-remove", item_id: next.id })
     }
 
     async function queueRemove(index: number) {
         if (!guildID) return
         const item = queue[index]
         if (!item) return
-
-        setQueue(prev => prev.filter((_, i) => i !== index))
-
-        if ('isSkeleton' in item) return  // skeleton has no backend record
-
-        try {
-            await backendAPI.queue.removeItem(guildID, item.id)
-        } catch {
-            await refreshQueue()
+        if ('isSkeleton' in item) {
+            setQueue(prev => prev.filter((_, i) => i !== index))
+            return
         }
+        setQueue(prev => prev.filter((_, i) => i !== index))  // optimistic
+        send({ type: "queue-remove", item_id: item.id })
     }
 
-    // plays item at index, removes it from queue, returns the video so
-    // PlaybackVideoContext can set it without knowing about the queue internals
     async function queuePlayFrom(index: number): Promise<YoutubeVideo | null> {
         if (!guildID) return null
         const item = queue[index]
         if (!item || 'isSkeleton' in item) return null
-
         send({ type: "play", video_id: item.video.youtube_id, offset: 0, volume: 0.5 })
-        await backendAPI.queue.removeItem(guildID, item.id)
+        send({ type: "queue-remove", item_id: item.id })
         setQueue(prev => prev.filter((_, i) => i !== index))
-
         return item.video
     }
 
     async function queueSwap(fromIndex: number, toIndex: number) {
         if (!guildID) return
-
-        setQueue(prev => {
-            const next = [...prev]
-            const [moved] = next.splice(fromIndex, 1)
-            next.splice(toIndex, 0, moved)
-            return next
-        })
-
-        const realIds = queue
+        const reordered = [...queue]
+        const [moved] = reordered.splice(fromIndex, 1)
+        reordered.splice(toIndex, 0, moved)
+        setQueue(reordered)  // optimistic
+        const realIds = reordered
             .filter((q): q is DiscordGuildQueueItem => !('isSkeleton' in q))
             .map(q => q.id)
-
-        await backendAPI.queue.reorder(guildID, realIds).catch(() => refreshQueue())
+        send({ type: "queue-reorder", order: realIds })
     }
 
     return (
@@ -138,5 +117,4 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
         </PlaybackQueueContext.Provider>
     )
 }
-
 export const usePlaybackQueueContext = () => useContext(PlaybackQueueContext)

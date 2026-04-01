@@ -2,7 +2,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from api import app
-from conftest import client, GUILD_ID, make_mock_status
+from api.api_backend_wrapper import VideoAPI
+from conftest import client, GUILD_ID, make_mock_status, make_mock_video_response
 
 # ---------------------------------------------------------------------------
 # Status
@@ -44,14 +45,10 @@ class TestPlayCommand:
     def test_play_success(self, client):
         with (
             patch("api.websockets.music_controls.bot") as mock_bot,
-            patch("api.websockets.music_controls.httpx.AsyncClient") as mock_http,
+            patch.object(VideoAPI, "get_source", new=AsyncMock(return_value=make_mock_video_response())),
         ):
             mock_bot.vc_play = AsyncMock()
             mock_bot.vc_get_status.return_value = make_mock_status(video_id="abc")
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {"source_url": "http://example.com/audio"}
-            mock_http.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
 
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "play", "video_id": "abc", "offset": 0.0, "volume": 0.5})
@@ -72,13 +69,9 @@ class TestPlayCommand:
     def test_play_bot_not_in_channel(self, client):
         with (
             patch("api.websockets.music_controls.bot") as mock_bot,
-            patch("api.websockets.music_controls.httpx.AsyncClient") as mock_http,
+            patch.object(VideoAPI, "get_source", new=AsyncMock(return_value=make_mock_video_response())),
         ):
             mock_bot.vc_play = AsyncMock(side_effect=RuntimeError("not connected"))
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {"source_url": "http://example.com/audio"}
-            mock_http.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
 
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "play", "video_id": "abc"})
@@ -86,36 +79,26 @@ class TestPlayCommand:
         assert "error" in data
 
     def test_play_source_url_failure(self, client):
-        with patch("api.websockets.music_controls.httpx.AsyncClient") as mock_http:
-            mock_response = MagicMock()
-            mock_response.status_code = 500
-            mock_response.json.return_value = {"detail": "upstream error"}
-            mock_http.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-
+        with patch.object(VideoAPI, "get_source", new=AsyncMock(return_value=make_mock_video_response(500))):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "play", "video_id": "abc"})
                 data = ws.receive_json()
         assert "error" in data
 
     def test_play_broadcasts_status_to_guild(self, client):
-        """All connected clients in the guild should receive a status update after play."""
         with (
             patch("api.websockets.music_controls.bot") as mock_bot,
-            patch("api.websockets.music_controls.httpx.AsyncClient") as mock_http,
+            patch.object(VideoAPI, "get_source", new=AsyncMock(return_value=make_mock_video_response())),
         ):
             mock_bot.vc_play = AsyncMock()
             mock_bot.vc_get_status.return_value = make_mock_status(video_id="abc")
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {"source_url": "http://example.com/audio"}
-            mock_http.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
 
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
                     ws1.send_json({"type": "play", "video_id": "abc"})
                     ws1.receive_json()  # ack
                     ws1.receive_json()  # status broadcast to sender
-                    data = ws2.receive_json()  # status broadcast to guild
+                    data = ws2.receive_json()
 
         assert data["type"] == "status"
 
@@ -246,6 +229,40 @@ class TestSeekCommand:
     #                 data = ws2.receive_json()
     #     assert data["type"] == "status"
     #     assert data["playback"]["position"] == 42.0
+
+
+class TestLoopCommand:
+    def test_loop_toggles_on(self, client):
+        with patch("api.websockets.music_controls.bot") as mock_bot:
+            mock_bot.vc_loop = AsyncMock()
+            mock_bot.vc_get_status.return_value = make_mock_status(loop=True)
+            with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
+                ws.send_json({"type": "loop"})
+                ack = ws.receive_json()
+                broadcast = ws.receive_json()
+        assert ack["type"] == "loop"
+        assert ack["loop"] is True
+        assert broadcast["type"] == "loop"
+
+    def test_loop_toggles_off(self, client):
+        with patch("api.websockets.music_controls.bot") as mock_bot:
+            mock_bot.vc_loop = AsyncMock()
+            mock_bot.vc_get_status.return_value = make_mock_status(loop=False)
+            with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
+                ws.send_json({"type": "loop"})
+                ack = ws.receive_json()
+                broadcast = ws.receive_json()
+        assert ack["type"] == "loop"
+        assert ack["loop"] is False
+        assert broadcast["type"] == "loop"
+
+    def test_loop_nothing_playing(self, client):
+        with patch("api.websockets.music_controls.bot") as mock_bot:
+            mock_bot.vc_loop = AsyncMock(side_effect=RuntimeError("Nothing is playing"))
+            with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
+                ws.send_json({"type": "loop"})
+                data = ws.receive_json()
+        assert "error" in data
 
 
 # ---------------------------------------------------------------------------

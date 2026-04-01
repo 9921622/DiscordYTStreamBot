@@ -1,16 +1,9 @@
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from bot.bot import bot
-from bot.ws_manager import ws_manager
+from api.websockets.ws_manager import ws_manager
 
 from api.websockets.ws_router import ws_command_router
 
-
-# TODO: move import + initialize to different file???
-from api.websockets import debug, music_controls, queue_controls
-
-debug.ws.initialize()
-music_controls.ws.initialize()
-queue_controls.ws.initialize()
 
 router = APIRouter(prefix="/ws", tags=["ws"])
 
@@ -35,3 +28,17 @@ async def websocket_endpoint(websocket: WebSocket, guild_id: int):
 
     except WebSocketDisconnect:
         await ws_manager.disconnect(guild_id, websocket)
+
+
+def initialize_websocket_routes():
+    """in order to enable websocket { type: command }
+    they need to be enabled here
+    """
+    from api.websockets import debug, music_controls, queue_controls
+
+    debug.ws.initialize()
+    music_controls.ws.initialize()
+    queue_controls.ws.initialize()
+
+
+initialize_websocket_routes()

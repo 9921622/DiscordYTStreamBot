@@ -35,7 +35,7 @@ class WSRouter:
 
 
 async def ws_command_router(websocket, message: dict):
-    from bot.ws_manager import ws_manager
+    from api.websockets.ws_manager import ws_manager
     from bot.bot import bot
 
     cmd = message.get("type")

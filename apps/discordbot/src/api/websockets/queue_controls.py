@@ -6,13 +6,6 @@ from api.api_backend_wrapper import guild_queue_url, guild_queue_items_url, guil
 ws = WSRouter()
 
 
-async def _fetch_queue(guild_id: int) -> list:
-    async with httpx.AsyncClient() as client:
-        response = await client.get(guild_queue_url(guild_id), headers=backend.auth_headers())
-        response.raise_for_status()
-        return response.json()
-
-
 @ws.command(prefix="queue-get")
 async def handle_queue_get(websocket, guild_id: int, data: dict):
     """
@@ -50,7 +43,7 @@ async def handle_queue_remove(websocket, guild_id: int, data: dict):
     if response.status_code not in (200, 204):
         return {"error": "failed to remove item", "detail": response.json()}
 
-    return {"type": "queue-remove", "queue": await QueueAPI.get(guild_id).json()}
+    return {"type": "queue-remove", "queue": (await QueueAPI.get(guild_id)).json()}
 
 
 @ws.command(prefix="queue-reorder", broadcast=True)
@@ -66,7 +59,7 @@ async def handle_queue_reorder(websocket, guild_id: int, data: dict):
     if response.status_code != 200:
         return {"error": "failed to reorder queue", "detail": response.json()}
 
-    return {"type": "queue-reorder", "queue": await QueueAPI.get(guild_id).json()}
+    return {"type": "queue-reorder", "queue": (await QueueAPI.get(guild_id)).json()}
 
 
 @ws.command(prefix="queue-clear", broadcast=True)

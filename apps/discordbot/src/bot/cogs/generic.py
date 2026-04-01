@@ -11,20 +11,20 @@ class EventsMixin:
     # GUILDS
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        pass
+        await self.bot._emit("on_guild_join", guild_id)
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
-        pass
+        await self.bot._emit("on_guild_remove", guild_id)
 
     # CONNECTION
     @commands.Cog.listener()
     async def on_connect(self):
-        pass
+        await self.bot._emit("on_connect", guild_id)
 
     @commands.Cog.listener()
     async def on_disconnect(self):
-        pass
+        await self.bot._emit("on_disconnect", guild_id)
 
     # GATEWAY
     @commands.Cog.listener()

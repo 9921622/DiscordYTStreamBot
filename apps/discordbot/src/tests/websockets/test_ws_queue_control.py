@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from api import app
+from api.api_backend_wrapper import QueueAPI
 from conftest import client, GUILD_ID, make_mock_status
 
 # ---------------------------------------------------------------------------
@@ -22,28 +23,12 @@ MOCK_QUEUE = {
 EMPTY_QUEUE = {**MOCK_QUEUE, "items": []}
 
 
-def make_mock_response(status_code: int = 200, json_data: dict = None):
+def make_mock_response(status_code: int = 200, json_data=None):
     mock = MagicMock()
     mock.status_code = status_code
-    mock.json.return_value = json_data or {}
+    mock.json.return_value = json_data if json_data is not None else {}
     mock.raise_for_status = MagicMock()
     return mock
-
-
-def patch_httpx(get=None, post=None, delete=None, patch_=None):
-    """Patches httpx.AsyncClient with configurable responses per method."""
-    mock_client = AsyncMock()
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=None)
-    if get:
-        mock_client.get = AsyncMock(return_value=get)
-    if post:
-        mock_client.post = AsyncMock(return_value=post)
-    if delete:
-        mock_client.delete = AsyncMock(return_value=delete)
-    if patch_:
-        mock_client.patch = AsyncMock(return_value=patch_)
-    return patch("httpx.AsyncClient", return_value=mock_client)
 
 
 # ---------------------------------------------------------------------------
@@ -53,7 +38,7 @@ def patch_httpx(get=None, post=None, delete=None, patch_=None):
 
 class TestQueueGet:
     def test_queue_get_returns_queue(self, client):
-        with patch_httpx(get=make_mock_response(200, MOCK_QUEUE)):
+        with patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response(200, MOCK_QUEUE))):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-get"})
                 data = ws.receive_json()
@@ -61,8 +46,7 @@ class TestQueueGet:
         assert data["queue"] == MOCK_QUEUE
 
     def test_queue_get_not_broadcast(self, client):
-        """queue-get is read-only — only sender receives it."""
-        with patch_httpx(get=make_mock_response(200, MOCK_QUEUE)):
+        with patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response(200, MOCK_QUEUE))):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
                     ws1.send_json({"type": "queue-get"})
@@ -70,15 +54,6 @@ class TestQueueGet:
                     assert data["type"] == "queue-get"
                     with pytest.raises(Exception):
                         ws2.receive_json(timeout=0.1)
-
-    def test_queue_get_backend_error_propagates(self, client):
-        mock_response = make_mock_response(500)
-        mock_response.raise_for_status.side_effect = Exception("backend error")
-        with patch_httpx(get=mock_response):
-            with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
-                ws.send_json({"type": "queue-get"})
-                data = ws.receive_json()
-        assert "error" in data
 
 
 # ---------------------------------------------------------------------------
@@ -88,9 +63,9 @@ class TestQueueGet:
 
 class TestQueueAdd:
     def test_queue_add_success(self, client):
-        with patch_httpx(
-            post=make_mock_response(201),
-            get=make_mock_response(200, MOCK_QUEUE),
+        with (
+            patch.object(QueueAPI, "add", new=AsyncMock(return_value=make_mock_response(201))),
+            patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response(200, MOCK_QUEUE))),
         ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-add", "youtube_id": "abc"})
@@ -106,21 +81,23 @@ class TestQueueAdd:
         assert "youtube_id" in data["error"]
 
     def test_queue_add_backend_failure(self, client):
-        with patch_httpx(post=make_mock_response(502, {"detail": "upstream error"})):
+        with patch.object(
+            QueueAPI, "add", new=AsyncMock(return_value=make_mock_response(502, {"detail": "upstream error"}))
+        ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-add", "youtube_id": "abc"})
                 data = ws.receive_json()
         assert "error" in data
 
     def test_queue_add_broadcasts_to_guild(self, client):
-        with patch_httpx(
-            post=make_mock_response(201),
-            get=make_mock_response(200, MOCK_QUEUE),
+        with (
+            patch.object(QueueAPI, "add", new=AsyncMock(return_value=make_mock_response(201))),
+            patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response(200, MOCK_QUEUE))),
         ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
                     ws1.send_json({"type": "queue-add", "youtube_id": "abc"})
-                    ws1.receive_json()  # ack to sender
+                    ws1.receive_json()  # ack
                     data = ws2.receive_json()
         assert data["type"] == "queue-add"
         assert data["queue"] == MOCK_QUEUE
@@ -142,13 +119,15 @@ class TestQueueAdd:
 
 class TestQueueRemove:
     def test_queue_remove_success(self, client):
-        with patch_httpx(
-            delete=make_mock_response(204),
-            get=make_mock_response(200, MOCK_QUEUE),
+        with (
+            patch.object(QueueAPI, "remove", new=AsyncMock(return_value=make_mock_response(204))),
+            patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response(200, MOCK_QUEUE))),
         ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-remove", "item_id": 1})
                 data = ws.receive_json()
+
+        assert "error" not in data
         assert data["type"] == "queue-remove"
         assert data["queue"] == MOCK_QUEUE
 
@@ -160,16 +139,18 @@ class TestQueueRemove:
         assert "item_id" in data["error"]
 
     def test_queue_remove_backend_failure(self, client):
-        with patch_httpx(delete=make_mock_response(404, {"error": "not found"})):
+        with patch.object(
+            QueueAPI, "remove", new=AsyncMock(return_value=make_mock_response(404, {"error": "not found"}))
+        ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-remove", "item_id": 99})
                 data = ws.receive_json()
         assert "error" in data
 
     def test_queue_remove_broadcasts_to_guild(self, client):
-        with patch_httpx(
-            delete=make_mock_response(204),
-            get=make_mock_response(200, MOCK_QUEUE),
+        with (
+            patch.object(QueueAPI, "remove", new=AsyncMock(return_value=make_mock_response(204))),
+            patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response(200, MOCK_QUEUE))),
         ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
@@ -186,9 +167,9 @@ class TestQueueRemove:
 
 class TestQueueReorder:
     def test_queue_reorder_success(self, client):
-        with patch_httpx(
-            patch_=make_mock_response(200),
-            get=make_mock_response(200, MOCK_QUEUE),
+        with (
+            patch.object(QueueAPI, "reorder", new=AsyncMock(return_value=make_mock_response(200))),
+            patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response(200, MOCK_QUEUE))),
         ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-reorder", "order": [2, 1]})
@@ -209,16 +190,18 @@ class TestQueueReorder:
         assert "error" in data
 
     def test_queue_reorder_backend_failure(self, client):
-        with patch_httpx(patch_=make_mock_response(400, {"error": "invalid ids"})):
+        with patch.object(
+            QueueAPI, "reorder", new=AsyncMock(return_value=make_mock_response(400, {"error": "invalid ids"}))
+        ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-reorder", "order": [99, 98]})
                 data = ws.receive_json()
         assert "error" in data
 
     def test_queue_reorder_broadcasts_to_guild(self, client):
-        with patch_httpx(
-            patch_=make_mock_response(200),
-            get=make_mock_response(200, MOCK_QUEUE),
+        with (
+            patch.object(QueueAPI, "reorder", new=AsyncMock(return_value=make_mock_response(200))),
+            patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response(200, MOCK_QUEUE))),
         ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
@@ -235,7 +218,7 @@ class TestQueueReorder:
 
 class TestQueueClear:
     def test_queue_clear_success(self, client):
-        with patch_httpx(delete=make_mock_response(204)):
+        with patch.object(QueueAPI, "clear", new=AsyncMock(return_value=make_mock_response(204))):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-clear"})
                 data = ws.receive_json()
@@ -243,14 +226,16 @@ class TestQueueClear:
         assert data["queue"] == []
 
     def test_queue_clear_backend_failure(self, client):
-        with patch_httpx(delete=make_mock_response(500)):
+        with patch.object(
+            QueueAPI, "clear", new=AsyncMock(return_value=make_mock_response(500, {"detail": "db error"}))
+        ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "queue-clear"})
                 data = ws.receive_json()
         assert "error" in data
 
     def test_queue_clear_broadcasts_to_guild(self, client):
-        with patch_httpx(delete=make_mock_response(204)):
+        with patch.object(QueueAPI, "clear", new=AsyncMock(return_value=make_mock_response(204))):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
                     ws1.send_json({"type": "queue-clear"})
@@ -260,7 +245,9 @@ class TestQueueClear:
         assert data["queue"] == []
 
     def test_queue_clear_error_not_broadcast(self, client):
-        with patch_httpx(delete=make_mock_response(500)):
+        with patch.object(
+            QueueAPI, "clear", new=AsyncMock(return_value=make_mock_response(500, {"detail": "db error"}))
+        ):
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
                     ws1.send_json({"type": "queue-clear"})

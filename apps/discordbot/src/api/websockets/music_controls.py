@@ -62,6 +62,16 @@ async def handle_stop(websocket, guild_id: int, data: dict):
     return {"type": "stop"}
 
 
+@ws.command(prefix="loop", broadcast=True)
+async def handle_loop(websocket, guild_id: int, data: dict):
+    """
+    {"type": "loop", "guild_id": 123}
+    """
+    await bot.vc_loop(guild_id)
+    state = bot.vc_get_status(guild_id)
+    return {"type": "loop", "loop": state.get("loop")}
+
+
 @ws.command(prefix="seek", broadcast_status=True)
 async def handle_seek(websocket, guild_id: int, data: dict):
     """

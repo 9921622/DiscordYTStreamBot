@@ -4,12 +4,25 @@ from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 
 from bot.bot import bot
+from api.websockets.ws_manager import ws_manager
 from settings import settings
 from api.routers import misc, admin, voice, debug, websockets
 
 
+def wire_bot_events():
+    async def on_song_start(guild_id: int):
+        await ws_manager.send(guild_id, {"type": "song_start"})
+
+    async def on_song_end(guild_id: int):
+        await ws_manager.send(guild_id, {"type": "song_end"})
+
+    bot.on("on_song_start", on_song_start)
+    bot.on("on_song_end", on_song_end)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    wire_bot_events()
     asyncio.create_task(bot.start(settings.DISCORD_TOKEN))
     yield
 

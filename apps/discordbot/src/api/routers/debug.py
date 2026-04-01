@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from bot.bot import bot
-from bot.ws_manager import ws_manager
+from api.websockets.ws_manager import ws_manager
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 

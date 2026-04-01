@@ -4,6 +4,8 @@ import time
 
 from dataclasses import dataclass, field
 
+from api.websockets.ws_manager import ws_manager
+
 
 @dataclass
 class Playback:
@@ -15,6 +17,7 @@ class Playback:
     volume: float = 0.5
     ended: bool = False
     manually_stopped: bool = False
+    loop: bool = False
 
 
 class PlaybackMixin:
@@ -26,6 +29,7 @@ class PlaybackMixin:
         source_url: str,
         offset: float = 0.0,
         volume: float = 0.5,
+        loop: bool = False,
     ):
         self._playback[guild_id] = Playback(
             video_id=video_id,
@@ -35,6 +39,7 @@ class PlaybackMixin:
             volume=volume,
             ended=False,
             manually_stopped=False,
+            loop=loop,
         )
 
     def _delete_playback(self, guild_id: int):
@@ -50,11 +55,11 @@ class PlaybackMixin:
 
     async def on_song_start(self, guild_id: int):
         """custom event listener. triggered when song starts"""
-        pass
+        await self._emit("on_song_start", guild_id)
 
     async def on_song_end(self, guild_id: int):
         """custom event listener. triggered when song ends naturally"""
-        pass
+        await self._emit("on_song_end", guild_id)
 
 
 class ConnectionMixin:
@@ -135,8 +140,11 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             vc.stop()
             await asyncio.sleep(0.3)
 
+        existing_loop = self._playback.get(guild_id)
+        loop = existing_loop.loop if existing_loop else False
+
         # create new playback state before playing
-        self._create_playback(guild_id, video_id, source_url, offset, volume)
+        self._create_playback(guild_id, video_id, source_url, offset, volume, loop=loop)
 
         def _after(error):
             current_state = self._playback.get(guild_id)
@@ -144,7 +152,16 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
                 current_state.ended = True
 
                 async def _run():
-                    await self.on_song_end(guild_id)
+                    if current_state.loop:
+                        await self.vc_play(
+                            guild_id,
+                            current_state.video_id,
+                            current_state.source_url,
+                            offset=0.0,
+                            volume=current_state.volume,
+                        )
+                    else:
+                        await self.on_song_end(guild_id)
 
                 asyncio.run_coroutine_threadsafe(_run(), self.loop)
 
@@ -192,6 +209,13 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
 
         return vc.source.volume / self.VOLUME_SCALE
 
+    async def vc_loop(self, guild_id: int):
+        state = self._playback.get(guild_id)
+        if not state:
+            return
+        state.loop = not state.loop
+        return state.loop
+
     def vc_get_status(self, guild_id: int) -> dict:
         """Returns the current playback status."""
         state = self._playback.get(guild_id)
@@ -205,6 +229,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
                 "volume": 0.5,
                 "video_id": None,
                 "ended": False,
+                "loop": False,
             }
 
         return {
@@ -214,4 +239,5 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             "volume": state.volume,
             "video_id": state.video_id,
             "ended": state.ended,
+            "loop": state.loop,
         }

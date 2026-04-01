@@ -188,7 +188,7 @@ function CurrentSong() {
 }
 
 export default function QueueSidebar() {
-    const { queue, queuePlayFrom, queueRemove, queueSwap } = usePlaybackQueueContext();
+    const { queue, queuePlayFrom, queueRemove, queueSwap, queueClear } = usePlaybackQueueContext();
 
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: { distance: 5 } // prevents accidental drags on click
@@ -217,10 +217,10 @@ export default function QueueSidebar() {
                 </div>
 
                 <div className="flex items-center gap-1">
-                    <button className="btn btn-ghost btn-xs btn-circle hover:bg-zinc-700" onClick={() => {}}>
+                    <button title="Shuffle" className="btn btn-ghost btn-xs btn-circle hover:bg-zinc-700" onClick={() => {}}>
                         <ShuffleIcon />
                     </button>
-                    <button className="btn btn-ghost btn-xs btn-circle hover:bg-red-500/20 hover:text-red-400" onClick={() => {}}>
+                    <button title="Clear Queue" className="btn btn-ghost btn-xs btn-circle hover:bg-red-500/20 hover:text-red-400" onClick={queueClear}>
                         <TrashIcon />
                     </button>
                 </div>

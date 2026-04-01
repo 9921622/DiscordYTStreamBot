@@ -102,7 +102,7 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     }
 
     async function queueSwap(fromIndex: number, toIndex: number) {
-        if (!!guildID || !botInChannel) return
+        if (!guildID || !botInChannel) return
         const reordered = [...queue]
         const [moved] = reordered.splice(fromIndex, 1)
         reordered.splice(toIndex, 0, moved)

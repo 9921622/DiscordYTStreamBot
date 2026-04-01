@@ -1,13 +1,10 @@
 import SongSearchbar from "./SongSearchbar";
-import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 import { discordBotAPI } from "~/api/discord/discord-wrapper";
-import { backendAPI } from "~/api/backend-wrapper";
 import type { DiscordUser } from "~/api/backend-types";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useUser } from "~/contexts/UserContext";
 import { useBotContext } from "~/contexts/BotContext";
-import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
 
 function ProfileDropdown({ profile } : { profile? : DiscordUser }) {
   const navigate = useNavigate()
@@ -87,7 +84,6 @@ function JoinChannel() {
 }
 
 export default function Navbar() {
-  const { videoPlay } = usePlaybackVideoContext()
   const discordUser = useUser();
 
   return (
@@ -98,7 +94,7 @@ export default function Navbar() {
       </div>
 
       <div className="absolute left-1/2 transform -translate-x-1/2">
-        <SongSearchbar onItemClick={videoPlay}/>
+        <SongSearchbar />
       </div>
 
       <div className="flex items-center gap-3 ml-auto">

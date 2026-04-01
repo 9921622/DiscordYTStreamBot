@@ -6,6 +6,8 @@ import SongSearchbarCard from "./SongSearchbarCard";
 
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
 import type { YoutubeSearch, YoutubeVideo } from "~/api/youtube/youtube-types";
+import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
+import SongDropdown from "./SongDropdown";
 
 
 function SongSearchbarDropdownExtra({ query }: { query: string }) {
@@ -21,7 +23,8 @@ function SongSearchbarDropdownExtra({ query }: { query: string }) {
   );
 }
 
-export default function SongSearchbar( { onItemClick } : { onItemClick? : (item: YoutubeVideo) => void } ) {
+export default function SongSearchbar() {
+    const { videoPlay } = usePlaybackVideoContext()
     const [search, setSearch] = useState("");
     const [results, setResults] = useState<YoutubeVideo[]>([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -82,7 +85,9 @@ export default function SongSearchbar( { onItemClick } : { onItemClick? : (item:
 
             {results.map((item, i) => (
             <li key={item.youtube_id}>
-                <SongSearchbarCard item={item} onClick={() => onItemClick?.(item)}/>
+                <SongDropdown song={item}>
+                <SongSearchbarCard song={item} onClick={() => videoPlay?.(item)}/>
+                </SongDropdown>
             </li>
             ))}
 

@@ -37,7 +37,7 @@ const PlaybackQueueContext = createContext<PlaybackQueueContextType>({
 })
 
 export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
-    const { guildID } = useBotContext()
+    const { guildID, botInChannel } = useBotContext()
     const { send, on, connected } = useSocketContext()
     const [queue, setQueue] = useState<QueueItem[]>([])
 
@@ -49,14 +49,14 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     useEffect(() => on("queue-clear",   (data) => { const d = data as QueueResponse; if (!d.error) setQueue([]) }), [on])
 
     useEffect(() => {
-        if (!guildID || !connected) return
+        if (!guildID || !botInChannel || !connected) return
         send({ type: "queue-get" })
-    }, [guildID, connected])
+    }, [guildID, botInChannel, connected])
 
     // ---- actions ----
 
     async function queueAdd(item: YoutubeVideo, playingNow: boolean) {
-        if (!guildID) return
+        if (!guildID || !botInChannel) return
         if (playingNow) {
             const skeleton: SkeletonQueueItem = {
                 id: `skeleton-${item.youtube_id}-${Date.now()}`,
@@ -70,7 +70,7 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     }
 
     async function queueNext(): Promise<void> {
-        if (!guildID) return
+        if (!guildID || !botInChannel) return
         const next = queue[0]
         if (!next || 'isSkeleton' in next) return
         send({ type: "play", video_id: next.video.youtube_id, offset: 0, volume: 0.5 })
@@ -78,7 +78,7 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     }
 
     async function queueRemove(index: number) {
-        if (!guildID) return
+        if (!guildID || !botInChannel) return
         const item = queue[index]
         if (!item) return
         if ('isSkeleton' in item) {
@@ -90,7 +90,7 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     }
 
     async function queuePlayFrom(index: number): Promise<YoutubeVideo | null> {
-        if (!guildID) return null
+        if (!guildID || !botInChannel) return null
         const item = queue[index]
         if (!item || 'isSkeleton' in item) return null
         send({ type: "play", video_id: item.video.youtube_id, offset: 0, volume: 0.5 })
@@ -100,7 +100,7 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     }
 
     async function queueSwap(fromIndex: number, toIndex: number) {
-        if (!guildID) return
+        if (!!guildID || !botInChannel) return
         const reordered = [...queue]
         const [moved] = reordered.splice(fromIndex, 1)
         reordered.splice(toIndex, 0, moved)

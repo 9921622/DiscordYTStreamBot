@@ -26,6 +26,7 @@ interface PlaybackQueueContextType {
     queueRemove: (index: number) => Promise<void>
     queuePlayFrom: (index: number) => Promise<YoutubeVideo | null>
     queueSwap: (fromIndex: number, toIndex: number) => Promise<void>
+    queueClear: () => void
 }
 
 const PlaybackQueueContext = createContext<PlaybackQueueContextType>({
@@ -35,6 +36,7 @@ const PlaybackQueueContext = createContext<PlaybackQueueContextType>({
     queueRemove: async () => {},
     queuePlayFrom: async () => null,
     queueSwap: async () => {},
+    queueClear: async () => {},
 })
 
 export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
@@ -119,8 +121,13 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
         send({ type: "queue-reorder", order: realIds })
     }
 
+    async function queueClear() {
+        if (!guildID || !botInChannel) return
+        send({ type: "queue-clear" })
+    }
+
     return (
-        <PlaybackQueueContext.Provider value={{ queue, queueAdd, queueNext, queueRemove, queuePlayFrom, queueSwap }}>
+        <PlaybackQueueContext.Provider value={{ queue, queueAdd, queueNext, queueRemove, queuePlayFrom, queueSwap, queueClear }}>
             {children}
         </PlaybackQueueContext.Provider>
     )

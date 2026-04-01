@@ -6,12 +6,11 @@ from api.websockets.ws_router import ws_command_router
 
 
 # TODO: move import + initialize to different file???
-from api.websockets import debug, voice, music_controls
+from api.websockets import debug, music_controls, queue_controls
 
 debug.ws.initialize()
-voice.ws.initialize()
 music_controls.ws.initialize()
-
+queue_controls.ws.initialize()
 
 router = APIRouter(prefix="/ws", tags=["ws"])
 

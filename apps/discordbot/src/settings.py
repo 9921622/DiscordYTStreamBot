@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     DISCORD_DEBUG_VC: int | None = None
     DISCORD_DEBUG_CHANNEL: int | None = None
 
+    # Backend
+    INTERNAL_API_KEY: str
+
     # App
     APP_HOST: str
     APP_PORT: int

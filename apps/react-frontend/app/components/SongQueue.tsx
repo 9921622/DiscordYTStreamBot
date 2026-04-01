@@ -1,6 +1,6 @@
 import { useBotContext } from "~/contexts/BotContext"
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext"
-import { PlayIcon } from "./utilities/Icons"
+import { PlayIcon, StopIcon, NextIcon } from "./utilities/Icons"
 import {
     DndContext,
     closestCenter,
@@ -117,6 +117,14 @@ function SortableItem({ item, index, onPlay, onRemove }: {
 
 function CurrentSong() {
     const { video, videoLoading, videoStop } = usePlaybackVideoContext();
+    const { queue, queueNext } = usePlaybackQueueContext()
+
+    function clickHandler() {
+        if (queue?.length > 0)
+            queueNext();
+        else
+            videoStop();
+    }
 
     return (
         <div className="p-3 border-b border-zinc-800">
@@ -159,11 +167,16 @@ function CurrentSong() {
                         </div>
 
                         <button
-                            onClick={videoStop}
+                            onClick={clickHandler}
                             className="btn btn-xs btn-ghost text-red-400 hover:bg-red-500/20"
                             title="Stop"
                         >
-                            ■
+                            {
+                                queue?.length > 0 ?
+                                <NextIcon/> :
+                                <StopIcon />
+                            }
+
                         </button>
                     </>
                 ) : (

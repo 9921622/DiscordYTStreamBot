@@ -24,29 +24,26 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
     }
 
     return (
-        <div className={`card bg-base-100 w-50 h-50 shadow-sm relative overflow-hidden group ${!botInChannel ? "cursor-not-allowed" : ""}`}>
-            <figure className="h-full">
-                <img src={song.thumbnail || ""} alt={song.title} className="w-full h-full object-cover" />
-            </figure>
+        <div className={`relative w-48 h-48 rounded-lg overflow-hidden group bg-zinc-900 ${!botInChannel ? "cursor-not-allowed" : ""}`}>
+            <img
+                src={song.thumbnail || ""}
+                alt={song.title}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
 
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/70 to-transparent p-4">
-                <h2 className="card-title text-white text-lg line-clamp-2">{song.title}</h2>
-                <p className="text-gray-300 text-sm">{song.creator}</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col p-3">
 
-                <div className="card-actions justify-end mt-3 opacity-0 group-hover:opacity-100 transition-opacity gap-2">
-                    <div className="tooltip tooltip-top" data-tip={!botInChannel ? "Bot is not in your voice channel" : "Add to queue"}>
+                <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                    <div className="flex gap-2">
                         <button
-                            className="btn btn-secondary btn-circle btn-md text-white p-3"
+                            className="btn btn-secondary btn-circle btn-sm"
                             onClick={() => queueAdd(song, !!videoPlaybackStatus?.playing)}
                             disabled={!botInChannel}
                         >
                             <CrossIcon />
                         </button>
-                    </div>
 
-                    <div className="tooltip tooltip-top" data-tip={!botInChannel ? "Bot is not in your voice channel" : isPlaying ? "Pause" : "Play"}>
                         <button
-                            className="btn btn-primary btn-circle btn-md text-white p-3"
+                            className="btn btn-primary btn-circle btn-sm"
                             onClick={handlePlay}
                             disabled={!botInChannel}
                         >
@@ -54,7 +51,17 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                         </button>
                     </div>
                 </div>
+
+                {/* Push text to bottom */}
+                <div className="mt-auto">
+                    <h2 className="text-white text-sm font-semibold line-clamp-2">
+                        {song.title}
+                    </h2>
+                    <p className="text-gray-400 text-xs truncate">
+                        {song.creator}
+                    </p>
+                </div>
             </div>
         </div>
-    )
+    );
 }

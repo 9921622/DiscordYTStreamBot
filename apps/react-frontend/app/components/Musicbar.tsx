@@ -17,9 +17,10 @@ export default function Musicbar() {
     const { queueNext } = usePlaybackQueueContext()
     const { guildID, botInChannel } = useBotContext()
 
-    const isPlaying = videoPlaybackStatus?.playing ?? false
-    const isPaused  = videoPlaybackStatus?.paused ?? false
-    const volume    = videoPlaybackStatus?.volume ?? 0.5
+    const isPlaying = videoPlaybackStatus?.playing ?? false;
+    const isPaused  = videoPlaybackStatus?.paused ?? false;
+    const isLoop    = videoPlaybackStatus?.loop   ?? false;
+    const volume    = videoPlaybackStatus?.volume ?? 0.5;
 
     const [currentTime, setCurrentTime] = useState(videoPlaybackStatus?.position ?? 0)
 
@@ -42,6 +43,11 @@ export default function Musicbar() {
     const handlePause = () => {
         if (!guildID) return
         videoPause()
+    }
+
+    const handleLoop = () => {
+        if (!guildID) return
+        send({ type: "loop" })
     }
 
     const handleSeek = (time: number) => {
@@ -108,8 +114,10 @@ export default function Musicbar() {
                         className="w-1/2"
                         isPlaying={isPlaying}
                         isPaused={isPaused}
+                        isLoop={isLoop}
                         onPause={handlePause}
                         onNext={queueNext}
+                        onLoop={handleLoop}
                     />
                     <SongProgressBar
                         className="w-full"

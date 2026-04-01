@@ -100,16 +100,13 @@ export function PlaybackVideoProvider({ children }: { children: ReactNode }) {
         setVideoPlaybackStatus(prev => prev ? { ...prev, volume: data.volume as number } : prev)
     }), [on])
 
+    useEffect(() => on("loop", (data) => {
+        if (data.error) return
+        setVideoPlaybackStatus(prev => prev ? { ...prev, loop: data.loop as boolean } : prev)
+    }), [on])
+
     useEffect(() => on("song_start", async (data) => {
-        setVideoError(null)
-        try {
-            const fetched = await youtubeAPI.video.retrieve(data.video_id as string)
-            setVideo(fetched)
-        } catch {
-            setVideo(null)
-        } finally {
-            setVideoLoading(false)
-        }
+
     }), [on])
 
     useEffect(() => on("song_end", () => {

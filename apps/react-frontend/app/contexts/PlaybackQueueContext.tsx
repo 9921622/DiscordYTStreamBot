@@ -4,6 +4,7 @@ import { useBotContext } from "~/contexts/BotContext"
 import { useSocketContext } from "~/contexts/SocketContext"
 import type { DiscordGuildQueueItem, DiscordGuildQueue } from "~/api/backend-types"
 import type { YoutubeVideo } from "~/api/youtube/youtube-types"
+import { usePlaybackVideoContext } from "./PlaybackVideoContext"
 
 interface SkeletonQueueItem {
     id: string
@@ -38,6 +39,7 @@ const PlaybackQueueContext = createContext<PlaybackQueueContextType>({
 
 export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     const { guildID, botInChannel } = useBotContext()
+    const { videoPlay } = usePlaybackVideoContext()
     const { send, on, connected } = useSocketContext()
     const [queue, setQueue] = useState<QueueItem[]>([])
 
@@ -73,7 +75,7 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
         if (!guildID || !botInChannel) return
         const next = queue[0]
         if (!next || 'isSkeleton' in next) return
-        send({ type: "play", video_id: next.video.youtube_id, offset: 0, volume: 0.5 })
+        videoPlay(next.video);
         send({ type: "queue-remove", item_id: next.id })
     }
 
@@ -93,7 +95,7 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
         if (!guildID || !botInChannel) return null
         const item = queue[index]
         if (!item || 'isSkeleton' in item) return null
-        send({ type: "play", video_id: item.video.youtube_id, offset: 0, volume: 0.5 })
+        videoPlay(item.video);
         send({ type: "queue-remove", item_id: item.id })
         setQueue(prev => prev.filter((_, i) => i !== index))
         return item.video

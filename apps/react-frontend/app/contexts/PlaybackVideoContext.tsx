@@ -109,7 +109,10 @@ export function PlaybackVideoProvider({ children }: { children: ReactNode }) {
 
     }), [on])
 
-    useEffect(() => on("song_end", () => {
+    useEffect(() => on("song_end", (data) => {
+        if (data.next_song) {
+            setVideoLoading(true)
+        }
         setVideo(null)
         setVideoPlaybackStatus(null)
     }), [on])

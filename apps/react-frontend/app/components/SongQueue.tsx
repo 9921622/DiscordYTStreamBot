@@ -174,7 +174,6 @@ function CurrentSong() {
 }
 
 export default function QueueSidebar() {
-    const { video } = usePlaybackVideoContext();
     const { queue, queuePlayFrom, queueRemove, queueSwap } = usePlaybackQueueContext();
 
     const sensors = useSensors(useSensor(PointerSensor, {

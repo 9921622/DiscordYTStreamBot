@@ -1,5 +1,7 @@
 from bot.bot import bot
 
+from api.api_backend_wrapper import QueueAPI, VideoAPI
+
 from .ws_manager import ws_manager
 from .ws_hooks import hook
 
@@ -12,4 +14,36 @@ async def on_song_start(guild_id: int):
 
 @hook("on_song_end")
 async def on_song_end(guild_id: int):
-    await ws_manager.send(guild_id, {"type": "song_end"})
+    queue_response = await QueueAPI.get(guild_id)
+    queue_data = queue_response.json()
+    items = queue_data.get("items", [])
+
+    await ws_manager.send(guild_id, {"type": "song_end", "next_song": bool(items)})
+    if not items:
+        return
+
+    next_item = items[0]
+    video = next_item.get("video", {})
+
+    item_id = next_item.get("id")
+    youtube_id = video.get("youtube_id")
+
+    if not youtube_id:
+        return
+
+    source_response = await VideoAPI.get_source(youtube_id)
+    if source_response.status_code != 200:
+        return
+
+    source_url = source_response.json().get("source_url")
+    if not source_url:
+        return
+
+    vc_status = bot.vc_get_status(guild_id)
+    vc = bot.get_voice_client(guild_id)
+
+    await QueueAPI.remove(guild_id, item_id)
+    await ws_manager.send(guild_id, {"type": "play", "video_id": youtube_id})
+    await ws_manager.send(guild_id, {"type": "queue-remove", "queue": (await QueueAPI.get(guild_id)).json()})
+
+    await bot.vc_play(guild_id, youtube_id, source_url)

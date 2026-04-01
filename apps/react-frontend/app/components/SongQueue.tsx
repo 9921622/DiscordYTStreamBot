@@ -1,6 +1,6 @@
 import { useBotContext } from "~/contexts/BotContext"
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext"
-import { PlayIcon, StopIcon, NextIcon } from "./utilities/Icons"
+import { PlayIcon, StopIcon, NextIcon, ShuffleIcon, TrashIcon } from "./utilities/Icons"
 import {
     DndContext,
     closestCenter,
@@ -211,8 +211,20 @@ export default function QueueSidebar() {
             <CurrentSong />
 
             <div className="p-4 border-b border-zinc-700 flex items-center justify-between">
-                <p className="font-bold text-white">Queue</p>
-                <span className="badge badge-neutral">{queue.length}</span>
+                <div className="flex items-center gap-2">
+                    <p className="font-bold text-white">Queue</p>
+                    <span className="badge badge-neutral">{queue.length}</span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                    <button className="btn btn-ghost btn-xs btn-circle hover:bg-zinc-700" onClick={() => {}}>
+                        <ShuffleIcon />
+                    </button>
+                    <button className="btn btn-ghost btn-xs btn-circle hover:bg-red-500/20 hover:text-red-400" onClick={() => {}}>
+                        <TrashIcon />
+                    </button>
+                </div>
+
             </div>
 
             {queue.length === 0 ? (

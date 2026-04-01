@@ -18,6 +18,7 @@ import {
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
 import { CSS } from "@dnd-kit/utilities"
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext"
+import VCMembersContainer from "./VCMembersContainer"
 
 function DragHandle() {
     return (
@@ -193,7 +194,7 @@ export default function QueueSidebar() {
 
     return (
         <div className="w-112 bg-zinc-900 h-full flex flex-col border-l border-zinc-700 rounded-lg ml-2">
-
+            <VCMembersContainer/>
             <CurrentSong />
 
             <div className="p-4 border-b border-zinc-700 flex items-center justify-between">

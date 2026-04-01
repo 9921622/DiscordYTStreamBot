@@ -1,8 +1,5 @@
-import { useEffect, useState } from "react";
 import { useBotContext } from "~/contexts/BotContext"
-import { useSocketContext } from "~/contexts/SocketContext"
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
 
 import ArtistInfo from "./MusicbarArtistInfo";
 import SongProgressBar from "./MusicbarSongProgressBar";
@@ -12,56 +9,8 @@ import VolumeControl from "./MusicbarVolumeControl";
 
 
 export default function Musicbar() {
-    const { send } = useSocketContext();
-    const { video, videoLoading, videoError, videoPlaybackStatus, videoPause, videoVolume } = usePlaybackVideoContext()
-    const { queueNext } = usePlaybackQueueContext()
-    const { guildID, botInChannel } = useBotContext()
-
-    const isPlaying = videoPlaybackStatus?.playing ?? false;
-    const isPaused  = videoPlaybackStatus?.paused ?? false;
-    const isLoop    = videoPlaybackStatus?.loop   ?? false;
-    const volume    = videoPlaybackStatus?.volume ?? 0.5;
-
-    const [currentTime, setCurrentTime] = useState(videoPlaybackStatus?.position ?? 0)
-
-    // keep currentTime in sync when status arrives (seek, play, etc.)
-    useEffect(() => {
-        if (videoPlaybackStatus?.position !== undefined) {
-            setCurrentTime(videoPlaybackStatus.position)
-        }
-    }, [videoPlaybackStatus?.position])
-
-    // local tick between server pushes
-    useEffect(() => {
-        if (!isPlaying || isPaused) return
-        const timer = setInterval(() => setCurrentTime(t => t + 1), 1000)
-        return () => clearInterval(timer)
-    }, [isPlaying, isPaused])
-
-    // ---- handlers ----
-
-    const handlePause = () => {
-        if (!guildID) return
-        videoPause()
-    }
-
-    const handleLoop = () => {
-        if (!guildID) return
-        send({ type: "loop" })
-    }
-
-    const handleSeek = (time: number) => {
-        if (!guildID) return
-        setCurrentTime(time)
-        send({ type: "seek", position: time })
-    }
-
-    const handleVolume = (level: number) => {
-        if (!guildID) return
-        videoVolume(level)
-    }
-
-    // ---- render ----
+    const { video, videoLoading, videoError} = usePlaybackVideoContext()
+    const { botInChannel } = useBotContext()
 
     if (videoError) return (
         <div className="bg-gray-900 text-white px-4 py-5 fixed bottom-0 w-full flex items-center justify-center">
@@ -110,20 +59,9 @@ export default function Musicbar() {
                     {!botInChannel && video && (
                         <p className="text-xs text-warning">Bot is not in your voice channel</p>
                     )}
-                    <SongControls
-                        className="w-1/2"
-                        isPlaying={isPlaying}
-                        isPaused={isPaused}
-                        isLoop={isLoop}
-                        onPause={handlePause}
-                        onNext={queueNext}
-                        onLoop={handleLoop}
-                    />
+                    <SongControls className="w-1/2" />
                     <SongProgressBar
                         className="w-full"
-                        currentTime={currentTime}
-                        setCurrentTime={handleSeek}
-                        duration={video?.duration ?? 0}
                     />
                 </div>
             </div>
@@ -133,7 +71,7 @@ export default function Musicbar() {
             </div>
 
             <div className="relative z-10 flex items-center gap-3">
-                <VolumeControl volume={volume} onVolumeChange={handleVolume} />
+                <VolumeControl />
             </div>
         </div>
     );

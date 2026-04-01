@@ -1,24 +1,47 @@
 import { useEffect, useState } from "react";
 import { NumToTime } from "./utilities/misc";
+import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
+import { useSocketContext } from "~/contexts/SocketContext";
 
+export default function SongProgressBar({ className }: { className?: string }) {
+    const { send } = useSocketContext();
+    const { video, videoPlaybackStatus } = usePlaybackVideoContext();
 
-export default  function SongProgressBar({ className, currentTime, setCurrentTime, duration }: { className? : string, currentTime: number; duration: number; setCurrentTime: (value: number) => void; }) {
-    const [localValue, setLocalValue] = useState(0);
-    const [dragging, setDragging] = useState(false);
-    const displayTime = dragging ? (localValue / 100) * duration : Math.min(duration, currentTime);
+    const isPlaying = videoPlaybackStatus?.playing ?? false;
+    const isPaused  = videoPlaybackStatus?.paused  ?? false;
+    const duration  = video?.duration ?? 0;
 
+    const [currentTime, setCurrentTime] = useState(videoPlaybackStatus?.position ?? 0);
+    const [sliderValue, setSliderValue] = useState(0);
+    const [dragging, setDragging]       = useState(false);
+
+    const displayTime = dragging ? (sliderValue / 100) * duration : Math.min(duration, currentTime);
+
+    // sync on server push
     useEffect(() => {
-        if (!dragging && duration) setLocalValue((currentTime / duration) * 100);
-    }, [currentTime, duration]);
+        if (videoPlaybackStatus?.position !== undefined)
+            setCurrentTime(videoPlaybackStatus.position);
+    }, [videoPlaybackStatus?.position]);
 
-    function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-        setLocalValue(Number(e.target.value));
-    }
+    // local tick
+    useEffect(() => {
+        if (!isPlaying || isPaused || dragging) return;
+        const timer = setInterval(() => setCurrentTime(t => Math.min(duration, t + 1)), 1000);
+        return () => clearInterval(timer);
+    }, [isPlaying, isPaused, dragging, duration]);
 
-    function handleRelease() {
+    // keep slider in sync when not dragging
+    useEffect(() => {
+        if (!dragging && duration)
+            setSliderValue((currentTime / duration) * 100);
+    }, [currentTime, duration, dragging]);
+
+    const handleRelease = () => {
+        const time = (sliderValue / 100) * duration;
         setDragging(false);
-        setCurrentTime((localValue / 100) * duration);
-    }
+        setCurrentTime(time);
+        send({ type: "seek", position: time });
+    };
 
     return (
         <div className={`${className} flex items-center gap-2 text-xs text-gray-400 w-64`}>
@@ -27,8 +50,8 @@ export default  function SongProgressBar({ className, currentTime, setCurrentTim
                 type="range"
                 min={0}
                 max={100}
-                value={localValue}
-                onChange={handleChange}
+                value={sliderValue}
+                onChange={e => setSliderValue(Number(e.target.value))}
                 onMouseDown={() => setDragging(true)}
                 onTouchStart={() => setDragging(true)}
                 onMouseUp={handleRelease}

@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from backend.mixins import RefreshTokenMixin
+from backend.permissions import IsInternalService
 from discord.api import DiscordAPIClient, DiscordCDNAPI
 from discord.models import DiscordUser, DiscordGuild, GuildQueue, GuildQueueItem
 from discord.serializers import (
@@ -168,8 +169,8 @@ class DiscordGuildView(APIView):
 
 
 class GuildQueueView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    authentication_classes = []
+    permission_classes = [IsInternalService]
 
     def get_queue(self, guild_id: str) -> GuildQueue:
         guild, _ = DiscordGuild.objects.get_or_create(guild_id=guild_id)
@@ -189,8 +190,8 @@ class GuildQueueView(APIView):
 
 
 class GuildQueueItemView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    authentication_classes = []
+    permission_classes = [IsInternalService]
 
     def post(self, request, guild_id: str):
         """Add a video to the queue"""
@@ -214,20 +215,13 @@ class GuildQueueItemView(APIView):
                 )
 
         last_order = queue.items.aggregate(models.Max("order"))["order__max"] or 0
-        item = GuildQueueItem.objects.create(
-            queue=queue,
-            video=video,
-            order=last_order + 1,
-            added_by=request.user,
-        )
+        item = GuildQueueItem.objects.create(queue=queue, video=video, order=last_order + 1)
         return Response(GuildQueueItemSerializer(item).data, status=201)
 
     def delete(self, request, guild_id: str, item_id: int):
         """Remove a specific item from the queue"""
         try:
-            item = GuildQueueItem.objects.get(
-                id=item_id, queue__guild__guild_id=guild_id
-            )
+            item = GuildQueueItem.objects.get(id=item_id, queue__guild__guild_id=guild_id)
             item.delete()
             return Response({"ok": True})
         except GuildQueueItem.DoesNotExist:
@@ -248,10 +242,7 @@ class GuildQueueItemView(APIView):
             return Response({"error": "One or more item IDs are invalid"}, status=400)
 
         # Bulk update order based on position in the list
-        updates = [
-            GuildQueueItem(id=item_id, order=index + 1)
-            for index, item_id in enumerate(item_ids)
-        ]
+        updates = [GuildQueueItem(id=item_id, order=index + 1) for index, item_id in enumerate(item_ids)]
         GuildQueueItem.objects.bulk_update(updates, ["order"])
 
         return Response({"ok": True})

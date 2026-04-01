@@ -31,7 +31,7 @@ class DiscordUser(models.Model):
 
 class DiscordGuild(models.Model):
     guild_id = models.CharField(max_length=64, unique=True, primary_key=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, blank=True, default="")
 
     def __str__(self):
         return self.name or "Guild"

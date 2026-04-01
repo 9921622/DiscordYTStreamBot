@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 from bot.decorators import voice_channel_only
+from settings import settings
 
 
 class VoiceCog(commands.Cog, name="voice"):
@@ -38,6 +39,25 @@ class VoiceCog(commands.Cog, name="voice"):
                     await bot_vc.disconnect()
                     await self.bot._emit("on_disconnect", member.guild.id)
                     self.bot._delete_playback(member.guild.id)
+
+        # someone joined a channel
+        if before.channel is None and after.channel is not None:
+            embed = discord.Embed(
+                title="🎵 Music Session",
+                description="A new session is ready! Click below to open the player.",
+                color=discord.Color.blurple(),
+            )
+
+            view = discord.ui.View()
+            view.add_item(
+                discord.ui.Button(
+                    label="Open Player",
+                    url=settings.FRONTEND_URL,
+                    style=discord.ButtonStyle.link,
+                )
+            )
+
+            await after.channel.send(embed=embed, view=view)
 
     @voice_group.command(name="connect")
     async def connect(self, ctx: commands.Context):

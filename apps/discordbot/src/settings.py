@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     # Backend
     INTERNAL_API_KEY: str
 
+    # Frontend
+    FRONTEND_URL: str
+
     # App
     APP_HOST: str
     APP_PORT: int

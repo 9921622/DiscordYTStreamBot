@@ -242,3 +242,21 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
             "ended": state.ended,
             "loop": state.loop,
         }
+
+    def vc_get_members(self, guild_id: int) -> dict:
+        guild = self.get_guild(guild_id)
+        if not guild:
+            return []
+
+        channel = guild.voice_client.channel
+        members = [
+            {
+                "discord_id": str(m.id),
+                "username": m.name,
+                "global_name": m.display_name,
+                "avatar": str(m.display_avatar.url),
+            }
+            for m in channel.members
+            if not m.bot
+        ]
+        return members

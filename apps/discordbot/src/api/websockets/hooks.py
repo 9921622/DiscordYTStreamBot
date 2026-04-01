@@ -11,6 +11,11 @@ async def on_disconnect(guild_id: int):
     await ws_manager.disconnect_all(guild_id)
 
 
+@hook("on_voice_join")
+async def on_voice_join(guild_id: int):
+    await ws_manager.send(guild_id, {"type": "users", "members": bot.vc_get_members(guild_id)})
+
+
 @hook("on_song_start")
 async def on_song_start(guild_id: int):
     await ws_manager.send(guild_id, {"type": "song_start"})

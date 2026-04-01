@@ -23,6 +23,9 @@ class VoiceCog(commands.Cog, name="voice"):
         """
         Triggered whenever a member joins, leaves, or moves between voice channels.
         """
+        # someone joined a channel
+        if before.channel is None and after.channel is not None:
+            await self.bot._emit("on_voice_join", member.guild.id)
 
         # Only care about members leaving a channel
         if before.channel is not None and after.channel != before.channel:

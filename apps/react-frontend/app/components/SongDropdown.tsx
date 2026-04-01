@@ -35,7 +35,7 @@ const SongContextMenu = forwardRef<HTMLUListElement, SongContextMenuProps>(
         return (
             <ul
                 ref={ref}
-                className="absolute z-50 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg py-1 w-44"
+                className="fixed z-50 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg py-1 w-44"
                 style={{ top: y, left: x }}>
 
                 {options.map((opt, i) => (

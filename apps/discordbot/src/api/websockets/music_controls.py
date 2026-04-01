@@ -1,6 +1,5 @@
-import httpx
 from bot.bot import bot
-import api.api_backend_wrapper as backend
+from api.api_backend_wrapper import VideoAPI
 from api.websockets.ws_router import WSRouter
 
 ws = WSRouter()
@@ -15,11 +14,10 @@ async def handle_play(websocket, guild_id: int, data: dict):
     if not video_id:
         return {"error": "missing 'video_id'"}
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.get(backend.play_url(video_id=video_id))
-        if response.status_code != 200:
-            return {"error": "failed to resolve source url", "detail": response.json()}
-        source_url = response.json()["source_url"]
+    response = await VideoAPI.get_source(video_id)
+    if response.status_code != 200:
+        return {"error": "failed to resolve source url", "detail": response.json()}
+    source_url = response.json()["source_url"]
 
     try:
         await bot.vc_play(

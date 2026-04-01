@@ -44,7 +44,7 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                         </button>
                     </div>
 
-                    <div className="tooltip tooltip-top" data-tip={!botInChannel ? "Bot is not in your voice channel" : "Play"}>
+                    <div className="tooltip tooltip-top" data-tip={!botInChannel ? "Bot is not in your voice channel" : isPlaying ? "Pause" : "Play"}>
                         <button
                             className="btn btn-primary btn-circle btn-md text-white p-3"
                             onClick={handlePlay}

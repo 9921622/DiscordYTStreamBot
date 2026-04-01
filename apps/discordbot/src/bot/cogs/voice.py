@@ -25,7 +25,9 @@ class VoiceCog(commands.Cog, name="voice"):
         """
         # someone joined a channel
         if before.channel is None and after.channel is not None:
-            await self.bot._emit("on_voice_join", member.guild.id)
+            await self.bot._emit("on_voice_connect", member.guild.id)
+        if before.channel is not None and after.channel != before.channel:
+            await self.bot._emit("on_voice_disconnect", member.guild.id)
 
         # Only care about members leaving a channel
         if before.channel is not None and after.channel != before.channel:

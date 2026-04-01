@@ -10,9 +10,14 @@ from bot.bot import bot
 """
 
 
-def hook(name: str):
+def hooks(*names: str):
     def decorator(func):
-        bot.on(name, func)
-        return func
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            return await func(*args, **kwargs)
+
+        for name in names:
+            bot.on(name, wrapper)
+        return wrapper
 
     return decorator

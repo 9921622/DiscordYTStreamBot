@@ -19,8 +19,11 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(misc.router)
 app.include_router(voice.router)
 app.include_router(admin.router)
-app.include_router(debug.router)
 app.include_router(websockets.router)
+
+if settings.DEBUG:
+    app.include_router(debug.router)
+
 
 app.add_middleware(
     CORSMiddleware,

@@ -4,6 +4,8 @@ from api.websockets.ws_manager import ws_manager
 
 from api.websockets.ws_router import ws_command_router
 
+from settings import settings
+
 router = APIRouter(prefix="/ws", tags=["ws"])
 
 
@@ -36,10 +38,12 @@ def initialize_websockets():
     # websocket commands
     from api.websockets import debug, voice, music_controls, queue_controls
 
-    debug.ws.initialize()
     voice.ws.initialize()
     music_controls.ws.initialize()
     queue_controls.ws.initialize()
+
+    if settings.DEBUG:
+        debug.ws.initialize()
 
     # websocket hooks
     from api.websockets import hooks

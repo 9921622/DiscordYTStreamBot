@@ -33,20 +33,20 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                 <h2 className="card-title text-white text-lg line-clamp-2">{song.title}</h2>
                 <p className="text-gray-300 text-sm">{song.creator}</p>
 
-                <div className="card-actions justify-between mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="card-actions justify-end mt-3 opacity-0 group-hover:opacity-100 transition-opacity gap-2">
                     <div className="tooltip tooltip-top" data-tip={!botInChannel ? "Bot is not in your voice channel" : "Add to queue"}>
                         <button
-                            className="btn btn-ghost btn-circle btn-sm text-white"
+                            className="btn btn-secondary btn-circle btn-md text-white p-3"
                             onClick={() => queueAdd(song, !!videoPlaybackStatus?.playing)}
                             disabled={!botInChannel}
                         >
                             <CrossIcon />
                         </button>
                     </div>
-                    <div className="tooltip tooltip-top"
-                            data-tip={!botInChannel ? "Bot is not in your voice channel" : isPlaying ? "Pause" : "Play"}>
+
+                    <div className="tooltip tooltip-top" data-tip={!botInChannel ? "Bot is not in your voice channel" : "Play"}>
                         <button
-                            className="btn btn-primary btn-circle btn-sm"
+                            className="btn btn-primary btn-circle btn-md text-white p-3"
                             onClick={handlePlay}
                             disabled={!botInChannel}
                         >

@@ -6,7 +6,7 @@ ws = WSRouter()
 
 
 @ws.command(prefix="play", broadcast_status=True)
-async def handle_play(websocket, guild_id: int, data: dict):
+async def handle_play(websocket, guild_id: int, data: dict):  # THIS DOESNT WORK
     """
     {"type": "play", "guild_id": 123, "video_id": "abc", "offset": 0.0, "volume": 0.5}
     """
@@ -69,7 +69,7 @@ async def handle_loop(websocket, guild_id: int, data: dict):
     """
     await bot.vc_loop(guild_id)
     state = bot.vc_get_status(guild_id)
-    return {"type": "loop", "loop": state.get("loop")}
+    return {"type": "loop", "loop": state.loop}
 
 
 @ws.command(prefix="seek", broadcast_status=True)
@@ -94,7 +94,7 @@ async def handle_status(websocket, guild_id: int, data: dict):
     """
     {"type": "status", "guild_id": 123}
     """
-    return {"type": "status", "playback": bot.vc_get_status(guild_id)}
+    return {"type": "status", "playback": bot.vc_get_status(guild_id).model_dump()}
 
 
 @ws.command(prefix="volume", broadcast_status=True)

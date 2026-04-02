@@ -3,7 +3,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from api import app
 from api.api_backend_wrapper import VideoAPI
-from conftest import client, GUILD_ID, make_mock_status, make_mock_video_response
+from conftest import client
+from tests.utils import GUILD_ID, make_mock_video_response
+from tests.bot_factories import PlaybackStatusFactory
 
 # ---------------------------------------------------------------------------
 # Status
@@ -12,18 +14,18 @@ from conftest import client, GUILD_ID, make_mock_status, make_mock_video_respons
 
 class TestStatusCommand:
     def test_status_returns_playback(self, client):
-        mock_status = make_mock_status()
+        mock_status = PlaybackStatusFactory.build()
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_get_status.return_value = mock_status
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "status"})
                 data = ws.receive_json()
         assert data["type"] == "status"
-        assert data["playback"] == mock_status
+        assert data["playback"] == mock_status.model_dump()
 
     def test_status_not_broadcast(self, client):
         """Status is read-only — only the sender should receive a response."""
-        mock_status = make_mock_status()
+        mock_status = PlaybackStatusFactory.build()
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_get_status.return_value = mock_status
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
@@ -48,7 +50,7 @@ class TestPlayCommand:
             patch.object(VideoAPI, "get_source", new=AsyncMock(return_value=make_mock_video_response())),
         ):
             mock_bot.vc_play = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status(video_id="abc")
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(video_id="abc")
 
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "play", "video_id": "abc", "offset": 0.0, "volume": 0.5})
@@ -91,7 +93,7 @@ class TestPlayCommand:
             patch.object(VideoAPI, "get_source", new=AsyncMock(return_value=make_mock_video_response())),
         ):
             mock_bot.vc_play = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status(video_id="abc")
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(video_id="abc")
 
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
@@ -118,7 +120,7 @@ class TestPauseCommand:
 
     #     with patch("api.websockets.music_controls.bot") as mock_bot:
     #         mock_bot.get_voice_client.return_value = mock_vc
-    #         mock_bot.vc_get_status.return_value = make_mock_status(paused=True)
+    #         mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(paused=True)
     #         with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
     #             ws.send_json({"type": "pause"})
     #             ack = ws.receive_json()
@@ -137,7 +139,7 @@ class TestPauseCommand:
 
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.get_voice_client.return_value = mock_vc
-            mock_bot.vc_get_status.return_value = make_mock_status(paused=False)
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(paused=False)
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "pause"})
                 ack = ws.receive_json()
@@ -173,7 +175,7 @@ class TestPauseCommand:
 
     #     with patch("api.websockets.music_controls.bot") as mock_bot:
     #         mock_bot.get_voice_client.return_value = mock_vc
-    #         mock_bot.vc_get_status.return_value = make_mock_status(paused=True)
+    #         mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(paused=True)
     #         with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
     #             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
     #                 ws1.send_json({"type": "pause"})
@@ -193,7 +195,7 @@ class TestSeekCommand:
     def test_seek_success(self, client):
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_seek = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status(position=42.0)
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(position=42.0)
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "seek", "position": 42.0})
                 ack = ws.receive_json()
@@ -220,7 +222,7 @@ class TestSeekCommand:
     # def test_seek_broadcasts_status_to_guild(self, client):
     #     with patch("api.websockets.music_controls.bot") as mock_bot:
     #         mock_bot.vc_seek = AsyncMock()
-    #         mock_bot.vc_get_status.return_value = make_mock_status(position=42.0)
+    #         mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(position=42.0)
     #         with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
     #             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
     #                 ws1.send_json({"type": "seek", "position": 42.0})
@@ -235,7 +237,7 @@ class TestLoopCommand:
     def test_loop_toggles_on(self, client):
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_loop = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status(loop=True)
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(loop=True)
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "loop"})
                 ack = ws.receive_json()
@@ -247,7 +249,7 @@ class TestLoopCommand:
     def test_loop_toggles_off(self, client):
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_loop = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status(loop=False)
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(loop=False)
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "loop"})
                 ack = ws.receive_json()
@@ -274,7 +276,7 @@ class TestVolumeCommand:
     def test_volume_set(self, client):
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_volume = AsyncMock(return_value=0.8)
-            mock_bot.vc_get_status.return_value = make_mock_status(volume=0.8)
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(volume=0.8)
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "volume", "level": 0.8})
                 ack = ws.receive_json()
@@ -286,7 +288,7 @@ class TestVolumeCommand:
     def test_volume_get(self, client):
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_volume = AsyncMock(return_value=0.5)
-            mock_bot.vc_get_status.return_value = make_mock_status(volume=0.5)
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(volume=0.5)
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
                 ws.send_json({"type": "volume"})  # no level = get
                 ack = ws.receive_json()
@@ -303,7 +305,7 @@ class TestVolumeCommand:
     # def test_volume_broadcasts_status_to_guild(self, client):
     #     with patch("api.websockets.music_controls.bot") as mock_bot:
     #         mock_bot.vc_volume = AsyncMock(return_value=0.8)
-    #         mock_bot.vc_get_status.return_value = make_mock_status(volume=0.8)
+    #         mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(volume=0.8)
     #         with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
     #             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
     #                 ws1.send_json({"type": "volume", "level": 0.8})
@@ -323,7 +325,7 @@ class TestStopCommand:
     # def test_stop_success(self, client):
     #     with patch("api.websockets.music_controls.bot") as mock_bot:
     #         mock_bot.vc_stop = AsyncMock()
-    #         mock_bot.vc_get_status.return_value = make_mock_status(playing=False)
+    #         mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(playing=False)
     #         with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
     #             ws.send_json({"type": "stop"})
     #             ack = ws.receive_json()
@@ -334,7 +336,7 @@ class TestStopCommand:
     # def test_stop_broadcasts_status_to_guild(self, client):
     #     with patch("api.websockets.music_controls.bot") as mock_bot:
     #         mock_bot.vc_stop = AsyncMock()
-    #         mock_bot.vc_get_status.return_value = make_mock_status(playing=False)
+    #         mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(playing=False)
     #         with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
     #             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
     #                 ws1.send_json({"type": "stop"})
@@ -356,7 +358,7 @@ class TestMultiSession:
         OTHER_GUILD = 999999
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_seek = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status()
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build()
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{OTHER_GUILD}") as ws2:
                     ws1.send_json({"type": "seek", "position": 30.0})
@@ -377,7 +379,7 @@ class TestMultiSession:
     def test_multiple_clients_same_guild_all_receive_broadcast(self, client):
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_seek = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status(position=99.0)
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(position=99.0)
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
                     with client.websocket_connect(f"/ws/{GUILD_ID}") as ws3:

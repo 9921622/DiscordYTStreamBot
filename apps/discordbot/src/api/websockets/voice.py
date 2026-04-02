@@ -6,4 +6,4 @@ ws = WSRouter()
 
 @ws.command("users")
 async def users(websocket, guild_id: int, data: dict):
-    return {"type": "users", "members": bot.vc_get_members(guild_id)}
+    return {"type": "users", "members": bot.vc_get_members(guild_id).model_dump()}

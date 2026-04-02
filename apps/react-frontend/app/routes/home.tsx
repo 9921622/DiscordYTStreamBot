@@ -9,12 +9,13 @@ import Musicbar from "~/components/Musicbar";
 import SongContainer from "~/components/SongContainer";
 import SideBar from "~/components/SideBar";
 import SongQueue from "~/components/SongQueue";
+import HorizontalAccordion from "~/components/utilities/HorizontalAccordion";
 import { BotProvider, useBotContext } from "~/contexts/BotContext"
 import { UserProvider, useUser } from "~/contexts/UserContext";
 import { SocketProvider } from "~/contexts/SocketContext";
 import { PlaybackVideoProvider } from "~/contexts/PlaybackVideoContext";
 import { PlaybackQueueProvider } from "~/contexts/PlaybackQueueContext";
-
+import SongQueueClosed from "~/components/SongQueueClosed";
 
 export function meta({}: Route.MetaArgs) {
 	return [
@@ -50,7 +51,13 @@ function HomePage() {
                             <p className="text-xl font-bold mb-3">All Songs</p>
                             <SongContainer songs={songs} />
                         </div>
-                        <SongQueue />
+
+                        <HorizontalAccordion
+                            // childrenClosed={<SongQueue />}>
+                            closedWidth="w-32"
+                            childrenClosed={<SongQueueClosed />}>
+                            <SongQueue />
+                        </HorizontalAccordion>
                     </div>
                 }
             />

@@ -13,13 +13,13 @@ async def on_disconnect(guild_id: int):
 
 @hooks("on_voice_connect", "on_voice_disconnect")
 async def on_voice(guild_id: int):
-    await ws_manager.send(guild_id, {"type": "users", "members": bot.vc_get_members(guild_id)})
+    await ws_manager.send(guild_id, {"type": "users", "members": bot.vc_get_members(guild_id).model_dump()})
 
 
 @hooks("on_song_start")
 async def on_song_start(guild_id: int):
     await ws_manager.send(guild_id, {"type": "song_start"})
-    await ws_manager.send(guild_id, {"type": "status", "playback": bot.vc_get_status(guild_id)})
+    await ws_manager.send(guild_id, {"type": "status", "playback": bot.vc_get_status(guild_id).model_dump()})
 
 
 @hooks("on_song_end")

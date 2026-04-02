@@ -2,7 +2,7 @@
 
 # testing
 pytest
-httpx  # https://fastapi.tiangolo.com/tutorial/testing/#using-testclient
+polyfactory
 
 pre-commit
 

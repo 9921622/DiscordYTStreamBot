@@ -30,7 +30,7 @@ export default function SideBar({ navbar, content }: { navbar: React.ReactNode; 
 		<div className="drawer lg:drawer-open">
 			<input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
 			<div className="drawer-content">
-				<nav className="navbar w-full bg-base-300">
+				<nav className="sticky top-0 z-50 navbar w-full bg-base-300">
 					<label htmlFor="my-drawer-4" aria-label="open sidebar" className="btn btn-square btn-ghost">
 						<MenuIcon />
 					</label>
@@ -38,6 +38,7 @@ export default function SideBar({ navbar, content }: { navbar: React.ReactNode; 
 				</nav>
 				<div className="p-4">{content}</div>
 			</div>
+
 			<div className="drawer-side is-drawer-close:overflow-visible">
 				<label htmlFor="my-drawer-4" aria-label="close sidebar" className="drawer-overlay" />
 				<div className="flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64">
@@ -47,6 +48,7 @@ export default function SideBar({ navbar, content }: { navbar: React.ReactNode; 
 					<SideBarContent />
 				</div>
 			</div>
+
 		</div>
 	)
 }

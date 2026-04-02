@@ -3,7 +3,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from api import app
 from api.api_backend_wrapper import QueueAPI
-from conftest import client, GUILD_ID, make_mock_status
+from conftest import client
+from tests.utils import GUILD_ID, make_mock_video_response
+from tests.bot_factories import PlaybackStatusFactory
 
 # ---------------------------------------------------------------------------
 # Helpers

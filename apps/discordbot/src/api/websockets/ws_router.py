@@ -59,9 +59,14 @@ async def ws_command_router(websocket, message: dict):
             return result, None, None
 
         guild_broadcast = result if broadcast else None
-        status_broadcast = {"type": "status", "playback": bot.vc_get_status(guild_id)} if broadcast_status else None
+        status_broadcast = (
+            {"type": "status", "playback": bot.vc_get_status(guild_id).model_dump()} if broadcast_status else None
+        )
 
         return result, guild_broadcast, status_broadcast
 
     except Exception as e:
+        import traceback
+
+        traceback.print_exc()
         return {"error": str(e)}, None, None

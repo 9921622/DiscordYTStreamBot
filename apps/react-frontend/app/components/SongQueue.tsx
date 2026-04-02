@@ -80,7 +80,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
 
             {isSkeleton ? (
                 <>
-                    <div className="w-10 h-10 rounded bg-zinc-700 animate-pulse flex-shrink-0" />
+                    <div className="w-12 h-12 rounded bg-zinc-700 animate-pulse flex-shrink-0" />
                     <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                         <div className="h-3 bg-zinc-700 animate-pulse rounded w-3/4" />
                         <div className="h-2.5 bg-zinc-800 animate-pulse rounded w-1/2" />
@@ -92,7 +92,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
                         <img
                             src={item.video.thumbnail ?? ""}
                             alt={item.video.title}
-                            className="w-10 h-10 rounded object-cover"
+                            className="w-12 h-12 rounded object-cover"
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded transition">
                             <PlayIcon />
@@ -134,7 +134,7 @@ function CurrentSong() {
 
                 {videoLoading ? (
                     <>
-                        <div className="skeleton w-10 h-10 rounded flex-shrink-0" />
+                        <div className="skeleton w-12 h-12 rounded flex-shrink-0" />
 
                         <div className="flex-1 min-w-0 space-y-1">
                             <div className="skeleton h-3 w-3/4" />
@@ -152,7 +152,7 @@ function CurrentSong() {
                         <img
                             src={video.thumbnail ?? ""}
                             alt={video.title}
-                            className="w-10 h-10 rounded object-cover flex-shrink-0"
+                            className="w-12 h-12 rounded object-cover flex-shrink-0"
                         />
 
                         <div className="flex-1 min-w-0">

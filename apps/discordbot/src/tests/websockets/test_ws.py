@@ -2,7 +2,9 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from api import app
-from tests.conftest import client, GUILD_ID, make_mock_status
+from conftest import client
+from tests.utils import GUILD_ID
+from tests.bot_factories import PlaybackStatusFactory
 
 
 class TestWebSocketConnection:
@@ -32,7 +34,7 @@ class TestWebSocketRouting:
 
     def test_guild_id_injected_from_url(self, client):
         """guild_id in the URL should be used, ignoring any guild_id in the payload."""
-        mock_status = make_mock_status()
+        mock_status = PlaybackStatusFactory.build()
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_get_status.return_value = mock_status
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws:
@@ -46,7 +48,7 @@ class TestMultiSession:
         OTHER_GUILD = 999999
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_seek = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status()
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build()
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{OTHER_GUILD}") as ws2:
                     ws1.send_json({"type": "seek", "position": 30.0})
@@ -67,7 +69,7 @@ class TestMultiSession:
     def test_multiple_clients_same_guild_all_receive_broadcast(self, client):
         with patch("api.websockets.music_controls.bot") as mock_bot:
             mock_bot.vc_seek = AsyncMock()
-            mock_bot.vc_get_status.return_value = make_mock_status(position=99.0)
+            mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(position=99.0)
             with client.websocket_connect(f"/ws/{GUILD_ID}") as ws1:
                 with client.websocket_connect(f"/ws/{GUILD_ID}") as ws2:
                     with client.websocket_connect(f"/ws/{GUILD_ID}") as ws3:

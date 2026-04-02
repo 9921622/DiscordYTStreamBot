@@ -2,25 +2,13 @@ import discord
 import asyncio
 import time
 
-from dataclasses import dataclass, field
 
 from api.websockets.ws_manager import ws_manager
+from .bot_objects import Playback, PlaybackStatus, Member, MemberList
 
 
-@dataclass
-class Playback:
-    video_id: str
-    source_url: str
-    started_at: float
-    offset: float = 0.0
-    paused_at: float | None = None
-    volume: float = 0.5
-    ended: bool = False
-    manually_stopped: bool = False
-    loop: bool = False
-
-
-class PlaybackMixin:
+class PlaybackMixin:  # TODO: CONVERT THIS TO A MANAGER WITH __INIT__ HOLDING PLAYBACK
+    """helper mixin to handle Playback object"""
 
     def _create_playback(
         self,
@@ -47,11 +35,18 @@ class PlaybackMixin:
 
     def _get_position(self, guild_id: int) -> float:
         state = self._playback.get(guild_id)
-        if not state:
-            return 0.0
-        if state.paused_at is not None:
-            return state.offset
-        return state.offset + (time.monotonic() - state.started_at)
+        return state.get_position() if state else 0.0
+
+    def _create_playback_status(self, vc: discord.VoiceClient, state: Playback) -> PlaybackStatus:
+        return PlaybackStatus(
+            playing=vc.is_playing(),
+            paused=vc.is_paused(),
+            position=state.get_position(),
+            volume=state.volume,
+            video_id=state.video_id,
+            ended=state.ended,
+            loop=state.loop,
+        )
 
     async def on_song_start(self, guild_id: int):
         """custom event listener. triggered when song starts"""
@@ -65,7 +60,7 @@ class PlaybackMixin:
 class ConnectionMixin:
 
     async def vc_connect(self, voice_channel: discord.VoiceChannel) -> discord.VoiceClient:
-        """Join or move within a guild's voice channel."""
+        """join or move within a guilds voice channel."""
         await self.wait_until_ready()
 
         guild_id = voice_channel.guild.id
@@ -81,7 +76,7 @@ class ConnectionMixin:
         return vc
 
     async def vc_disconnect(self, guild_id: int):
-        """Leave a guild's voice channel and clean up state."""
+        """leave a guild's voice channel and clean up state."""
         await self.wait_until_ready()
 
         state = self._playback.get(guild_id)
@@ -95,7 +90,7 @@ class ConnectionMixin:
             await vc.disconnect(force=True)
 
         self._delete_playback(guild_id)
-        await self._emit("on_disconnect", member.guild.id)
+        await self._emit("on_disconnect", guild_id)
 
 
 class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
@@ -217,46 +212,37 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
         state.loop = not state.loop
         return state.loop
 
-    def vc_get_status(self, guild_id: int) -> dict:
-        """Returns the current playback status."""
+    def vc_get_status(self, guild_id: int) -> PlaybackStatus:
         state = self._playback.get(guild_id)
         vc = self.get_voice_client(guild_id)
 
         if not state or not vc:
-            return {
-                "playing": False,
-                "paused": False,
-                "position": 0.0,
-                "volume": 0.5,
-                "video_id": None,
-                "ended": False,
-                "loop": False,
-            }
+            return PlaybackStatus(
+                playing=False,
+                paused=False,
+                position=0.0,
+                volume=0.5,
+                video_id=None,
+                ended=False,
+                loop=False,
+            )
 
-        return {
-            "playing": vc.is_playing(),
-            "paused": vc.is_paused(),
-            "position": self._get_position(guild_id),
-            "volume": state.volume,
-            "video_id": state.video_id,
-            "ended": state.ended,
-            "loop": state.loop,
-        }
+        return self._create_playback_status(vc, state)
 
-    def vc_get_members(self, guild_id: int) -> dict:
+    def vc_get_members(self, guild_id: int) -> MemberList:
         guild = self.get_guild(guild_id)
-        if not guild:
-            return []
+        if not guild or not guild.voice_client or not guild.voice_client.channel:
+            return MemberList([])
 
-        channel = guild.voice_client.channel
-        members = [
-            {
-                "discord_id": str(m.id),
-                "username": m.name,
-                "global_name": m.display_name,
-                "avatar": str(m.display_avatar.url),
-            }
-            for m in channel.members
-            if not m.bot
-        ]
-        return members
+        return MemberList(
+            [
+                Member(
+                    discord_id=str(m.id),
+                    username=m.name,
+                    global_name=m.display_name,
+                    avatar=str(m.display_avatar.url),
+                )
+                for m in guild.voice_client.channel.members
+                if not m.bot
+            ]
+        )

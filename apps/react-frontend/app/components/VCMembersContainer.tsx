@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import type { DiscordUser } from "~/api/backend-types";
 import { useBotContext } from "~/contexts/BotContext";
 import { useSocketContext } from "~/contexts/SocketContext";
+import type { WSResponse } from "~/api/backend-types";
 
 function useMembers() {
     const { guildID, botInChannel } = useBotContext()
     const { send, on, connected } = useSocketContext()
     const [members, setMembers] = useState<DiscordUser[]>([])
 
-    useEffect(() => on("users", (data: any) => {
-        if (data.members) setMembers(data.members)
+    useEffect(() => on("users", (resp: WSResponse) => {
+        if (resp.data && resp.data.members) setMembers(resp.data.members)
     }), [on])
 
     useEffect(() => {

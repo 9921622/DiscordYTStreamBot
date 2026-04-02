@@ -5,16 +5,12 @@ import { useSocketContext } from "~/contexts/SocketContext"
 import type { DiscordGuildQueueItem, DiscordGuildQueue } from "~/api/backend-types"
 import type { YoutubeVideo } from "~/api/youtube/youtube-types"
 import { usePlaybackVideoContext } from "./PlaybackVideoContext"
+import type { WSResponse } from "~/api/backend-types"
 
 interface SkeletonQueueItem {
     id: string
     isSkeleton: true
     video: Pick<YoutubeVideo, "youtube_id">
-}
-
-interface QueueResponse {
-    queue?: DiscordGuildQueue
-    error?: string
 }
 
 export type QueueItem = DiscordGuildQueueItem | SkeletonQueueItem
@@ -46,11 +42,30 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     const [queue, setQueue] = useState<QueueItem[]>([])
 
     // ---- sync ----
-    useEffect(() => on("queue-get",     (data) => { const d = data as QueueResponse; if (d.queue) setQueue(d.queue.items) }), [on])
-    useEffect(() => on("queue-add",     (data) => { const d = data as QueueResponse; if (!d.error && d.queue) setQueue(d.queue.items) }), [on])
-    useEffect(() => on("queue-remove",  (data) => { const d = data as QueueResponse; if (!d.error && d.queue) setQueue(d.queue.items) }), [on])
-    useEffect(() => on("queue-reorder", (data) => { const d = data as QueueResponse; if (!d.error && d.queue) setQueue(d.queue.items) }), [on])
-    useEffect(() => on("queue-clear",   (data) => { const d = data as QueueResponse; if (!d.error) setQueue([]) }), [on])
+    useEffect(() => on("queue-get", (resp: WSResponse) => {
+        if (!resp.success || !resp.data?.queue) return
+        setQueue(resp.data.queue.items as QueueItem[])
+    }), [on])
+
+    useEffect(() => on("queue-add", (resp: WSResponse) => {
+        if (!resp.success || !resp.data?.queue) return
+        setQueue(resp.data.queue.items as QueueItem[])
+    }), [on])
+
+    useEffect(() => on("queue-remove", (resp: WSResponse) => {
+        if (!resp.success || !resp.data?.queue) return
+        setQueue(resp.data.queue.items as QueueItem[])
+    }), [on])
+
+    useEffect(() => on("queue-reorder", (resp: WSResponse) => {
+        if (!resp.success || !resp.data?.queue) return
+        setQueue(resp.data.queue.items as QueueItem[])
+    }), [on])
+
+    useEffect(() => on("queue-clear", (resp: WSResponse) => {
+        if (!resp.success) return
+        setQueue([])
+    }), [on])
 
     useEffect(() => {
         if (!guildID || !botInChannel || !connected) return

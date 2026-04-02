@@ -6,24 +6,20 @@ ws = WSRouter()
 
 
 @ws.command(prefix="play", broadcast_status=True)
-async def handle_play(websocket, guild_id: int, data: dict):  # THIS DOESNT WORK
-    """
-    {"type": "play", "guild_id": 123, "video_id": "abc", "offset": 0.0, "volume": 0.5}
-    """
+async def handle_play(websocket, guild_id: int, data: dict):
     video_id = data.get("video_id")
     if not video_id:
         return {"error": "missing 'video_id'"}
 
-    response = await VideoAPI.get_source(video_id)
-    if response.status_code != 200:
-        return {"error": "failed to resolve source url", "detail": response.json()}
-    source_url = response.json()["source_url"]
+    rw = await VideoAPI.get_source(video_id)
+    if not rw.response.is_success:
+        return {"error": "failed to resolve source url", "detail": rw.response.json()}
 
     try:
         await bot.vc_play(
             guild_id,
             video_id,
-            source_url,
+            rw.data.source_url,
             offset=data.get("offset", 0.0),
             volume=data.get("volume", 0.5),
         )
@@ -68,8 +64,8 @@ async def handle_loop(websocket, guild_id: int, data: dict):
     {"type": "loop", "guild_id": 123}
     """
     await bot.vc_loop(guild_id)
-    state = bot.vc_get_status(guild_id)
-    return {"type": "loop", "loop": state.loop}
+    status = bot.vc_get_status(guild_id)
+    return {"type": "loop", "loop": status.loop}
 
 
 @ws.command(prefix="seek", broadcast_status=True)

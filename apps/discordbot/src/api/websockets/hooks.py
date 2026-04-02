@@ -42,10 +42,10 @@ async def on_song_end(guild_id: int):
         return
 
     source_response = await VideoAPI.get_source(youtube_id)
-    if source_response.status_code != 200:
+    if source_response.response.status_code != 200:
         return
 
-    source_url = source_response.json().get("source_url")
+    source_url = source_response.data.source_url
     if not source_url:
         return
 

@@ -1,16 +1,9 @@
-from pydantic import BaseModel
 from abc import ABC, abstractmethod
 from enum import IntFlag, auto
 from typing import Optional
 
-from .ws_router import CommandMeta
-
-
-class WSResponse(BaseModel):
-    type: str
-    success: bool
-    data: dict | None = None
-    error: dict | None = None
+from .ws_commands_router import CommandMeta
+from .ws_response import WSResponse
 
 
 class WSCommandFlags(IntFlag):
@@ -51,7 +44,7 @@ class WebsocketCommand(ABC, metaclass=CommandMeta):
         ).model_dump()
 
     async def execute(self):
-        """will be called by ws_router"""
+        """will be called by ws_commands_router"""
         result = await self.handle()
 
         if isinstance(result, dict) and result.get("error") is not None:

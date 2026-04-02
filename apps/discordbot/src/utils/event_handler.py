@@ -19,6 +19,11 @@ class EventHandler:
 
     async def _emit(self, event: str, guild_id: int, **kwargs):
         for handler in self._event_handlers.get(event, []):
+            import inspect
+
+            params = inspect.signature(handler).parameters
+            if "event" in params:
+                kwargs["event"] = event
             if asyncio.iscoroutinefunction(handler):
                 await handler(guild_id, **kwargs)
             else:

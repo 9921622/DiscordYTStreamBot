@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from bot.bot import bot
 from api.websockets.ws_manager import ws_manager
 
-from api.websockets.ws_router import ws_command_router
+from api.websockets.ws_commands_router import ws_command_router
 
 from settings import settings
 

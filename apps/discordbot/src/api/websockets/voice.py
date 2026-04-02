@@ -7,4 +7,4 @@ class UsersCommand(WebsocketCommand):
 
     async def handle(self):
         await bot.vc_stop(self.guild_id)
-        return self.response(members=bot.vc_get_members(guild_id).model_dump())
+        return self.response(members=bot.vc_get_members(self.guild_id).model_dump())

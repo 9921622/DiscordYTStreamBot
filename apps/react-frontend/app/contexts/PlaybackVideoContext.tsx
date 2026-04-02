@@ -5,8 +5,7 @@ import type { PlaybackStatus } from "~/api/discord/discord-types"
 import { useBotContext } from "./BotContext"
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper"
 import { useSocketContext } from "./SocketContext"
-import { backendAPI } from "~/api/backend-wrapper"
-
+import type { WSResponse } from "~/api/backend-types"
 
 
 interface PlaybackVideoContextType {
@@ -47,80 +46,78 @@ export function PlaybackVideoProvider({ children }: { children: ReactNode }) {
     // websocket hooks
     // ==============================================================================================================
 
-    useEffect(() => on("status", async (data) => {
-        /* catches the status response
-            {"type": "status", "playback": bot.vc_get_status(guild_id)}
-        */
-        const status = data.playback as PlaybackStatus
-        setVideoPlaybackStatus(status)
-        if (!status.playing || !status.video_id) return
-        try {
-            const fetched = await youtubeAPI.video.retrieve(status.video_id)
-            setVideo(fetched)
-        } catch {
-            setVideo(null)
-        }
-    }), [on])
+    useEffect(() => on("status", async (resp: WSResponse) => {
+        if (!resp.success || !resp.data) return;
 
-    useEffect(() => on("play", (data) => {
-        if (data.error) {
-            setVideoError(data.error as string);
+        const status = resp.data.playback as PlaybackStatus;
+        setVideoPlaybackStatus(status);
+
+        if (!status.playing || !status.video_id) return;
+
+        try {
+            const fetched = await youtubeAPI.video.retrieve(status.video_id);
+            setVideo(fetched);
+        } catch {
+            setVideo(null);
+        }
+    }), [on]);
+
+    useEffect(() => on("play", async (resp: WSResponse) => {
+        if (!resp.success || !resp.data) {
+            setVideoError(resp.error?.message || "Unknown error");
             setVideo(null);
             setVideoLoading(false);
             return;
         }
 
-        // get youtube video from Id
-        youtubeAPI.video.retrieve(data.video_id as string)
-            .then(video => {
-                setVideo(video)
-                setVideoLoading(false)
-                console.log("test");
-            })
-            .catch(() => {
-                setVideoError("Failed to fetch video info")
-                setVideoLoading(false)
-            })
-    }), [on])
-
-    useEffect(() => on("stop", (data) => {
-        if (data.error) return
-        setVideo(null)
-        setVideoPlaybackStatus(null)
-        setVideoLoading(false)
-    }), [on])
-
-    useEffect(() => on("pause", (data) => {
-        if (data.error) return
-        setVideoPlaybackStatus(prev => prev ? { ...prev, paused: data.paused as boolean } : prev)
-    }), [on])
-
-    useEffect(() => on("volume", (data) => {
-        if (data.error) return
-        setVideoPlaybackStatus(prev => prev ? { ...prev, volume: data.volume as number } : prev)
-    }), [on])
-
-    useEffect(() => on("loop", (data) => {
-        if (data.error) return
-        setVideoPlaybackStatus(prev => prev ? { ...prev, loop: data.loop as boolean } : prev)
-    }), [on])
-
-    useEffect(() => on("song_start", async (data) => {
-
-    }), [on])
-
-    useEffect(() => on("song_end", (data) => {
-        if (data.next_song) {
-            setVideoLoading(true)
+        try {
+            const video = await youtubeAPI.video.retrieve(resp.data.video_id as string);
+            setVideo(video);
+            setVideoLoading(false);
+        } catch {
+            setVideoError("Failed to fetch video info");
+            setVideoLoading(false);
         }
-        setVideo(null)
-        setVideoPlaybackStatus(null)
+    }), [on]);
+
+    useEffect(() => on("stop", (resp: WSResponse) => {
+        if (!resp.success) return;
+        setVideo(null);
+        setVideoPlaybackStatus(null);
+        setVideoLoading(false);
+    }), [on]);
+
+    useEffect(() => on("pause", (resp: WSResponse) => {
+        if (!resp.success || !resp.data) return
+        const { paused } = resp.data
+        if (typeof paused !== "boolean") return
+        setVideoPlaybackStatus(prev => prev ? { ...prev, paused } : prev)
     }), [on])
 
-    useEffect(() => on("*", (data) => {
-        console.log(data);
+    useEffect(() => on("volume", (resp: WSResponse) => {
+        if (!resp.success || !resp.data) return
+        const { volume } = resp.data
+        if (typeof volume !== "number") return
+        setVideoPlaybackStatus(prev => prev ? { ...prev, volume } : prev)
     }), [on])
 
+    useEffect(() => on("loop", (resp: WSResponse) => {
+        if (!resp.success || !resp.data) return
+        const { loop } = resp.data
+        if (typeof loop !== "boolean") return
+        setVideoPlaybackStatus(prev => prev ? { ...prev, loop } : prev)
+    }), [on])
+
+    useEffect(() => on("song_end", (resp: WSResponse) => {
+        if (!resp.success || !resp.data) return;
+        if (resp.data.next_song) setVideoLoading(true);
+        setVideo(null);
+        setVideoPlaybackStatus(null);
+    }), [on]);
+
+    useEffect(() => on("*", (resp: WSResponse) => {
+        console.log(resp);
+    }), [on]);
 
     // ==============================================================================================================
 

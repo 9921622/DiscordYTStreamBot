@@ -1,5 +1,13 @@
 import type { YoutubeVideo } from "./youtube/youtube-types";
 
+
+export interface WSResponse {
+    type: string;
+    success: boolean;
+    data?: Record<string, any>;
+    error?: { message: string; detail?: Record<string, any> };
+}
+
 export interface DiscordUser {
     discord_id : string;
     username : string;

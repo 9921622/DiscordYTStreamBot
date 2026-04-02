@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react"
+import type { WSResponse } from "~/api/backend-types"
 
-type MessageHandler = (data: Record<string, unknown>) => void
+type MessageHandler = (resp: WSResponse) => void
 
 interface SocketContextValue {
   send: (data: Record<string, unknown>) => void

@@ -36,7 +36,7 @@ def initialize_websockets():
     they need to be enabled here
     """
     # websocket commands
-    from api.websockets import debug, voice, music_controls, queue_controls
+    from api.websockets.commands import debug, voice, music_controls, queue_controls
 
     # websocket hooks
     from api.websockets import hooks

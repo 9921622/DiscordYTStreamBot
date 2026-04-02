@@ -27,14 +27,13 @@ GUILD_ID = 123213
 
 @contextmanager
 def patch_queue_get(mock_queue: GuildQueueSchema):
-    rw = make_mock_response_wrapper(200, mock_queue)
-    with patch.object(QueueAPI, "get", new=AsyncMock(return_value=rw)):
+    with patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response_wrapper(200, mock_queue))):
         yield
 
 
 @contextmanager
 def patch_queue_get_error(status: int = 500, detail: dict | None = None):
-    with patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_httpx_response(status, detail or {}))):
+    with patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {}))):
         yield
 
 
@@ -46,7 +45,7 @@ def patch_queue_add(status: int = 201):
 
 @contextmanager
 def patch_queue_add_error(status: int = 502, detail: dict | None = None):
-    with patch.object(QueueAPI, "add", new=AsyncMock(return_value=make_mock_httpx_response(status, detail or {}))):
+    with patch.object(QueueAPI, "add", new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {}))):
         yield
 
 
@@ -61,7 +60,7 @@ def patch_queue_remove_error(status: int = 404, detail: dict | None = None):
     with patch.object(
         QueueAPI,
         "remove",
-        new=AsyncMock(return_value=make_mock_httpx_response(status, detail or {"error": "not found"})),
+        new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {"error": "not found"})),
     ):
         yield
 
@@ -93,7 +92,7 @@ def patch_queue_clear_error(status: int = 500, detail: dict | None = None):
     with patch.object(
         QueueAPI,
         "clear",
-        new=AsyncMock(return_value=make_mock_httpx_response(status, detail or {"detail": "db error"})),
+        new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {"detail": "db error"})),
     ):
         yield
 
@@ -101,7 +100,14 @@ def patch_queue_clear_error(status: int = 500, detail: dict | None = None):
 class TestQueue(TestCaseCommand, TestCaseWebSocket):
     """Mixin for queue command tests — combines command helpers with queue assertions."""
 
-    pass
+    def assert_queue_response(self, data: dict, expected_type: str, expected_queue):
+        """Assert a successful queue response with the correct type and queue payload."""
+        res = self.to_response(data)
+
+        assert res.success
+        assert res.type == expected_type
+        assert res.data is not None
+        assert res.data.get("queue") == expected_queue
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +265,8 @@ class TestQueueClear(TestQueue):
                 data = ws.receive_json()
 
         self.assert_success(data, "queue-clear")
-        assert data["queue"] == []
+        assert data["data"]
+        assert data["data"]["queue"] == []
 
     def test_queue_clear_error_not_broadcast(self, client):
         with patch_queue_clear_error(500, {"detail": "db error"}):

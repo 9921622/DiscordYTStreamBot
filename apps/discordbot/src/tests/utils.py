@@ -3,6 +3,7 @@ import httpx
 from unittest.mock import AsyncMock, MagicMock, patch
 from contextlib import contextmanager
 
+from api.websockets.ws_command import WSResponse
 from api.api_backend_wrapper import ResponseWrapper
 
 
@@ -48,18 +49,27 @@ class TestCaseWebSocket:
 class TestCaseCommand:
     """Abstract base class providing shared assertion helpers for command tests."""
 
+    def to_response(self, data: dict | WSResponse) -> WSResponse:
+        if isinstance(data, WSResponse):
+            return data
+        return WSResponse.model_validate(data)
+
     def assert_success(self, data: dict, expected_type: str):
         """Assert a successful websocket response with the correct type."""
-        assert "error" not in data, f"Unexpected error: {data.get('error')}"
-        assert data["type"] == expected_type
+        res = self.to_response(data)
+
+        assert res.success, f"Unexpected error: {res.error}"
+        assert res.type == expected_type
 
     def assert_error(self, data: dict, key: str | None = None):
         """Assert an error response, optionally checking the error mentions a specific key."""
-        assert "error" in data
-        if key:
-            assert key in data["error"]
+        res = self.to_response(data)
 
-    def assert_queue_response(self, data: dict, expected_type: str, expected_queue):
-        """Assert a successful queue response with the correct type and queue payload."""
-        self.assert_success(data, expected_type)
-        assert data["queue"] == expected_queue
+        assert not res.success
+        assert res.error is not None
+
+        if key:
+            # check inside message or detail
+            msg = res.error.get("message", "")
+            detail = str(res.error.get("detail", ""))
+            assert key in msg or key in detail

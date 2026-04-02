@@ -1,11 +1,11 @@
 from bot.bot import bot
 from api.api_backend_wrapper import VideoAPI
-from api.websockets.ws_router import WebsocketCommand
+from api.websockets.ws_command import WebsocketCommand, WSCommandFlags
 
 
 class PlayCommand(WebsocketCommand):
     prefix = "play"
-    broadcast_status = True
+    flags = WSCommandFlags.BROADCAST_STATUS
 
     async def handle(self):
         video_id = self.data.get("video_id")
@@ -33,7 +33,7 @@ class PlayCommand(WebsocketCommand):
 
 class PauseCommand(WebsocketCommand):
     prefix = "pause"
-    broadcast = True
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
         vc = bot.get_voice_client(self.guild_id)
@@ -53,7 +53,7 @@ class PauseCommand(WebsocketCommand):
 
 class StopCommand(WebsocketCommand):
     prefix = "stop"
-    broadcast = True
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
         await bot.vc_stop(self.guild_id)
@@ -62,17 +62,21 @@ class StopCommand(WebsocketCommand):
 
 class LoopCommand(WebsocketCommand):
     prefix = "loop"
-    broadcast = True
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
-        await bot.vc_loop(self.guild_id)
+        try:
+            await bot.vc_loop(self.guild_id)
+        except RuntimeError as e:
+            return self.response_error(str(e))
+
         status = bot.vc_get_status(self.guild_id)
         return self.response(loop=status.loop)
 
 
 class SeekCommand(WebsocketCommand):
     prefix = "seek"
-    broadcast_status = True
+    flags = WSCommandFlags.BROADCAST_STATUS
 
     async def handle(self):
         position = self.data.get("position")
@@ -90,7 +94,7 @@ class SeekCommand(WebsocketCommand):
 
 class StatusCommand(WebsocketCommand):
     prefix = "status"
-    broadcast = True
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
         return self.response(playback=bot.vc_get_status(self.guild_id).model_dump())
@@ -98,7 +102,7 @@ class StatusCommand(WebsocketCommand):
 
 class VolumeCommand(WebsocketCommand):
     prefix = "volume"
-    broadcast_status = True
+    flags = WSCommandFlags.BROADCAST_STATUS
 
     async def handle(self):
         level = self.data.get("level")

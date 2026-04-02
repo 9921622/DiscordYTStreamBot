@@ -23,7 +23,7 @@ GUILD_ID = 123878273492
 
 @contextmanager
 def patch_bot():
-    with patch("api.websockets.music_controls.bot") as mock_bot:
+    with patch("api.websockets.commands.music_controls.bot") as mock_bot:
         yield mock_bot
 
 
@@ -99,7 +99,8 @@ class TestStatusCommand(TestCaseMusic):
                 data = ws.receive_json()
 
         self.assert_success(data, "status")
-        assert data["playback"] == mock_status.model_dump()
+        assert data["data"]
+        assert data["data"]["playback"] == mock_status.model_dump()
 
     def test_status_not_broadcast(self, client):
         """Status is read-only — only the sender should receive a response."""
@@ -119,20 +120,24 @@ class TestStatusCommand(TestCaseMusic):
 class TestPlayCommand(TestCaseMusic):
     def test_play_success(self, client):
         status = PlaybackStatusFactory.build(video_id="abc")
+
         with patch_bot_play(status=status), patch_video_source():
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "play", "video_id": "abc", "offset": 0.0, "volume": 0.5})
-                ack = ws.receive_json()
-                broadcast = ws.receive_json()
 
-        self.assert_success(ack, "play")
-        assert ack["video_id"] == "abc"
-        self.assert_success(broadcast, "status")
+                ack = ws.receive_json()
+                self.assert_success(ack, "play")
+                assert ack["data"]
+                assert ack["data"]["video_id"] == "abc"
+
+                broadcast = ws.receive_json()
+                self.assert_success(broadcast, "status")
 
     def test_play_missing_video_id(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
             ws.send_json({"type": "play"})
             data = ws.receive_json()
+
         self.assert_error(data, "video_id")
 
     def test_play_bot_not_in_channel(self, client):
@@ -140,6 +145,7 @@ class TestPlayCommand(TestCaseMusic):
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "play", "video_id": "abc"})
                 data = ws.receive_json()
+
         self.assert_error(data)
 
     def test_play_source_url_failure(self, client):
@@ -147,6 +153,7 @@ class TestPlayCommand(TestCaseMusic):
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "play", "video_id": "abc"})
                 data = ws.receive_json()
+
         self.assert_error(data)
 
     def test_play_broadcasts_status_to_guild(self, client):
@@ -181,13 +188,15 @@ class TestPauseCommand(TestCaseMusic):
                 ack = ws.receive_json()
 
         self.assert_success(ack, "pause")
-        assert ack["paused"] is False
+        assert ack["data"]
+        assert ack["data"]["paused"] is False
 
     def test_pause_not_connected(self, client):
         with patch_voice_client(None):
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "pause"})
                 data = ws.receive_json()
+
         self.assert_error(data)
 
     def test_pause_nothing_playing(self, client):
@@ -198,6 +207,7 @@ class TestPauseCommand(TestCaseMusic):
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "pause"})
                 data = ws.receive_json()
+
         self.assert_error(data)
 
 
@@ -211,17 +221,20 @@ class TestSeekCommand(TestCaseMusic):
         with patch_bot_seek(status=PlaybackStatusFactory.build(position=42.0)):
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "seek", "position": 42.0})
-                ack = ws.receive_json()
-                broadcast = ws.receive_json()
 
-        self.assert_success(ack, "seek")
-        assert ack["position"] == 42.0
-        self.assert_success(broadcast, "status")
+                ack = ws.receive_json()
+                self.assert_success(ack, "seek")
+                assert ack["data"]
+                assert ack["data"]["position"] == 42.0
+
+                broadcast = ws.receive_json()
+                self.assert_success(broadcast, "status")
 
     def test_seek_missing_position(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
             ws.send_json({"type": "seek"})
             data = ws.receive_json()
+
         self.assert_error(data, "position")
 
     def test_seek_nothing_playing(self, client):
@@ -229,6 +242,7 @@ class TestSeekCommand(TestCaseMusic):
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "seek", "position": 10.0})
                 data = ws.receive_json()
+
         self.assert_error(data)
 
 
@@ -246,7 +260,8 @@ class TestLoopCommand(TestCaseMusic):
                 broadcast = ws.receive_json()
 
         self.assert_success(ack, "loop")
-        assert ack["loop"] is True
+        assert ack["data"]
+        assert ack["data"]["loop"] is True
         self.assert_success(broadcast, "loop")
 
     def test_loop_toggles_off(self, client):
@@ -257,7 +272,8 @@ class TestLoopCommand(TestCaseMusic):
                 broadcast = ws.receive_json()
 
         self.assert_success(ack, "loop")
-        assert ack["loop"] is False
+        assert ack["data"]
+        assert ack["data"]["loop"] is False
         self.assert_success(broadcast, "loop")
 
     def test_loop_nothing_playing(self, client):
@@ -265,6 +281,7 @@ class TestLoopCommand(TestCaseMusic):
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "loop"})
                 data = ws.receive_json()
+
         self.assert_error(data)
 
 
@@ -283,7 +300,8 @@ class TestVolumeCommand(TestCaseMusic):
                 broadcast = ws.receive_json()
 
         self.assert_success(ack, "volume")
-        assert ack["volume"] == 0.8
+        assert ack["data"]
+        assert ack["data"]["volume"] == 0.8
         self.assert_success(broadcast, "status")
 
     def test_volume_get(self, client):
@@ -294,13 +312,15 @@ class TestVolumeCommand(TestCaseMusic):
                 ack = ws.receive_json()
 
         self.assert_success(ack, "volume")
-        assert ack["volume"] == 0.5
+        assert ack["data"]
+        assert ack["data"]["volume"] == 0.5
 
     def test_volume_no_audio_source(self, client):
         with patch_bot_volume(return_value=None):
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "volume", "level": 0.8})
                 data = ws.receive_json()
+
         self.assert_error(data)
 
 

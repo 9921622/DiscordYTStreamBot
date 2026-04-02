@@ -37,7 +37,7 @@ class TestWebSocketRouting(TestCaseWebSocket):
     def test_guild_id_injected_from_url(self, client):
         """guild_id in the URL should be used, ignoring any guild_id in the payload."""
         mock_status = PlaybackStatusFactory.build()
-        with patch("api.websockets.music_controls.bot") as mock_bot:
+        with patch("api.websockets.commands.music_controls.bot") as mock_bot:
             mock_bot.vc_get_status.return_value = mock_status
             with self.ws_connect(client, GUILD_ID) as ws:
                 ws.send_json({"type": "status", "guild_id": 999})
@@ -48,7 +48,7 @@ class TestWebSocketRouting(TestCaseWebSocket):
 class TestMultiSession(TestCaseWebSocket):
     def test_different_guilds_dont_receive_each_others_broadcasts(self, client):
         OTHER_GUILD = 999999
-        with patch("api.websockets.music_controls.bot") as mock_bot:
+        with patch("api.websockets.commands.music_controls.bot") as mock_bot:
             mock_bot.vc_seek = AsyncMock()
             mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build()
             with self.ws_connect(client, GUILD_ID) as ws1:
@@ -66,7 +66,7 @@ class TestMultiSession(TestCaseWebSocket):
             self.assert_not_broadcast(ws2)
 
     def test_multiple_clients_same_guild_all_receive_broadcast(self, client):
-        with patch("api.websockets.music_controls.bot") as mock_bot:
+        with patch("api.websockets.commands.music_controls.bot") as mock_bot:
             mock_bot.vc_seek = AsyncMock()
             mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(position=99.0)
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):

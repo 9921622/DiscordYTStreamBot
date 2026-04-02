@@ -1,5 +1,5 @@
 from bot.bot import bot
-from api.websockets.ws_router import WebsocketCommand
+from api.websockets.ws_command import WebsocketCommand
 
 
 class UsersCommand(WebsocketCommand):

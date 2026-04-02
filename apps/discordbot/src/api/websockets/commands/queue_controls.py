@@ -1,5 +1,5 @@
 from api.api_backend_wrapper import QueueAPI
-from api.websockets.ws_router import WebsocketCommand
+from api.websockets.ws_command import WebsocketCommand, WSCommandFlags
 
 
 class QueueGetCommand(WebsocketCommand):
@@ -16,7 +16,7 @@ class QueueGetCommand(WebsocketCommand):
 
 class QueueAddCommand(WebsocketCommand):
     prefix = "queue-add"
-    broadcast = True
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
         youtube_id = self.data.get("youtube_id")
@@ -34,7 +34,7 @@ class QueueAddCommand(WebsocketCommand):
 
 class QueueRemoveCommand(WebsocketCommand):
     prefix = "queue-remove"
-    broadcast = True
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
         item_id = self.data.get("item_id")
@@ -52,7 +52,7 @@ class QueueRemoveCommand(WebsocketCommand):
 
 class QueueReorderCommand(WebsocketCommand):
     prefix = "queue-reorder"
-    broadcast = True
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
         order = self.data.get("order")
@@ -71,7 +71,7 @@ class QueueReorderCommand(WebsocketCommand):
 
 class QueueClearCommand(WebsocketCommand):
     prefix = "queue-clear"
-    broadcast = True
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
         rw = await QueueAPI.clear(self.guild_id)

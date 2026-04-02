@@ -102,7 +102,7 @@ class StatusCommand(WebsocketCommand):
 
 class VolumeCommand(WebsocketCommand):
     prefix = "volume"
-    flags = WSCommandFlags.BROADCAST_STATUS
+    flags = WSCommandFlags.BROADCAST
 
     async def handle(self):
         level = self.data.get("level")

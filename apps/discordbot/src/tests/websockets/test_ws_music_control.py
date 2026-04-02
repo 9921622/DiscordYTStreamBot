@@ -302,7 +302,7 @@ class TestVolumeCommand(TestCaseMusic):
         self.assert_success(ack, "volume")
         assert ack["data"]
         assert ack["data"]["volume"] == 0.8
-        self.assert_success(broadcast, "status")
+        self.assert_success(broadcast, "volume")
 
     def test_volume_get(self, client):
         with patch_bot_volume(return_value=0.5) as mock_bot:

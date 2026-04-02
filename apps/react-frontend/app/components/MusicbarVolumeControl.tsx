@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { VolumeIcon } from "./utilities/Icons";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
 
@@ -9,6 +9,12 @@ export default function VolumeControl() {
     const [localVolume, setLocalVolume] = useState(Math.round(volume * 100));
     const [hovered, setHovered] = useState(false);
     const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        if (videoPlaybackStatus?.volume != null) {
+            setLocalVolume(Math.round(videoPlaybackStatus.volume * 100));
+        }
+    }, [videoPlaybackStatus?.volume]);
 
     const handleMouseEnter = () => {
         if (hideTimer.current) clearTimeout(hideTimer.current);

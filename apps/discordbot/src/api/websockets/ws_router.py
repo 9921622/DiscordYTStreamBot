@@ -1,69 +1,86 @@
-import functools
-from collections.abc import Callable
+from abc import ABCMeta, ABC, abstractmethod
 
-_ws_commands: dict[str, tuple[Callable, bool, bool]] = {}  # (handler, broadcast, broadcast_status)
+_ws_commands: dict[str, type["WebsocketCommand"]] = {}
 
 
-class WSRouter:
+class CommandMeta(ABCMeta):
+    """metaclass for adding class to _ws_commands"""
 
-    def __init__(self):
-        self._routes: dict[str, tuple[Callable, bool, bool]] = {}
+    def __new__(cls, name, bases, attrs):
+        new_cls = super().__new__(cls, name, bases, attrs)
 
-    def command(self, prefix: str = None, broadcast: bool = False, broadcast_status: bool = False):
-        if not prefix:
-            raise Exception("prefix required")
-
-        def decorator(f: Callable):
-            @functools.wraps(f)
-            async def wrapper(websocket, guild_id: int, data: dict):
-                print(f"[ws_command] {prefix} | guild={guild_id} | data={data}")
-                return await f(websocket, guild_id, data)
-
-            if prefix in self._routes:
-                raise Exception(f"WSRouter: '{prefix}' is already registered")
-
-            self._routes[prefix] = (wrapper, broadcast, broadcast_status)
-            return wrapper
-
-        return decorator
-
-    def initialize(self):
-        for prefix, entry in self._routes.items():
+        # using the prefix add to _ws_commands
+        prefix = attrs.get("prefix")
+        if prefix:
             if prefix in _ws_commands:
-                raise Exception(f"WSRouter: '{prefix}' conflicts with an existing command")
-            _ws_commands[prefix] = entry
+                raise Exception(f"Duplicate WS command '{prefix}'")
+
+            _ws_commands[prefix] = new_cls
+
+        return new_cls
 
 
-async def ws_command_router(websocket, message: dict):
-    from api.websockets.ws_manager import ws_manager
-    from bot.bot import bot
+class WebsocketCommand(ABC, metaclass=CommandMeta):
+    """Attach this as a parent to register as a websocket command"""
 
-    cmd = message.get("type")
-    guild_id = message.get("guild_id")
+    prefix: str = None
+    broadcast: bool = False
+    broadcast_status: bool = False
 
-    if not cmd:
-        return {"error": "missing 'type' field"}, None, None
-    if not guild_id:
-        return {"error": "missing 'guild_id' field"}, None, None
+    def __init__(self, websocket, guild_id: int, data: dict):
+        self.websocket = websocket
+        self.guild_id = guild_id
+        self.data = data
 
-    entry = _ws_commands.get(cmd)
-    if not entry:
-        return {"error": f"unknown command '{cmd}'"}, None, None
+    @abstractmethod
+    async def handle(self):
+        """Main logic"""
+        pass
 
-    handler, broadcast, broadcast_status = entry
+    def response(self, **kwargs):
+        return {"type": self.prefix, **kwargs}
 
-    try:
-        result = await handler(websocket, guild_id, message)
+    def response_error(self, msg, **kwargs):
+        return {"error": msg, **kwargs}
+
+    async def execute(self):
+        result = await self.handle()
 
         if isinstance(result, dict) and "error" in result:
             return result, None, None
 
-        guild_broadcast = result if broadcast else None
+        from bot.bot import bot
+
+        guild_broadcast = result if self.broadcast else None
         status_broadcast = (
-            {"type": "status", "playback": bot.vc_get_status(guild_id).model_dump()} if broadcast_status else None
+            {
+                "type": "status",
+                "playback": bot.vc_get_status(self.guild_id).model_dump(),
+            }
+            if self.broadcast_status
+            else None
         )
 
         return result, guild_broadcast, status_broadcast
+
+
+async def ws_command_router(websocket, message: dict):
+    """returns response based on command. used in the websockets route"""
+    cmd = message.get("type")
+    guild_id = message.get("guild_id")
+
+    if not cmd:
+        return {"error": "missing 'type'"}, None, None
+    if not guild_id:
+        return {"error": "missing 'guild_id'"}, None, None
+
+    command_cls = _ws_commands.get(cmd)
+    if not command_cls:
+        return {"error": f"unknown command '{cmd}'"}, None, None
+
+    try:
+        command = command_cls(websocket, guild_id, message)
+        return await command.execute()
 
     except Exception as e:
         import traceback

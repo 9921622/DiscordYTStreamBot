@@ -1,63 +1,82 @@
-import httpx
 from api.api_backend_wrapper import QueueAPI
-from api.websockets.ws_router import WSRouter
-
-ws = WSRouter()
+from api.websockets.ws_router import WebsocketCommand
 
 
-@ws.command(prefix="queue-get")
-async def handle_queue_get(websocket, guild_id: int, data: dict):
-    rw = await QueueAPI.get(guild_id)
-    if not rw.response.is_success:
-        return {"error": "failed to get queue", "detail": rw.response.json()}
-    return {"type": "queue-get", "queue": rw.data.model_dump()}
+class QueueGetCommand(WebsocketCommand):
+    prefix = "queue-get"
+
+    async def handle(self):
+        rw = await QueueAPI.get(self.guild_id)
+
+        if not rw.response.is_success:
+            return self.response_error("failed to get queue", detail=rw.response.json())
+
+        return self.response(queue=rw.data.model_dump())
 
 
-@ws.command(prefix="queue-add", broadcast=True)
-async def handle_queue_add(websocket, guild_id: int, data: dict):
-    youtube_id = data.get("youtube_id")
-    if not youtube_id:
-        return {"error": "missing 'youtube_id'"}
+class QueueAddCommand(WebsocketCommand):
+    prefix = "queue-add"
+    broadcast = True
 
-    rw = await QueueAPI.add(guild_id, youtube_id)
-    if not rw.response.is_success:
-        return {"error": "failed to add item", "detail": rw.response.json()}
+    async def handle(self):
+        youtube_id = self.data.get("youtube_id")
+        if not youtube_id:
+            return self.response_error("missing 'youtube_id'")
 
-    rw_queue = await QueueAPI.get(guild_id)
-    return {"type": "queue-add", "queue": rw_queue.data.model_dump()}
+        rw = await QueueAPI.add(self.guild_id, youtube_id)
+        if not rw.response.is_success:
+            return self.response_error("failed to add item", detail=rw.response.json())
 
+        rw_queue = await QueueAPI.get(self.guild_id)
 
-@ws.command(prefix="queue-remove", broadcast=True)
-async def handle_queue_remove(websocket, guild_id: int, data: dict):
-    item_id = data.get("item_id")
-    if item_id is None:
-        return {"error": "missing 'item_id'"}
-
-    rw = await QueueAPI.remove(guild_id, item_id)
-    if not rw.response.is_success:
-        return {"error": "failed to remove item", "detail": rw.response.json()}
-
-    rw_queue = await QueueAPI.get(guild_id)
-    return {"type": "queue-remove", "queue": rw_queue.data.model_dump()}
+        return self.response(queue=rw_queue.data.model_dump())
 
 
-@ws.command(prefix="queue-reorder", broadcast=True)
-async def handle_queue_reorder(websocket, guild_id: int, data: dict):
-    order = data.get("order")
-    if not order or not isinstance(order, list):
-        return {"error": "missing or invalid 'order'"}
+class QueueRemoveCommand(WebsocketCommand):
+    prefix = "queue-remove"
+    broadcast = True
 
-    rw = await QueueAPI.reorder(guild_id, order)
-    if not rw.response.is_success:
-        return {"error": "failed to reorder queue", "detail": rw.response.json()}
+    async def handle(self):
+        item_id = self.data.get("item_id")
+        if item_id is None:
+            return self.response_error("missing 'item_id'")
 
-    rw_queue = await QueueAPI.get(guild_id)
-    return {"type": "queue-reorder", "queue": rw_queue.data.model_dump()}
+        rw = await QueueAPI.remove(self.guild_id, item_id)
+        if not rw.response.is_success:
+            return self.response_error("failed to remove item", detail=rw.response.json())
+
+        rw_queue = await QueueAPI.get(self.guild_id)
+
+        return self.response(queue=rw_queue.data.model_dump())
 
 
-@ws.command(prefix="queue-clear", broadcast=True)
-async def handle_queue_clear(websocket, guild_id: int, data: dict):
-    rw = await QueueAPI.clear(guild_id)
-    if not rw.response.is_success:
-        return {"error": "failed to clear queue", "detail": rw.response.json()}
-    return {"type": "queue-clear", "queue": []}
+class QueueReorderCommand(WebsocketCommand):
+    prefix = "queue-reorder"
+    broadcast = True
+
+    async def handle(self):
+        order = self.data.get("order")
+
+        if not order or not isinstance(order, list):
+            return self.response_error("missing or invalid 'order'")
+
+        rw = await QueueAPI.reorder(self.guild_id, order)
+        if not rw.response.is_success:
+            return self.response_error("failed to reorder queue", detail=rw.response.json())
+
+        rw_queue = await QueueAPI.get(self.guild_id)
+
+        return self.response(queue=rw_queue.data.model_dump())
+
+
+class QueueClearCommand(WebsocketCommand):
+    prefix = "queue-clear"
+    broadcast = True
+
+    async def handle(self):
+        rw = await QueueAPI.clear(self.guild_id)
+
+        if not rw.response.is_success:
+            return self.response_error("failed to clear queue", detail=rw.response.json())
+
+        return self.response(queue=[])

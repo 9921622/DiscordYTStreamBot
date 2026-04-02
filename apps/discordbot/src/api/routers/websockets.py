@@ -38,13 +38,6 @@ def initialize_websockets():
     # websocket commands
     from api.websockets import debug, voice, music_controls, queue_controls
 
-    voice.ws.initialize()
-    music_controls.ws.initialize()
-    queue_controls.ws.initialize()
-
-    if settings.DEBUG:
-        debug.ws.initialize()
-
     # websocket hooks
     from api.websockets import hooks
 

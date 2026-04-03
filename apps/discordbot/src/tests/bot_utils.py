@@ -1,26 +1,28 @@
 import pytest
+import asyncio
 from unittest.mock import MagicMock, AsyncMock
 
 import discord
 
+from utils.event_handler import EventHandler
+from bot.bot_generic import DiscordBotGeneric
 from bot.bot_voice import DiscordBotVoice
 
 
-class FakeBot(DiscordBotVoice):
+class FakeBot(EventHandler, DiscordBotGeneric, DiscordBotVoice):
+
     def __init__(self):
-        self._playback = {}
-        self.VOLUME_SCALE = 0.125
+        super().__init__()
+
+        # discord.commands.Bot functions that are used
         self.voice_clients = []
-        self._emitted = []
+        self.loop = asyncio.get_event_loop()
 
     def get_guild(self, guild_id):
         return None
 
     async def wait_until_ready(self):
         pass
-
-    async def _emit(self, event: str, guild_id: int):
-        self._emitted.append((event, guild_id))
 
     def _inject_vc(self, vc):
         self.voice_clients = [vc]

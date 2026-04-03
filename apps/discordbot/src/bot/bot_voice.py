@@ -1,14 +1,24 @@
+import time
 import discord
 import asyncio
-import time
+from abc import abstractmethod
+
+from bot.bot_objects import MemberList, Member, Playback, PlaybackStatus
 
 
-from api.websockets.ws_manager import ws_manager
-from .bot_objects import Playback, PlaybackStatus, Member, MemberList
+class PlaybackHandler:
+    """Manages Playback state"""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._playback: dict[int, Playback] = {}
 
-class PlaybackMixin:  # TODO: CONVERT THIS TO A MANAGER WITH __INIT__ HOLDING PLAYBACK
-    """helper mixin to handle Playback object"""
+        # Incremented each time a new track starts for a guild. The current
+        # generation is captured in the vc.play(after=...) closure, so when
+        # the audio thread fires the callback we can detect whether it belongs
+        # to the track that is still active or a previous one that was
+        # interrupted. A mismatch means the callback is stale and should be discarded
+        self._generation: dict[int, int] = {}
 
     def _create_playback(
         self,
@@ -18,8 +28,8 @@ class PlaybackMixin:  # TODO: CONVERT THIS TO A MANAGER WITH __INIT__ HOLDING PL
         offset: float = 0.0,
         volume: float = 0.5,
         loop: bool = False,
-    ):
-        self._playback[guild_id] = Playback(
+    ) -> tuple[Playback, int]:
+        state = Playback(
             video_id=video_id,
             source_url=source_url,
             started_at=time.monotonic(),
@@ -29,15 +39,26 @@ class PlaybackMixin:  # TODO: CONVERT THIS TO A MANAGER WITH __INIT__ HOLDING PL
             manually_stopped=False,
             loop=loop,
         )
+        generation = self._generation.get(guild_id, 0) + 1
+        self._playback[guild_id] = state
+        self._generation[guild_id] = generation
+        return state, generation
 
     def _delete_playback(self, guild_id: int):
         self._playback.pop(guild_id, None)
+
+    def _stop_playback(self, guild_id: int):
+        """Mark current playback as manually stopped and delete it."""
+        state = self._playback.get(guild_id)
+        if state:
+            state.manually_stopped = True
+        self._delete_playback(guild_id)
 
     def _get_position(self, guild_id: int) -> float:
         state = self._playback.get(guild_id)
         return state.get_position() if state else 0.0
 
-    def _create_playback_status(self, vc: discord.VoiceClient, state: Playback) -> PlaybackStatus:
+    def _build_playback_status(self, vc: discord.VoiceClient, state: Playback) -> PlaybackStatus:
         return PlaybackStatus(
             playing=vc.is_playing(),
             paused=vc.is_paused(),
@@ -48,40 +69,42 @@ class PlaybackMixin:  # TODO: CONVERT THIS TO A MANAGER WITH __INIT__ HOLDING PL
             loop=state.loop,
         )
 
+
+class VoiceEventsMixin:
+    """Translates internal playback lifecycle into named events via _emit."""
+
+    @abstractmethod
+    async def _emit(self, event: str, guild_id: int) -> None:
+        """Implemented by the EventHandler base (e.g. ws_manager dispatch)."""
+        ...
+
     async def on_song_start(self, guild_id: int):
-        """custom event listener. triggered when song starts"""
         await self._emit("on_song_start", guild_id)
 
     async def on_song_end(self, guild_id: int):
-        """custom event listener. triggered when song ends naturally"""
         await self._emit("on_song_end", guild_id)
 
 
 class ConnectionMixin:
+    """Handles joining and leaving voice channels."""
 
     async def vc_connect(self, voice_channel: discord.VoiceChannel) -> discord.VoiceClient:
-        """join or move within a guilds voice channel."""
+        """Join or move within a guild's voice channel."""
         await self.wait_until_ready()
 
         guild_id = voice_channel.guild.id
         vc = self.get_voice_client(guild_id)
 
         if vc and vc.is_connected():
-            if vc.channel == voice_channel:
-                return vc
-            await vc.move_to(voice_channel)
-        else:
-            vc = await voice_channel.connect()
+            if vc.channel != voice_channel:
+                await vc.move_to(voice_channel)
+            return vc
 
-        return vc
+        return await voice_channel.connect()
 
     async def vc_disconnect(self, guild_id: int):
-        """leave a guild's voice channel and clean up state."""
+        """Leave a guild's voice channel and clean up state."""
         await self.wait_until_ready()
-
-        state = self._playback.get(guild_id)
-        if state:
-            state.manually_stopped = True
 
         vc = self.get_voice_client(guild_id)
         if vc:
@@ -89,31 +112,51 @@ class ConnectionMixin:
                 vc.stop()
             await vc.disconnect(force=True)
 
-        self._delete_playback(guild_id)
+        self._stop_playback(guild_id)
         await self._emit("on_disconnect", guild_id)
 
 
-class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
+class AudioMixin:
+    """Raw Discord audio operations: source creation, play, stop."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._playback: dict[int, Playback] = {}
-        self.VOLUME_SCALE = 0.125
+    VOLUME_SCALE = 0.125
 
     def get_voice_client(self, guild_id: int) -> discord.VoiceClient | None:
         return discord.utils.get(self.voice_clients, guild__id=guild_id)
 
-    def create_audio_source(
+    def _create_audio_source(
         self, source_url: str, offset: float = 0.0, volume: float = 1.0
     ) -> discord.PCMVolumeTransformer:
         return discord.PCMVolumeTransformer(
             discord.FFmpegPCMAudio(
                 source_url,
-                before_options=f"-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -ss {offset}",
+                before_options=(f"-reconnect 1 -reconnect_streamed 1 " f"-reconnect_delay_max 5 -ss {offset}"),
                 options="-vn",
             ),
             volume=volume * self.VOLUME_SCALE,
         )
+
+    def _handle_playback_end(self, guild_id: int, generation: int, error):
+        """Sync callback passed to vc.play(after=...). Discards stale callbacks."""
+        state = self._playback.get(guild_id)
+        if not state or self._generation.get(guild_id) != generation:
+            return
+
+        state.ended = True
+
+        async def _run():
+            if state.loop:
+                await self.vc_play(
+                    guild_id,
+                    state.video_id,
+                    state.source_url,
+                    offset=0.0,
+                    volume=state.volume,
+                )
+            else:
+                await self.on_song_end(guild_id)
+
+        asyncio.run_coroutine_threadsafe(_run(), self.loop)
 
     async def vc_play(
         self,
@@ -127,55 +170,31 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
         if not vc or not vc.is_connected():
             raise RuntimeError("Bot is not connected to a voice channel")
 
-        # mark current as manually stopped before stopping
-        state = self._playback.get(guild_id)
-        if state:
-            state.manually_stopped = True
+        prior = self._playback.get(guild_id)
+        loop = prior.loop if prior else False
+
+        if prior:
+            prior.manually_stopped = True
 
         if vc.is_playing() or vc.is_paused():
             vc.stop()
-            await asyncio.sleep(0.3)
 
-        existing_loop = self._playback.get(guild_id)
-        loop = existing_loop.loop if existing_loop else False
+        state, generation = self._create_playback(guild_id, video_id, source_url, offset, volume, loop=loop)
 
-        # create new playback state before playing
-        self._create_playback(guild_id, video_id, source_url, offset, volume, loop=loop)
-
-        def _after(error):
-            current_state = self._playback.get(guild_id)
-            if current_state and not current_state.manually_stopped:
-                current_state.ended = True
-
-                async def _run():
-                    if current_state.loop:
-                        await self.vc_play(
-                            guild_id,
-                            current_state.video_id,
-                            current_state.source_url,
-                            offset=0.0,
-                            volume=current_state.volume,
-                        )
-                    else:
-                        await self.on_song_end(guild_id)
-
-                asyncio.run_coroutine_threadsafe(_run(), self.loop)
-
-        source = self.create_audio_source(source_url, offset=offset, volume=volume)
-        vc.play(source, after=_after)
+        source = self._create_audio_source(source_url, offset=offset, volume=volume)
+        vc.play(source, after=lambda err: self._handle_playback_end(guild_id, generation, err))
         await self.on_song_start(guild_id)
 
     async def vc_stop(self, guild_id: int):
-        """Stop playback manually without triggering on_song_end."""
-        state = self._playback.get(guild_id)
-        if state:
-            state.manually_stopped = True
-
+        """Stop playback without triggering on_song_end."""
+        self._stop_playback(guild_id)
         vc = self.get_voice_client(guild_id)
         if vc and (vc.is_playing() or vc.is_paused()):
             vc.stop()
 
-        self._delete_playback(guild_id)
+
+class VoiceControlMixin:
+    """Higher-level playback controls and status queries."""
 
     async def vc_seek(self, guild_id: int, position: float):
         state = self._playback.get(guild_id)
@@ -184,31 +203,31 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
 
         vc = self.get_voice_client(guild_id)
         volume = (
-            (vc.source.volume / self.VOLUME_SCALE)
+            vc.source.volume / self.VOLUME_SCALE
             if vc and isinstance(vc.source, discord.PCMVolumeTransformer)
             else state.volume
         )
-
         await self.vc_play(guild_id, state.video_id, state.source_url, offset=position, volume=volume)
 
     async def vc_volume(self, guild_id: int, level: float | None = None) -> float | None:
-        """Get or set volume (0.0–1.0). Returns current volume or None if not playing."""
+        """Get or set volume (0.0–1.0). Returns None if nothing is playing."""
         vc = self.get_voice_client(guild_id)
         if not vc or not isinstance(vc.source, discord.PCMVolumeTransformer):
             return None
 
         if level is not None:
-            vc.source.volume = max(0.0, min(1.0, level)) * self.VOLUME_SCALE
+            clamped = max(0.0, min(1.0, level))
+            vc.source.volume = clamped * self.VOLUME_SCALE
             state = self._playback.get(guild_id)
             if state:
-                state.volume = level
+                state.volume = clamped
 
         return vc.source.volume / self.VOLUME_SCALE
 
-    async def vc_loop(self, guild_id: int):
+    async def vc_loop(self, guild_id: int) -> bool | None:
         state = self._playback.get(guild_id)
         if not state:
-            return
+            return None
         state.loop = not state.loop
         return state.loop
 
@@ -227,7 +246,7 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
                 loop=False,
             )
 
-        return self._create_playback_status(vc, state)
+        return self._build_playback_status(vc, state)
 
     def vc_get_members(self, guild_id: int) -> MemberList:
         guild = self.get_guild(guild_id)
@@ -246,3 +265,19 @@ class DiscordBotVoice(PlaybackMixin, ConnectionMixin):
                 if not m.bot
             ]
         )
+
+
+class DiscordBotVoice(
+    VoiceControlMixin,
+    AudioMixin,
+    ConnectionMixin,
+    VoiceEventsMixin,
+    PlaybackHandler,
+):
+    """
+    Composition root. Inherits all voice functionality from focused mixins.
+    MRO (left to right): VoiceControlMixin → AudioMixin → ConnectionMixin
+                       → VoiceEventsMixin → PlaybackHandler
+    """
+
+    pass

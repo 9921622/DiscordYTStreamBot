@@ -9,10 +9,10 @@ from tests.bot_factories import PlaybackStatusFactory, MemberFactory
 from tests.bot_utils import FakeBot, make_vc, bot, guild_id, vc
 
 
-# ── PlaybackMixin unit tests ───────────────────────────────────────────────────
+# ── PlaybackHandler unit tests ───────────────────────────────────────────────────
 
 
-class TestPlaybackMixin:
+class TestPlaybackHandler:
 
     def test_create_and_get_playback(self, bot, guild_id):
         bot._create_playback(guild_id, "vid1", "http://audio.url")
@@ -38,12 +38,12 @@ class TestPlaybackMixin:
         pos = bot._get_position(guild_id)
         assert pos >= 10.0
 
-    def test_create_playback_status_matches_factory_shape(self, bot, guild_id, vc):
+    def test_build_playback_status_matches_factory_shape(self, bot, guild_id, vc):
         """Factory-generated instance tells us exactly which fields must be present."""
         bot._create_playback(guild_id, "vid1", "http://audio.url", volume=0.7)
         state = bot._playback[guild_id]
 
-        result = bot._create_playback_status(vc, state)
+        result = bot._build_playback_status(vc, state)
         reference = PlaybackStatusFactory.build()
 
         # every field present on the factory model must exist on the real result
@@ -193,7 +193,7 @@ class TestVcPlay:
     async def test_play_creates_state_and_calls_vc(self, bot, guild_id, vc):
         bot._inject_vc(vc)
 
-        with patch.object(bot, "create_audio_source", return_value=MagicMock()):
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
             await bot.vc_play(guild_id, "vid1", "http://audio.url", volume=0.6)
 
         state = bot._playback[guild_id]
@@ -207,10 +207,27 @@ class TestVcPlay:
     async def test_play_emits_on_song_start(self, bot, guild_id, vc):
         bot._inject_vc(vc)
 
-        with patch.object(bot, "create_audio_source", return_value=MagicMock()):
+        with patch.object(bot, "_emit", new_callable=AsyncMock) as mock_emit:
+            with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
+                await bot.vc_play(guild_id, "vid1", "http://audio.url")
+
+        mock_emit.assert_awaited_with("on_song_start", guild_id)
+
+    @pytest.mark.asyncio
+    async def test_play_emits_on_song_end(self, bot, guild_id, vc):
+        bot._inject_vc(vc)
+
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
             await bot.vc_play(guild_id, "vid1", "http://audio.url")
 
-        assert ("on_song_start", guild_id) in bot._emitted
+        generation = bot._generation[guild_id]
+
+        with patch.object(bot, "_emit", new_callable=AsyncMock) as mock_emit:
+            with patch("asyncio.run_coroutine_threadsafe", side_effect=lambda coro, _loop: asyncio.ensure_future(coro)):
+                bot._handle_playback_end(guild_id, generation, error=None)
+                await asyncio.sleep(0)
+
+        mock_emit.assert_awaited_with("on_song_end", guild_id)
 
     @pytest.mark.asyncio
     async def test_play_stops_existing_before_new(self, bot, guild_id, vc):
@@ -218,7 +235,7 @@ class TestVcPlay:
         vc.is_playing.return_value = True
         bot._create_playback(guild_id, "old_vid", "http://old.url")
 
-        with patch.object(bot, "create_audio_source", return_value=MagicMock()):
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
             with patch("asyncio.sleep", new_callable=AsyncMock):
                 await bot.vc_play(guild_id, "new_vid", "http://new.url")
 
@@ -230,7 +247,7 @@ class TestVcPlay:
         bot._create_playback(guild_id, "old", "http://old.url")
         bot._playback[guild_id].loop = True
 
-        with patch.object(bot, "create_audio_source", return_value=MagicMock()):
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
             await bot.vc_play(guild_id, "new", "http://new.url")
 
         assert bot._playback[guild_id].loop is True
@@ -246,9 +263,10 @@ class TestVcDisconnect:
         bot._inject_vc(vc)
         bot._create_playback(guild_id, "vid", "http://url")
 
-        await bot.vc_disconnect(guild_id)
+        with patch.object(bot, "_emit", new_callable=AsyncMock) as mock_emit:
+            await bot.vc_disconnect(guild_id)
 
-        assert ("on_disconnect", guild_id) in bot._emitted
+        mock_emit.assert_awaited_with("on_disconnect", guild_id)
 
     @pytest.mark.asyncio
     async def test_disconnect_clears_playback(self, bot, guild_id, vc):

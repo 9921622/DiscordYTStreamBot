@@ -10,6 +10,6 @@ pre-commit
 #
 Pylint          # linter
 pylint-mccabe
-pylint-django
+pytest-cov
 black           # reformatter
 autoflake       # reformatter

@@ -12,7 +12,8 @@ from ws.hooks import OnDisconnect, OnVoice, OnSongStart, OnSongEnd
 from ws.models import WSResponse
 
 from tests.test_case import TestCaseCommand
-from tests.test_utils import make_mock_httpx_response, make_mock_response_wrapper
+from tests.mocks import make_mock_httpx_response
+from tests.utils.mocks import make_mock_response_wrapper
 from tests.bot.bot_utils import bot
 
 GUILD_ID = 1238723

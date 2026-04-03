@@ -6,7 +6,8 @@ from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
 from tests.test_case import TestCaseCommand
 from tests.ws.test_case import TestCaseWebSocket
 from tests.utils.factories import GuildQueueSchemaFactory
-from tests.test_utils import make_mock_response_wrapper, make_mock_httpx_response
+from tests.mocks import make_mock_httpx_response
+from tests.utils.mocks import make_mock_response_wrapper
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -17,13 +18,21 @@ GUILD_ID = 123213
 
 @contextmanager
 def patch_queue_get(mock_queue: GuildQueueSchema):
-    with patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response_wrapper(200, mock_queue))):
+    with patch.object(
+        QueueAPI,
+        "get",
+        new=AsyncMock(return_value=make_mock_response_wrapper(200, mock_queue)),
+    ):
         yield
 
 
 @contextmanager
 def patch_queue_get_error(status: int = 500, detail: dict | None = None):
-    with patch.object(QueueAPI, "get", new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {}))):
+    with patch.object(
+        QueueAPI,
+        "get",
+        new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {})),
+    ):
         yield
 
 
@@ -35,13 +44,21 @@ def patch_queue_add(status: int = 201):
 
 @contextmanager
 def patch_queue_add_error(status: int = 502, detail: dict | None = None):
-    with patch.object(QueueAPI, "add", new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {}))):
+    with patch.object(
+        QueueAPI,
+        "add",
+        new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {})),
+    ):
         yield
 
 
 @contextmanager
 def patch_queue_remove(status: int = 204):
-    with patch.object(QueueAPI, "remove", new=AsyncMock(return_value=make_mock_response_wrapper(status))):
+    with patch.object(
+        QueueAPI,
+        "remove",
+        new=AsyncMock(return_value=make_mock_response_wrapper(status)),
+    ):
         yield
 
 
@@ -57,7 +74,11 @@ def patch_queue_remove_error(status: int = 404, detail: dict | None = None):
 
 @contextmanager
 def patch_queue_reorder(status: int = 200):
-    with patch.object(QueueAPI, "reorder", new=AsyncMock(return_value=make_mock_response_wrapper(status))):
+    with patch.object(
+        QueueAPI,
+        "reorder",
+        new=AsyncMock(return_value=make_mock_response_wrapper(status)),
+    ):
         yield
 
 
@@ -73,7 +94,11 @@ def patch_queue_reorder_error(status: int = 400, detail: dict | None = None):
 
 @contextmanager
 def patch_queue_clear(status: int = 204):
-    with patch.object(QueueAPI, "clear", new=AsyncMock(return_value=make_mock_response_wrapper(status))):
+    with patch.object(
+        QueueAPI,
+        "clear",
+        new=AsyncMock(return_value=make_mock_response_wrapper(status)),
+    ):
         yield
 
 

@@ -6,7 +6,7 @@ from utils.api_backend_wrapper import VideoAPI
 from tests.test_case import TestCaseCommand
 from tests.ws.test_case import TestCaseWebSocket
 from tests.bot.factories import PlaybackStatusFactory
-from tests.test_utils import make_mock_video_response
+from tests.utils.mocks import make_mock_video_response
 
 GUILD_ID = 123878273492
 
@@ -24,7 +24,11 @@ def patch_bot():
 
 @contextmanager
 def patch_video_source(status_code: int = 200):
-    with patch.object(VideoAPI, "get_source", new=AsyncMock(return_value=make_mock_video_response(status_code))):
+    with patch.object(
+        VideoAPI,
+        "get_source",
+        new=AsyncMock(return_value=make_mock_video_response(status_code)),
+    ):
         yield
 
 

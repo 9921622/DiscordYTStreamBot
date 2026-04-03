@@ -12,3 +12,4 @@ Pylint          # linter
 pylint-mccabe
 pylint-django
 black           # reformatter
+autoflake       # reformatter

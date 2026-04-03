@@ -7,7 +7,6 @@ from utils.api_backend_wrapper import (
     GuildQueueItemSchema,
     YoutubeVideoSchema,
     VideoSourceSchema,
-    DiscordUserSchema,
 )
 from ws.hooks import OnDisconnect, OnVoice, OnSongStart, OnSongEnd
 from ws.models import WSResponse

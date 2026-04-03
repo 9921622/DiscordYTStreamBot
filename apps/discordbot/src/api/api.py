@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 
 from bot.bot import bot
-from ws.ws_manager import ws_manager
 from settings import settings
 from api.routers import misc, admin, voice, debug, websockets
 

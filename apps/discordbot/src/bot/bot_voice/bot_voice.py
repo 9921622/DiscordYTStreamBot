@@ -17,5 +17,3 @@ class DiscordBotVoice(
     MRO (left to right): VoiceControlMixin → AudioMixin → ConnectionMixin
                        → VoiceEventsMixin → PlaybackHandler
     """
-
-    pass

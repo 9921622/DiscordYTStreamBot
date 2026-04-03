@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from enum import IntFlag, auto
-from typing import Optional
 
 from .ws_commands_router import CommandMeta
 from .models import WSResponse
@@ -28,7 +27,6 @@ class WebsocketCommand(ABC, metaclass=CommandMeta):
     @abstractmethod
     async def handle(self):
         """main logic"""
-        pass
 
     def response(self, **data):
         return WSResponse(type=self.prefix, success=True, data=data or None).model_dump()

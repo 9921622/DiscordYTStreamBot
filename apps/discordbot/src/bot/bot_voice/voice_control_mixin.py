@@ -1,9 +1,6 @@
-import time
 import discord
-import asyncio
-from abc import abstractmethod
 
-from bot.models import MemberList, Member, Playback, PlaybackStatus
+from bot.models import MemberList, Member, PlaybackStatus
 
 
 class VoiceControlMixin:

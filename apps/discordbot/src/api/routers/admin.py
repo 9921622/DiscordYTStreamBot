@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Request
 from api.decorators import admin_only
-from bot.bot import bot
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 

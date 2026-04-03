@@ -1,5 +1,4 @@
 from fastapi import WebSocket
-import asyncio
 
 
 class WebSocketManager:

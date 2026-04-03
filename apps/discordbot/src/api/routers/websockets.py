@@ -1,10 +1,7 @@
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
-from bot.bot import bot
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from ws.ws_manager import ws_manager
 
 from ws.ws_commands_router import ws_command_router
-
-from settings import settings
 
 router = APIRouter(prefix="/ws", tags=["ws"])
 
@@ -36,10 +33,8 @@ def initialize_websockets():
     they need to be enabled here
     """
     # websocket commands
-    from ws.commands import debug, voice, music_controls, queue_controls
 
     # websocket hooks
-    from ws import hooks
 
 
 initialize_websockets()

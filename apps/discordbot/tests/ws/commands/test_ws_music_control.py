@@ -1,9 +1,6 @@
-import pytest
 from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
-from fastapi.testclient import TestClient
 
-from tests.conftest import client
 from utils.api_backend_wrapper import VideoAPI
 
 from tests.utils import (

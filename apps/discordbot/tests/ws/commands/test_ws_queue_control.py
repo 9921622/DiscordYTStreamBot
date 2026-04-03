@@ -1,19 +1,14 @@
-import pytest
 from contextlib import contextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
-from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock, patch
 
-from tests.conftest import client
 from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
 
 from tests.utils import (
-    make_mock_video_response,
     make_mock_response_wrapper,
     make_mock_httpx_response,
     TestCaseCommand,
     TestCaseWebSocket,
 )
-from tests.bot_factories import PlaybackStatusFactory
 from tests.backend_factories import GuildQueueSchemaFactory
 
 # ---------------------------------------------------------------------------

@@ -1,9 +1,5 @@
-import time
 import discord
 import asyncio
-from abc import abstractmethod
-
-from bot.models import MemberList, Member, Playback, PlaybackStatus
 
 
 class AudioMixin:

@@ -1,11 +1,6 @@
-import os
-import sys
-import asyncio
-
 import discord
 from discord.ext import commands
 
-from bot.decorators import voice_channel_only
 from settings import settings
 
 

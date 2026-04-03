@@ -3,12 +3,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from utils.api_backend_wrapper import VideoAPI
 
-from tests.utils import (
-    make_mock_video_response,
-    TestCaseCommand,
-    TestCaseWebSocket,
-)
-from tests.bot_factories import PlaybackStatusFactory
+from tests.test_case import TestCaseCommand
+from tests.ws.test_case import TestCaseWebSocket
+from tests.bot.factories import PlaybackStatusFactory
+from tests.test_utils import make_mock_video_response
 
 GUILD_ID = 123878273492
 

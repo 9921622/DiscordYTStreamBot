@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, patch
 
-from tests.utils import TestCaseWebSocket
-from tests.bot_factories import PlaybackStatusFactory
+from tests.ws.test_case import TestCaseWebSocket
+from tests.bot.factories import PlaybackStatusFactory
 
 GUILD_ID = 12938027349
 

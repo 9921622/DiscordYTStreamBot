@@ -4,7 +4,8 @@ from unittest.mock import MagicMock, AsyncMock, patch
 
 from bot.models import PlaybackStatus, Member, MemberList
 
-from tests.bot_factories import PlaybackStatusFactory, MemberFactory
+from tests.bot.bot_utils import bot, guild_id, vc
+from tests.bot.factories import PlaybackStatusFactory, MemberFactory
 
 # ── PlaybackHandler unit tests ───────────────────────────────────────────────────
 

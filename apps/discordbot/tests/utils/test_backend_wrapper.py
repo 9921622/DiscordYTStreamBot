@@ -10,8 +10,8 @@ from utils.api_backend_wrapper import (
     ResponseWrapper,
 )
 
-from tests.utils import make_mock_httpx_response
-from tests.backend_factories import GuildQueueSchemaFactory, GuildQueueItemSchemaFactory
+from tests.test_utils import make_mock_httpx_response
+from tests.utils.factories import GuildQueueSchemaFactory, GuildQueueItemSchemaFactory
 
 HTTPX_ASYNC_CLIENT = "utils.api_backend_wrapper.httpx.AsyncClient"
 GUILD_ID = "123"

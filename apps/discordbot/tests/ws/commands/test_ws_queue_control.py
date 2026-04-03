@@ -3,13 +3,10 @@ from unittest.mock import AsyncMock, patch
 
 from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
 
-from tests.utils import (
-    make_mock_response_wrapper,
-    make_mock_httpx_response,
-    TestCaseCommand,
-    TestCaseWebSocket,
-)
-from tests.backend_factories import GuildQueueSchemaFactory
+from tests.test_case import TestCaseCommand
+from tests.ws.test_case import TestCaseWebSocket
+from tests.utils.factories import GuildQueueSchemaFactory
+from tests.test_utils import make_mock_response_wrapper, make_mock_httpx_response
 
 # ---------------------------------------------------------------------------
 # Helpers

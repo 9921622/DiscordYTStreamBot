@@ -1,0 +1,60 @@
+import pytest
+from unittest.mock import MagicMock, AsyncMock
+
+import discord
+
+from bot.bot_voice import DiscordBotVoice
+
+
+class FakeBot(DiscordBotVoice):
+    def __init__(self):
+        self._playback = {}
+        self.VOLUME_SCALE = 0.125
+        self.voice_clients = []
+        self._emitted = []
+
+    def get_guild(self, guild_id):
+        return None
+
+    async def wait_until_ready(self):
+        pass
+
+    async def _emit(self, event: str, guild_id: int):
+        self._emitted.append((event, guild_id))
+
+    def _inject_vc(self, vc):
+        self.voice_clients = [vc]
+
+
+def make_vc(guild_id=123, playing=False, paused=False):
+    vc = MagicMock(spec=discord.VoiceClient)
+    vc.guild.id = guild_id
+    vc.guild__id = guild_id
+    vc.is_connected.return_value = True
+    vc.is_playing.return_value = playing
+    vc.is_paused.return_value = paused
+    vc.stop = MagicMock()
+    vc.play = MagicMock()
+    vc.disconnect = AsyncMock()
+    source = MagicMock(spec=discord.PCMVolumeTransformer)
+    source.volume = 0.5 * 0.125
+    vc.source = source
+    return vc
+
+
+# ── Fixtures ──────────────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def bot():
+    return FakeBot()
+
+
+@pytest.fixture
+def guild_id():
+    return 123
+
+
+@pytest.fixture
+def vc(guild_id):
+    return make_vc(guild_id)

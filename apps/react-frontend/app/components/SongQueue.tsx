@@ -15,14 +15,14 @@ import {
     useSortable,
     arrayMove,
 } from "@dnd-kit/sortable"
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
+import { restrictToVerticalAxis, restrictToFirstScrollableAncestor  } from "@dnd-kit/modifiers"
 import { CSS } from "@dnd-kit/utilities"
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext"
 import VCMembersContainer from "./VCMembersContainer"
 
 function DragHandle() {
     return (
-        <svg className="w-3 h-4 text-zinc-600 flex-shrink-0" fill="currentColor" viewBox="0 0 8 16">
+        <svg className="w-5 h-6 text-zinc-500 flex-shrink-0" fill="currentColor" viewBox="0 0 8 16">
             <circle cx="2" cy="3" r="1.2" /><circle cx="6" cy="3" r="1.2" />
             <circle cx="2" cy="8" r="1.2" /><circle cx="6" cy="8" r="1.2" />
             <circle cx="2" cy="13" r="1.2" /><circle cx="6" cy="13" r="1.2" />
@@ -36,6 +36,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
     onPlay: () => void
     onRemove: (e: React.MouseEvent) => void
 }) {
+    const thumbnailSize = "w-20 h-20"
     const isSkeleton = 'isSkeleton' in item
 
     const {
@@ -80,7 +81,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
 
             {isSkeleton ? (
                 <>
-                    <div className="w-12 h-12 rounded bg-zinc-700 animate-pulse flex-shrink-0" />
+                    <div className={`${thumbnailSize} rounded bg-zinc-700 animate-pulse flex-shrink-0`} />
                     <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                         <div className="h-3 bg-zinc-700 animate-pulse rounded w-3/4" />
                         <div className="h-2.5 bg-zinc-800 animate-pulse rounded w-1/2" />
@@ -88,11 +89,11 @@ function SortableItem({ item, index, onPlay, onRemove }: {
                 </>
             ) : (
                 <>
-                    <div className="relative w-10 h-10 flex-shrink-0">
+                    <div className={`relative ${thumbnailSize} flex-shrink-0`}>
                         <img
                             src={item.video.thumbnail ?? ""}
                             alt={item.video.title}
-                            className="w-12 h-12 rounded object-cover"
+                            className="w-full h-full rounded object-cover"
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded transition">
                             <PlayIcon />
@@ -116,6 +117,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
 
 
 function CurrentSong() {
+    const thumbnailSize = "w-30 h-30"
     const { video, videoLoading, videoStop } = usePlaybackVideoContext();
     const { queue, queueNext } = usePlaybackQueueContext()
 
@@ -134,7 +136,7 @@ function CurrentSong() {
 
                 {videoLoading ? (
                     <>
-                        <div className="skeleton w-12 h-12 rounded flex-shrink-0" />
+                        <div className={`skeleton ${thumbnailSize} rounded flex-shrink-0`} />
 
                         <div className="flex-1 min-w-0 space-y-1">
                             <div className="skeleton h-3 w-3/4" />
@@ -152,7 +154,7 @@ function CurrentSong() {
                         <img
                             src={video.thumbnail ?? ""}
                             alt={video.title}
-                            className="w-12 h-12 rounded object-cover flex-shrink-0"
+                            className={`${thumbnailSize} rounded object-cover flex-shrink-0`}
                         />
 
                         <div className="flex-1 min-w-0">
@@ -191,7 +193,7 @@ export default function QueueSidebar() {
     const { queue, queuePlayFrom, queueRemove, queueSwap, queueClear } = usePlaybackQueueContext();
 
     const sensors = useSensors(useSensor(PointerSensor, {
-        activationConstraint: { distance: 5 } // prevents accidental drags on click
+        activationConstraint: { distance: 5 }
     }))
 
     function handleDragEnd(event: DragEndEvent) {
@@ -206,7 +208,7 @@ export default function QueueSidebar() {
     }
 
     return (
-        <div className="w-112 bg-zinc-900 h-full flex flex-col border-l border-zinc-700 rounded-lg ml-2">
+        <div className="w-112 h-full flex flex-col rounded-lg ml-2">
             <VCMembersContainer/>
             <CurrentSong />
 
@@ -236,7 +238,7 @@ export default function QueueSidebar() {
                         sensors={sensors}
                         collisionDetection={closestCenter}
                         onDragEnd={handleDragEnd}
-                        modifiers={[restrictToVerticalAxis]}>
+                        modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor ]}>
                     <SortableContext items={queue.map(q => q.id)} strategy={verticalListSortingStrategy}>
                         <ul className="flex-1 overflow-y-auto divide-y divide-zinc-800">
                             {queue.map((item, index) => (

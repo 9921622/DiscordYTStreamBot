@@ -29,14 +29,16 @@ export default function SideBar({ navbar, content }: { navbar: React.ReactNode; 
 	return (
 		<div className="drawer lg:drawer-open">
 			<input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
-			<div className="drawer-content">
-				<nav className="sticky top-0 z-50 navbar w-full bg-base-300">
+			<div className="drawer-content flex flex-col h-screen">
+				<nav className="sticky top-0 z-50 navbar w-full bg-base-300 flex-shrink-0">
 					<label htmlFor="my-drawer-4" aria-label="open sidebar" className="btn btn-square btn-ghost">
 						<MenuIcon />
 					</label>
 					<div className="flex-1">{navbar}</div>
 				</nav>
-				<div className="p-4">{content}</div>
+				<div className="flex-1 overflow-hidden p-4 pb-[var(--musicbar-height,80px)]">
+					{content}
+				</div>
 			</div>
 
 			<div className="drawer-side is-drawer-close:overflow-visible">

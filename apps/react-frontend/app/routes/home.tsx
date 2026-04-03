@@ -46,18 +46,21 @@ function HomePage() {
             <SideBar
                 navbar={<Navbar />}
                 content={
-                    <div className="flex gap-0 h-full">
-                        <div className="flex-1 bg-zinc-900 p-5 rounded-md">
+                    <div className="flex gap-3 h-full overflow-hidden">
+                        <div className="flex-1 bg-zinc-900 p-5 rounded-md overflow-y-auto">
                             <p className="text-xl font-bold mb-3">All Songs</p>
                             <SongContainer songs={songs} />
+                            <div>&nbsp;</div>
+                            <div>&nbsp;</div>
                         </div>
-
-                        <HorizontalAccordion
-                            // childrenClosed={<SongQueue />}>
-                            closedWidth="w-32"
-                            childrenClosed={<SongQueueClosed />}>
-                            <SongQueue />
-                        </HorizontalAccordion>
+                        <div className="bg-zinc-900 rounded-md flex-shrink-0 h-full overflow-hidden">
+                            <HorizontalAccordion
+                                closedWidth="w-48"
+                                width="w-112"
+                                childrenClosed={<SongQueueClosed />}>
+                                <SongQueue />
+                            </HorizontalAccordion>
+                        </div>
                     </div>
                 }
             />

@@ -1,8 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from conftest import client
-
+from tests.conftest import client
 from tests.utils import TestCaseWebSocket
 from tests.bot_factories import PlaybackStatusFactory
 

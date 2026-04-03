@@ -3,7 +3,7 @@ import discord
 import asyncio
 from abc import abstractmethod
 
-from bot.bot_objects import MemberList, Member, Playback, PlaybackStatus
+from bot.models import MemberList, Member, Playback, PlaybackStatus
 
 
 class PlaybackHandler:

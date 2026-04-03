@@ -1,6 +1,6 @@
 from polyfactory.factories.pydantic_factory import ModelFactory
 
-from bot.bot_objects import PlaybackStatus, Member
+from bot.models import PlaybackStatus, Member
 
 
 class PlaybackStatusFactory(ModelFactory):

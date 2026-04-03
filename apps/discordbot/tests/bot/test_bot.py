@@ -3,7 +3,7 @@ import asyncio
 import time
 from unittest.mock import MagicMock, AsyncMock, patch
 
-from bot.bot_objects import Playback, PlaybackStatus, Member, MemberList
+from bot.models import Playback, PlaybackStatus, Member, MemberList
 
 from tests.bot_factories import PlaybackStatusFactory, MemberFactory
 from tests.bot_utils import FakeBot, make_vc, bot, guild_id, vc

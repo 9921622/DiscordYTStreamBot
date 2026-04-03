@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from api import app
-from api.api_backend_wrapper import VideoAPI
+from utils.api_backend_wrapper import VideoAPI
 from conftest import client
 from tests.utils import (
     make_mock_video_response,
@@ -23,7 +23,7 @@ GUILD_ID = 123878273492
 
 @contextmanager
 def patch_bot():
-    with patch("api.websockets.commands.music_controls.bot") as mock_bot:
+    with patch("ws.commands.music_controls.bot") as mock_bot:
         yield mock_bot
 
 

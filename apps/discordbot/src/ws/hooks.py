@@ -1,10 +1,12 @@
 from bot.bot import bot
-from api.api_backend_wrapper import QueueAPI, VideoAPI, GuildQueueItemSchema
-from api.websockets.ws_hook import WebsocketHook
-from api.websockets.ws_response import WSResponse
+from utils.api_backend_wrapper import QueueAPI, VideoAPI, GuildQueueItemSchema
+from ws.ws_hook import WebsocketHook
+from ws.ws_response import WSResponse
 
 
 class OnDisconnect(WebsocketHook):
+    """event for when bot disconnects"""
+
     events = ["on_disconnect"]
 
     async def handle(self):
@@ -12,6 +14,8 @@ class OnDisconnect(WebsocketHook):
 
 
 class OnVoice(WebsocketHook):
+    """general event for when user joins or disconnects"""
+
     events = ["on_voice_connect", "on_voice_disconnect"]
 
     async def handle(self):
@@ -24,6 +28,16 @@ class OnVoice(WebsocketHook):
                 },
             )
         )
+
+
+class OnVoiceDisconnect(WebsocketHook):
+    """event for when user disconnects"""
+
+    events = ["on_voice_disconnect"]
+
+    async def handle(self):
+        # validate all websocket connects with the current members
+        pass
 
 
 class OnSongStart(WebsocketHook):

@@ -24,6 +24,13 @@ class VoiceCog(commands.Cog, name="voice"):
         """
         Triggered whenever a member joins, leaves, or moves between voice channels.
         """
+        # if bot is forcefully disconnected...
+        if member.id == self.bot.user.id:
+            if before.channel is not None and after.channel is None:
+                await self.bot._emit("on_disconnect", member.guild.id)
+                self.bot._delete_playback(member.guild.id)
+            return
+
         # someone joined a channel
         if before.channel is None and after.channel is not None:
             await self.bot._emit("on_voice_connect", member.guild.id)

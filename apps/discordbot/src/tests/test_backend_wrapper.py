@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from api.api_backend_wrapper import (
+from utils.api_backend_wrapper import (
     VideoAPI,
     QueueAPI,
     VideoSourceSchema,
@@ -12,7 +12,7 @@ from tests.utils import make_mock_httpx_response
 from tests.backend_factories import YoutubeVideoSchemaFactory, GuildQueueSchemaFactory, GuildQueueItemSchemaFactory
 
 
-HTTPX_ASYNC_CLIENT = "api.api_backend_wrapper.httpx.AsyncClient"
+HTTPX_ASYNC_CLIENT = "utils.api_backend_wrapper.httpx.AsyncClient"
 GUILD_ID = "123"
 VIDEO_ID = "video_id"
 ITEM_ID = "23123"

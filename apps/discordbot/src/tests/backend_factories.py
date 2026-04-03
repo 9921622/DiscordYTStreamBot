@@ -1,5 +1,5 @@
 from polyfactory.factories.pydantic_factory import ModelFactory
-from api.api_backend_wrapper import (
+from utils.api_backend_wrapper import (
     YoutubeVideoSchema,
     VideoSourceSchema,
     DiscordUserSchema,

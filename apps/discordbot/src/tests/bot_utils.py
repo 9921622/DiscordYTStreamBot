@@ -16,7 +16,9 @@ class FakeBot(EventHandler, DiscordBotGeneric, DiscordBotVoice):
 
         # discord.commands.Bot functions that are used
         self.voice_clients = []
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+
+        asyncio.set_event_loop(self.loop)
 
     def get_guild(self, guild_id):
         return None

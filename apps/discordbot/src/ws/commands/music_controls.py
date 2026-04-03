@@ -1,6 +1,6 @@
 from bot.bot import bot
-from api.api_backend_wrapper import VideoAPI
-from api.websockets.ws_command import WebsocketCommand, WSCommandFlags
+from utils.api_backend_wrapper import VideoAPI
+from ws.ws_command import WebsocketCommand, WSCommandFlags
 
 
 class PlayCommand(WebsocketCommand):

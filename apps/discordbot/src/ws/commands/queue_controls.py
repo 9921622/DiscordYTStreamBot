@@ -1,5 +1,5 @@
-from api.api_backend_wrapper import QueueAPI
-from api.websockets.ws_command import WebsocketCommand, WSCommandFlags
+from utils.api_backend_wrapper import QueueAPI
+from ws.ws_command import WebsocketCommand, WSCommandFlags
 
 
 class QueueGetCommand(WebsocketCommand):

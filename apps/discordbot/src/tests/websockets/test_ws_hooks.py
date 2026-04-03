@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from api.api_backend_wrapper import (
+from utils.api_backend_wrapper import (
     ResponseWrapper,
     GuildQueueSchema,
     GuildQueueItemSchema,
@@ -9,8 +9,8 @@ from api.api_backend_wrapper import (
     VideoSourceSchema,
     DiscordUserSchema,
 )
-from api.websockets.hooks import OnDisconnect, OnVoice, OnSongStart, OnSongEnd
-from api.websockets.ws_response import WSResponse
+from ws.hooks import OnDisconnect, OnVoice, OnSongStart, OnSongEnd
+from ws.ws_response import WSResponse
 
 from tests.utils import make_mock_httpx_response, make_mock_response_wrapper, TestCaseCommand
 
@@ -69,7 +69,7 @@ class TestOnVoice(TestHookCase):
         mock_members = MagicMock()
         mock_members.model_dump.return_value = {"members": []}
 
-        with patch("api.websockets.hooks.bot") as mock_bot:
+        with patch("ws.hooks.bot") as mock_bot:
             mock_bot.vc_get_members.return_value = mock_members
             await hook.handle()
 
@@ -88,7 +88,7 @@ class TestOnSongStart(TestHookCase):
         mock_status = MagicMock()
         mock_status.model_dump.return_value = {"playing": True}
 
-        with patch("api.websockets.hooks.bot") as mock_bot:
+        with patch("ws.hooks.bot") as mock_bot:
             mock_bot.vc_get_status.return_value = mock_status
             await hook.handle()
 
@@ -110,7 +110,7 @@ class TestOnSongEnd(TestHookCase):
         hook = self.make_hook(OnSongEnd)
         empty_queue = make_queue([])
 
-        with patch("api.websockets.hooks.QueueAPI") as mock_queue:
+        with patch("ws.hooks.QueueAPI") as mock_queue:
             mock_queue.get = AsyncMock(return_value=make_mock_response_wrapper(200, empty_queue))
             await hook.handle()
 
@@ -130,9 +130,9 @@ class TestOnSongEnd(TestHookCase):
         source_wrapper = ResponseWrapper(response=make_mock_httpx_response(200), data=source_data)
 
         with (
-            patch("api.websockets.hooks.QueueAPI") as mock_queue,
-            patch("api.websockets.hooks.VideoAPI") as mock_video,
-            patch("api.websockets.hooks.bot") as mock_bot,
+            patch("ws.hooks.QueueAPI") as mock_queue,
+            patch("ws.hooks.VideoAPI") as mock_video,
+            patch("ws.hooks.bot") as mock_bot,
         ):
 
             mock_queue.get = AsyncMock(
@@ -167,9 +167,9 @@ class TestOnSongEnd(TestHookCase):
         source_wrapper = ResponseWrapper(response=make_mock_httpx_response(500), data=None)
 
         with (
-            patch("api.websockets.hooks.QueueAPI") as mock_queue,
-            patch("api.websockets.hooks.VideoAPI") as mock_video,
-            patch("api.websockets.hooks.bot") as mock_bot,
+            patch("ws.hooks.QueueAPI") as mock_queue,
+            patch("ws.hooks.VideoAPI") as mock_video,
+            patch("ws.hooks.bot") as mock_bot,
         ):
 
             mock_queue.get = AsyncMock(return_value=make_mock_response_wrapper(200, queue_with_item))
@@ -186,7 +186,7 @@ class TestOnSongEnd(TestHookCase):
     async def test_get_queue_returns_empty_on_failure(self):
         hook = self.make_hook(OnSongEnd)
 
-        with patch("api.websockets.hooks.QueueAPI") as mock_queue:
+        with patch("ws.hooks.QueueAPI") as mock_queue:
             mock_queue.get = AsyncMock(return_value=make_mock_response_wrapper(500, None))
             items = await hook._get_queue()
 

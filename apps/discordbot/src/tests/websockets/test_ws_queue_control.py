@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
 from api import app
-from api.api_backend_wrapper import QueueAPI, GuildQueueSchema
+from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
 
 from conftest import client
 

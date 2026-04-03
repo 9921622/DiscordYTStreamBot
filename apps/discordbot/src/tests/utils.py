@@ -3,8 +3,8 @@ import httpx
 from unittest.mock import AsyncMock, MagicMock, patch
 from contextlib import contextmanager
 
-from api.websockets.ws_response import WSResponse
-from api.api_backend_wrapper import ResponseWrapper
+from ws.ws_response import WSResponse
+from utils.api_backend_wrapper import ResponseWrapper
 
 
 def make_mock_video_response(status_code=200, source_url="http://example.com/audio") -> MagicMock:

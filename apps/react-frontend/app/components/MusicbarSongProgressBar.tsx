@@ -50,6 +50,7 @@ export default function SongProgressBar({ className }: { className?: string }) {
                 type="range"
                 min={0}
                 max={100}
+                step={0.1}
                 value={sliderValue}
                 onChange={e => setSliderValue(Number(e.target.value))}
                 onMouseDown={() => setDragging(true)}

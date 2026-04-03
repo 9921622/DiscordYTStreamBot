@@ -1,11 +1,11 @@
+import pytest
 import asyncio
 import time
-import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 
 from bot.bot_objects import Playback, PlaybackStatus, Member, MemberList
-from tests.bot_factories import PlaybackStatusFactory, MemberFactory
 
+from tests.bot_factories import PlaybackStatusFactory, MemberFactory
 from tests.bot_utils import FakeBot, make_vc, bot, guild_id, vc
 
 
@@ -50,6 +50,7 @@ class TestPlaybackHandler:
         assert set(PlaybackStatus.model_fields) == set(
             PlaybackStatus.model_fields
         )  # same class, so simplifies to just:
+
         assert isinstance(result, PlaybackStatus)
         # spot-check that values were actually wired through
         assert result.video_id == "vid1"

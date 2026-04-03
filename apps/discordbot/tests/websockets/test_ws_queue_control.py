@@ -3,10 +3,8 @@ from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
-from api import app
-from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
-
 from conftest import client
+from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
 
 from tests.utils import (
     make_mock_video_response,

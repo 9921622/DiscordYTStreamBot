@@ -13,7 +13,6 @@ from utils.api_backend_wrapper import (
 from tests.utils import make_mock_httpx_response
 from tests.backend_factories import YoutubeVideoSchemaFactory, GuildQueueSchemaFactory, GuildQueueItemSchemaFactory
 
-
 HTTPX_ASYNC_CLIENT = "utils.api_backend_wrapper.httpx.AsyncClient"
 GUILD_ID = "123"
 VIDEO_ID = "video_id"

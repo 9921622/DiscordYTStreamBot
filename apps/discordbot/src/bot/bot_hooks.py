@@ -1,7 +1,6 @@
 from functools import wraps
 from bot.bot import bot
 
-
 """
     @hook("on_disconnect")
     async def on_disconnect(guild_id: int):

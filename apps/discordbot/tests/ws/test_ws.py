@@ -5,7 +5,6 @@ from tests.conftest import client
 from tests.utils import TestCaseWebSocket
 from tests.bot_factories import PlaybackStatusFactory
 
-
 GUILD_ID = 12938027349
 
 

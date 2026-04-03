@@ -8,7 +8,6 @@ from bot.models import Playback, PlaybackStatus, Member, MemberList
 from tests.bot_factories import PlaybackStatusFactory, MemberFactory
 from tests.bot_utils import FakeBot, make_vc, bot, guild_id, vc
 
-
 # ── PlaybackHandler unit tests ───────────────────────────────────────────────────
 
 

@@ -13,7 +13,6 @@ from tests.utils import (
 )
 from tests.bot_factories import PlaybackStatusFactory
 
-
 GUILD_ID = 123878273492
 
 

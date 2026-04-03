@@ -14,7 +14,6 @@ from ws.models import WSResponse
 
 from tests.utils import make_mock_httpx_response, make_mock_response_wrapper, TestCaseCommand
 
-
 GUILD_ID = 1238723
 
 

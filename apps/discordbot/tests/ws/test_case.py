@@ -2,7 +2,7 @@ import pytest
 from contextlib import contextmanager
 
 
-class TestCaseWebSocket:
+class WebSocketTestCase:
 
     @contextmanager
     def ws_connect(self, client, guild_id: int):

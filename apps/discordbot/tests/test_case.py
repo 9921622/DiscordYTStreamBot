@@ -1,7 +1,7 @@
 from ws.models import WSResponse
 
 
-class TestCaseCommand:
+class CommandTestCase:
     """Abstract base class providing shared assertion helpers for command tests."""
 
     def to_response(self, data: dict | WSResponse) -> WSResponse:

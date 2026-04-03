@@ -1,12 +1,12 @@
 from unittest.mock import AsyncMock, patch
 
-from tests.ws.test_case import TestCaseWebSocket
+from tests.ws.test_case import WebSocketTestCase
 from tests.bot.factories import PlaybackStatusFactory
 
 GUILD_ID = 12938027349
 
 
-class TestWebSocketConnection(TestCaseWebSocket):
+class TestWebSocketConnection(WebSocketTestCase):
     def test_connects_successfully(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
             assert ws is not None
@@ -16,7 +16,7 @@ class TestWebSocketConnection(TestCaseWebSocket):
             pass
 
 
-class TestWebSocketRouting(TestCaseWebSocket):
+class TestWebSocketRouting(WebSocketTestCase):
     def test_missing_type_returns_error(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
             ws.send_json({"guild_id": GUILD_ID})
@@ -42,7 +42,7 @@ class TestWebSocketRouting(TestCaseWebSocket):
         mock_bot.vc_get_status.assert_called_with(GUILD_ID)
 
 
-class TestMultiSession(TestCaseWebSocket):
+class TestMultiSession(WebSocketTestCase):
     def test_different_guilds_dont_receive_each_others_broadcasts(self, client):
         OTHER_GUILD = 999999
         with patch("ws.commands.music_controls.bot") as mock_bot:

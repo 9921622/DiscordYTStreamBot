@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from utils.api_backend_wrapper import VideoAPI
 
-from tests.test_case import TestCaseCommand
-from tests.ws.test_case import TestCaseWebSocket
+from tests.test_case import CommandTestCase
+from tests.ws.test_case import WebSocketTestCase
 from tests.bot.factories import PlaybackStatusFactory
 from tests.utils.mocks import make_mock_video_response
 
@@ -80,7 +80,7 @@ def patch_voice_client(vc: MagicMock | None):
         yield mock_bot
 
 
-class TestCaseMusic(TestCaseCommand, TestCaseWebSocket):
+class TestCaseMusic(CommandTestCase, WebSocketTestCase):
     pass
 
 

@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, patch
 
 from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
 
-from tests.test_case import TestCaseCommand
-from tests.ws.test_case import TestCaseWebSocket
+from tests.test_case import CommandTestCase
+from tests.ws.test_case import WebSocketTestCase
 from tests.utils.factories import GuildQueueSchemaFactory
 from tests.mocks import make_mock_httpx_response
 from tests.utils.mocks import make_mock_response_wrapper
@@ -112,7 +112,7 @@ def patch_queue_clear_error(status: int = 500, detail: dict | None = None):
         yield
 
 
-class TestQueue(TestCaseCommand, TestCaseWebSocket):
+class TestQueue(CommandTestCase, WebSocketTestCase):
     """Mixin for queue command tests — combines command helpers with queue assertions."""
 
     def assert_queue_response(self, data: dict, expected_type: str, expected_queue):

@@ -11,7 +11,7 @@ from utils.api_backend_wrapper import (
 from ws.hooks import OnDisconnect, OnVoice, OnSongStart, OnSongEnd
 from ws.models import WSResponse
 
-from tests.test_case import TestCaseCommand
+from tests.test_case import CommandTestCase
 from tests.mocks import make_mock_httpx_response
 from tests.utils.mocks import make_mock_response_wrapper
 
@@ -42,7 +42,7 @@ def make_queue(items: list[GuildQueueItemSchema] | None = None) -> GuildQueueSch
     return GuildQueueSchema(id=GUILD_ID, items=items or [])
 
 
-class TestHookCase(TestCaseCommand):
+class TestHookCase(CommandTestCase):
 
     def make_hook(self, cls, guild_id=GUILD_ID):
         hook = cls.__new__(cls)

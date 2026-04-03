@@ -2,6 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from ws.ws_manager import ws_manager
 
 from ws.ws_commands_router import ws_command_router
+import ws.commands  # need to import commands in order to have them enabled
 
 router = APIRouter(prefix="/ws", tags=["ws"])
 
@@ -26,15 +27,3 @@ async def websocket_endpoint(websocket: WebSocket, guild_id: int):
 
     except WebSocketDisconnect:
         await ws_manager.disconnect(guild_id, websocket)
-
-
-def initialize_websockets():
-    """in order to enable websocket { type: command }
-    they need to be enabled here
-    """
-    # websocket commands
-
-    # websocket hooks
-
-
-initialize_websockets()

@@ -43,3 +43,7 @@ async def ws_command_router(websocket, message: dict):
 
         traceback.print_exc()
         return {"error": str(e)}, None, None
+
+
+def get_registered_commands():
+    return list(_ws_commands.keys())

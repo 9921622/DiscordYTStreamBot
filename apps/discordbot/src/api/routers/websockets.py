@@ -2,7 +2,13 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from ws.ws_manager import ws_manager
 
 from ws.ws_commands_router import ws_command_router
-import ws.commands  # need to import commands in order to have them enabled
+
+# need to import commands + hooks in order to have them enabled
+# I cant figure out how to test this.
+# if removed hooks wont wont but work in tests
+#   commands will still work in both practice and tests
+import ws.commands
+import ws.hooks
 
 router = APIRouter(prefix="/ws", tags=["ws"])
 

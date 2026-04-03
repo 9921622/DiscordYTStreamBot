@@ -11,10 +11,14 @@ class EventHandler:
         self._event_handlers: dict[str, list[Callable]] = {}
         super().__init__(*args, **kwargs)
 
+    def get_registered_events(self):
+        return list(self._event_handlers.keys())
+
     def on(self, event: str, handler: Callable):
         """Register a handler for a named event.
         handler signature: async/sync (guild_id: int, **kwargs)
         """
+        print("[EventHandler.on]", event)
         self._event_handlers.setdefault(event, []).append(handler)
 
     async def _emit(self, event: str, guild_id: int, **kwargs):

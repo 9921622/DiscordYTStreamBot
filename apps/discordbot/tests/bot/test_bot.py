@@ -3,9 +3,42 @@ import asyncio
 from unittest.mock import MagicMock, AsyncMock, patch
 
 from bot.models import PlaybackStatus, Member, MemberList
+from bot.bot_voice.voice_events_mixin import VoiceEventsMixin
 
+from tests.test_case import CommandTestCase
 from tests.bot.bot_utils import bot, guild_id, vc  # NOQA  # prevent autoflake removal
 from tests.bot.factories import PlaybackStatusFactory, MemberFactory
+
+GUILD_ID = 2327328
+
+
+class TestVoiceEventsMixin(CommandTestCase):
+
+    def make_mixin(self, guild_id=GUILD_ID):
+        """Instantiate VoiceEventsMixin with _emit mocked out."""
+        mixin = VoiceEventsMixin.__new__(VoiceEventsMixin)
+        mixin.guild_id = guild_id
+        mixin._emit = AsyncMock()
+        return mixin
+
+    @pytest.mark.asyncio
+    async def test_on_song_start_emits_correct_event(self):
+        mixin = self.make_mixin()
+        await mixin.on_song_start(GUILD_ID)
+        mixin._emit.assert_called_once_with("on_song_start", GUILD_ID)
+
+    @pytest.mark.asyncio
+    async def test_on_song_end_emits_correct_event(self):
+        mixin = self.make_mixin()
+        await mixin.on_song_end(GUILD_ID)
+        mixin._emit.assert_called_once_with("on_song_end", GUILD_ID)
+
+    @pytest.mark.asyncio
+    async def test_emit_not_called_without_trigger(self):
+        """_emit should never fire unless explicitly triggered."""
+        mixin = self.make_mixin()
+        mixin._emit.assert_not_called()
+
 
 # ── PlaybackHandler unit tests ───────────────────────────────────────────────────
 

@@ -10,6 +10,7 @@ from utils.api_backend_wrapper import (
 )
 from ws.hooks import OnDisconnect, OnVoice, OnSongStart, OnSongEnd
 from ws.models import WSResponse
+from ws.ws_hooks_router import get_registered_hooks
 
 from tests.test_case import CommandTestCase
 from tests.mocks import make_mock_httpx_response
@@ -53,6 +54,8 @@ class TestHookCase(CommandTestCase):
 
 
 class TestOnDisconnect(TestHookCase):
+    def test_exists(self):
+        assert "on_disconnect" in get_registered_hooks()
 
     @pytest.mark.asyncio
     async def test_disconnects_all(self):
@@ -62,6 +65,9 @@ class TestOnDisconnect(TestHookCase):
 
 
 class TestOnVoice(TestHookCase):
+    def test_exists(self):
+        assert "on_voice_connect" in get_registered_hooks()
+        assert "on_voice_disconnect" in get_registered_hooks()
 
     @pytest.mark.asyncio
     async def test_sends_members(self):
@@ -81,6 +87,8 @@ class TestOnVoice(TestHookCase):
 
 
 class TestOnSongStart(TestHookCase):
+    def test_exists(self):
+        assert "on_song_start" in get_registered_hooks()
 
     @pytest.mark.asyncio
     async def test_sends_song_start_and_status(self):
@@ -104,6 +112,8 @@ class TestOnSongStart(TestHookCase):
 
 
 class TestOnSongEnd(TestHookCase):
+    def test_exists(self):
+        assert "on_song_end" in get_registered_hooks()
 
     @pytest.mark.asyncio
     async def test_sends_song_end_no_next(self):

@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from ws.ws_commands_router import get_registered_commands
 from utils.api_backend_wrapper import VideoAPI
 
 from tests.test_case import CommandTestCase
@@ -90,6 +91,10 @@ class TestCaseMusic(CommandTestCase, WebSocketTestCase):
 
 
 class TestStatusCommand(TestCaseMusic):
+
+    def test_exists(self):
+        assert "status" in get_registered_commands()
+
     def test_status_returns_playback(self, client):
         mock_status = PlaybackStatusFactory.build()
         with patch_bot_status(mock_status):
@@ -117,6 +122,10 @@ class TestStatusCommand(TestCaseMusic):
 
 
 class TestPlayCommand(TestCaseMusic):
+
+    def test_exists(self):
+        assert "play" in get_registered_commands()
+
     def test_play_success(self, client):
         status = PlaybackStatusFactory.build(video_id="abc")
 
@@ -173,6 +182,9 @@ class TestPlayCommand(TestCaseMusic):
 
 
 class TestPauseCommand(TestCaseMusic):
+    def test_exists(self):
+        assert "pause" in get_registered_commands()
+
     def test_resume_while_paused(self, client):
         mock_vc = MagicMock()
         state = {"paused": True}
@@ -216,6 +228,9 @@ class TestPauseCommand(TestCaseMusic):
 
 
 class TestSeekCommand(TestCaseMusic):
+    def test_exists(self):
+        assert "seek" in get_registered_commands()
+
     def test_seek_success(self, client):
         with patch_bot_seek(status=PlaybackStatusFactory.build(position=42.0)):
             with self.ws_connect(client, GUILD_ID) as ws:
@@ -251,6 +266,9 @@ class TestSeekCommand(TestCaseMusic):
 
 
 class TestLoopCommand(TestCaseMusic):
+    def test_exists(self):
+        assert "loop" in get_registered_commands()
+
     def test_loop_toggles_on(self, client):
         with patch_bot_loop(status=PlaybackStatusFactory.build(loop=True)):
             with self.ws_connect(client, GUILD_ID) as ws:
@@ -290,6 +308,9 @@ class TestLoopCommand(TestCaseMusic):
 
 
 class TestVolumeCommand(TestCaseMusic):
+    def test_exists(self):
+        assert "volume" in get_registered_commands()
+
     def test_volume_set(self, client):
         with patch_bot_volume(return_value=0.8) as mock_bot:
             mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(volume=0.8)
@@ -329,7 +350,8 @@ class TestVolumeCommand(TestCaseMusic):
 
 
 class TestStopCommand(TestCaseMusic):
-    pass
+    def test_exists(self):
+        assert "stop" in get_registered_commands()
 
 
 # ---------------------------------------------------------------------------

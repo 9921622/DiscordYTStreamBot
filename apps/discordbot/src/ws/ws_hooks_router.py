@@ -33,3 +33,7 @@ async def ws_hook_router(event: str, guild_id: int):
 @hooks("on_disconnect", "on_voice_connect", "on_voice_disconnect", "on_song_start", "on_song_end")
 async def _handler(guild_id: int, event: str):
     await ws_hook_router(event, guild_id)
+
+
+def get_registered_hooks():
+    return list(_ws_hooks.keys())

@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from unittest.mock import AsyncMock, patch
 
+from ws.ws_commands_router import get_registered_commands
 from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
 
 from tests.test_case import CommandTestCase
@@ -131,6 +132,9 @@ class TestQueue(CommandTestCase, WebSocketTestCase):
 
 
 class TestQueueGet(TestQueue):
+    def test_exists(self):
+        assert "queue-get" in get_registered_commands()
+
     def test_queue_get_returns_queue(self, client):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_get(mock_queue):
@@ -155,6 +159,9 @@ class TestQueueGet(TestQueue):
 
 
 class TestQueueAdd(TestQueue):
+    def test_exists(self):
+        assert "queue-add" in get_registered_commands()
+
     def test_queue_add_success(self, client):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_add(), patch_queue_get(mock_queue):
@@ -199,6 +206,9 @@ class TestQueueAdd(TestQueue):
 
 
 class TestQueueRemove(TestQueue):
+    def test_exists(self):
+        assert "queue-remove" in get_registered_commands()
+
     def test_queue_remove_success(self, client):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_remove(), patch_queue_get(mock_queue):
@@ -237,6 +247,9 @@ class TestQueueRemove(TestQueue):
 
 
 class TestQueueReorder(TestQueue):
+    def test_exists(self):
+        assert "queue-reorder" in get_registered_commands()
+
     def test_queue_reorder_success(self, client):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_reorder(), patch_queue_get(mock_queue):
@@ -273,6 +286,9 @@ class TestQueueReorder(TestQueue):
 
 
 class TestQueueClear(TestQueue):
+    def test_exists(self):
+        assert "queue-clear" in get_registered_commands()
+
     def test_queue_clear_success(self, client):
         with patch_queue_clear():
             with self.ws_connect(client, GUILD_ID) as ws:

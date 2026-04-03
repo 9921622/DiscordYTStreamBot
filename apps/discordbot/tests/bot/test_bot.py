@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, AsyncMock, patch
 
 from bot.models import PlaybackStatus, Member, MemberList
 
-from tests.bot.bot_utils import bot, guild_id, vc
+from tests.bot.bot_utils import bot, guild_id, vc  # NOQA  # prevent autoflake removal
 from tests.bot.factories import PlaybackStatusFactory, MemberFactory
 
 # ── PlaybackHandler unit tests ───────────────────────────────────────────────────

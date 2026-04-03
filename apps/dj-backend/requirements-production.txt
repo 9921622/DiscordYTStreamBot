@@ -9,3 +9,6 @@ requests
 # utils
 python-dotenv
 yt-dlp
+
+#
+gunicorn

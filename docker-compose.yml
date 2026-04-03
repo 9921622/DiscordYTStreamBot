@@ -1,0 +1,43 @@
+services:
+  discordbot:
+    build:
+      context: ./apps/discordbot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./apps/discordbot/.env
+    networks:
+      - app-network
+
+  dj-backend:
+    build:
+      context: ./apps/dj-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./apps/dj-backend/.env
+    networks:
+      - app-network
+
+  react-frontend:
+    build:
+      context: ./apps/react-frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/react-frontend/.env.production
+    depends_on:
+      - discordbot
+      - dj-backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

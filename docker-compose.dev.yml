@@ -1,0 +1,29 @@
+services:
+  discordbot:
+    build:
+      target: development
+    volumes:
+      - ./apps/discordbot/src:/app/src
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
+    environment:
+      - DEBUG=true
+
+  dj-backend:
+    build:
+      target: development
+    volumes:
+      - ./apps/dj-backend/src:/app/src
+    command: python src/manage.py runserver 0.0.0.0:8000
+    environment:
+      - DEBUG=true
+
+  react-frontend:
+    build:
+      context: ./apps/react-frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./apps/react-frontend/app:/app/app
+      - ./apps/react-frontend/public:/app/public
+    ports:
+      - "5173:5173"
+    command: npm run dev -- --host

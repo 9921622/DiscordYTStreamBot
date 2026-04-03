@@ -1,7 +1,7 @@
 from bot.bot import bot
 from utils.api_backend_wrapper import QueueAPI, VideoAPI, GuildQueueItemSchema
 from ws.ws_hook import WebsocketHook
-from ws.ws_response import WSResponse
+from ws.models import WSResponse
 
 
 class OnDisconnect(WebsocketHook):

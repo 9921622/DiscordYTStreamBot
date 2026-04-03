@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from .ws_hooks_router import HookMeta
 from .ws_manager import ws_manager
-from .ws_response import WSResponse
+from .models import WSResponse
 
 
 class WebsocketHook(ABC, metaclass=HookMeta):

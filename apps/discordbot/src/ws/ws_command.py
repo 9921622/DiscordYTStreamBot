@@ -3,7 +3,7 @@ from enum import IntFlag, auto
 from typing import Optional
 
 from .ws_commands_router import CommandMeta
-from .ws_response import WSResponse
+from .models import WSResponse
 
 
 class WSCommandFlags(IntFlag):

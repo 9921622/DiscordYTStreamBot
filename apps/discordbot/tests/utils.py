@@ -3,7 +3,7 @@ import httpx
 from unittest.mock import AsyncMock, MagicMock, patch
 from contextlib import contextmanager
 
-from ws.ws_response import WSResponse
+from ws.models import WSResponse
 from utils.api_backend_wrapper import ResponseWrapper
 
 

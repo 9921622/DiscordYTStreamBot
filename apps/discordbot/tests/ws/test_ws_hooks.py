@@ -10,7 +10,7 @@ from utils.api_backend_wrapper import (
     DiscordUserSchema,
 )
 from ws.hooks import OnDisconnect, OnVoice, OnSongStart, OnSongEnd
-from ws.ws_response import WSResponse
+from ws.models import WSResponse
 
 from tests.utils import make_mock_httpx_response, make_mock_response_wrapper, TestCaseCommand
 

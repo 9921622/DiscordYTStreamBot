@@ -2,8 +2,9 @@ import React, { forwardRef, useEffect, useRef, useState } from "react";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import { CrossIcon, HeartIcon, PlayIcon } from "./utilities/Icons";
 import { createPortal } from "react-dom";
+import { Heart, Plus } from "lucide-react";
+import { PlayPauseIcon } from "./utilities/Icons";
 
 type SongContextMenuProps = {
     x: number
@@ -14,20 +15,38 @@ type SongContextMenuProps = {
 
 const SongContextMenu = forwardRef<HTMLUListElement, SongContextMenuProps>(
     ({ x, y, song, onClose }, ref) => {
-        const { videoPlay, videoPlaybackStatus } = usePlaybackVideoContext()
+        const iconClass = "w-4 h-4 text-white";
+        const { video, videoPlay, videoPause, videoPlaybackStatus } = usePlaybackVideoContext()
         const { queueAdd } = usePlaybackQueueContext()
+
+        const isCurrentSong = video?.youtube_id === song.youtube_id;
+        const isPlaying = (isCurrentSong && videoPlaybackStatus?.playing && !videoPlaybackStatus?.paused) || false;
+        const isPaused = isCurrentSong && (videoPlaybackStatus?.paused || false);
 
         const options: {label: React.ReactNode; action: () => void }[] = [
             {
-                label: <span className="flex items-center gap-2"><PlayIcon /> Play</span>,
-                action: () => { videoPlay(song); onClose() }
+                label: (
+                    <span className="flex items-center gap-2">
+                        <PlayPauseIcon isPlaying={isPlaying}/>
+                        { isPlaying ? "Pause" : "Play" }
+                    </span>
+                ),
+                action: () => {
+                    if (isPlaying)
+                        videoPause()
+                    else if (isPaused)
+                        videoPause()
+                    else
+                        videoPlay(song)
+                    onClose()
+                }
             },
             {
-                label: <span className="flex items-center gap-2"><CrossIcon /> Add to Queue</span>,
+                label: <span className="flex items-center gap-2"><Plus className={iconClass} /> Add to Queue</span>,
                 action: () => { queueAdd(song, !!videoPlaybackStatus?.playing); onClose() }
             },
             {
-                label: <span className="flex items-center gap-2"><HeartIcon /> Add to Likes</span>,
+                label: <span className="flex items-center gap-2"><Heart className={iconClass} /> Add to Likes</span>,
                 action: () => { onClose() }
             },
         ]

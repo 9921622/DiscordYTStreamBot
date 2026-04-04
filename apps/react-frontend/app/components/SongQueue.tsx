@@ -1,6 +1,5 @@
 import { useBotContext } from "~/contexts/BotContext"
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext"
-import { PlayIcon, StopIcon, NextIcon, ShuffleIcon, TrashIcon } from "./utilities/Icons"
 import {
     DndContext,
     closestCenter,
@@ -19,6 +18,7 @@ import { restrictToVerticalAxis, restrictToFirstScrollableAncestor  } from "@dnd
 import { CSS } from "@dnd-kit/utilities"
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext"
 import VCMembersContainer from "./VCMembersContainer"
+import { ListX, Play, Shuffle, SkipForward, Square } from "lucide-react"
 
 function DragHandle() {
     return (
@@ -96,7 +96,7 @@ function SortableItem({ item, index, onPlay, onRemove }: {
                             className="w-full h-full rounded object-cover"
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded transition">
-                            <PlayIcon />
+                            <Play className="w-4 h-4 text-white" />
                         </div>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -175,8 +175,8 @@ function CurrentSong() {
                         >
                             {
                                 queue?.length > 0 ?
-                                <NextIcon/> :
-                                <StopIcon />
+                                <SkipForward className="w-6 h-6 text-white" /> :
+                                <Square className="w-6 h-6 text-white" />
                             }
 
                         </button>
@@ -220,10 +220,10 @@ export default function QueueSidebar() {
 
                 <div className="flex items-center gap-1">
                     <button title="Shuffle" className="btn btn-ghost btn-xs btn-circle hover:bg-zinc-700" onClick={() => {}}>
-                        <ShuffleIcon />
+                        <Shuffle className="w-6 h-6 text-white" />
                     </button>
                     <button title="Clear Queue" className="btn btn-ghost btn-xs btn-circle hover:bg-red-500/20 hover:text-red-400" onClick={queueClear}>
-                        <TrashIcon />
+                        <ListX className="w-6 h-6 text-red-400" />
                     </button>
                 </div>
 
@@ -240,7 +240,7 @@ export default function QueueSidebar() {
                         onDragEnd={handleDragEnd}
                         modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor ]}>
                     <SortableContext items={queue.map(q => q.id)} strategy={verticalListSortingStrategy}>
-                        <ul className="flex-1 overflow-y-auto divide-y divide-zinc-800">
+                        <ul className="flex-1 overflow-y-auto divide-y divide-zinc-800 pb-[var(--musicbar-height,80px)]">
                             {queue.map((item, index) => (
                                 <SortableItem
                                     key={item.id}

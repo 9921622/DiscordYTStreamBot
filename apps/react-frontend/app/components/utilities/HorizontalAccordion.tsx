@@ -2,7 +2,7 @@ import { useState } from "react";
 
 interface HorizontalAccordionProps {
     children: React.ReactNode;
-    childrenClosed?: React.ReactNode,
+    childrenClosed?: React.ReactNode;
     peek?: React.ReactNode;
     width?: string;
     closedWidth?: string;
@@ -18,6 +18,8 @@ export default function HorizontalAccordion({
     defaultOpen = true
 }: HorizontalAccordionProps) {
     const [open, setOpen] = useState(defaultOpen);
+
+    const showPeeking = !open && !childrenClosed;
 
     return (
         <div className={`flex-shrink-0 h-full flex flex-col transition-[width] duration-300 overflow-hidden ${open ? width : closedWidth}`}>
@@ -36,12 +38,14 @@ export default function HorizontalAccordion({
                 <div className="flex flex-col flex-1 overflow-hidden">
                     {children}
                 </div>
+            ) : childrenClosed ? (
+                <div className="flex flex-col flex-1 overflow-hidden">
+                    {childrenClosed}
+                </div>
             ) : (
-                childrenClosed && (
-                    <div className="flex flex-col flex-1 overflow-hidden">
-                        {childrenClosed}
-                    </div>
-                )
+                <div className="flex flex-col flex-1 overflow-hidden opacity-50 pointer-events-none">
+                    {children}
+                </div>
             )}
         </div>
     );

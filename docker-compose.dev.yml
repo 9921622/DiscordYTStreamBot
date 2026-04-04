@@ -25,6 +25,8 @@ services:
     ports:
       - "5173:5173"
     command: npm run dev -- --host --force
+    environment:
+      - DOCKER=true
 
   nginx:
     volumes:

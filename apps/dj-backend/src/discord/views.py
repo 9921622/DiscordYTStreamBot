@@ -53,6 +53,7 @@ def get_oauth_redirect(request):
 
     # if using non docker. just change the backend url
     from django.conf import settings
+
     path = reverse("discord:login")
     return f"{settings.BACKEND_URL}{path}"
 
@@ -131,7 +132,7 @@ class DiscordLoginView(View, DiscordUserCreateUpdateMixin, RefreshTokenMixin):
 class DiscordOAuthView(View):
 
     OAUTH2_AUTHORIZE_ENDPOINT = "https://discord.com/oauth2/authorize"
-    SCOPES = ["identify", "rpc.voice.read"]
+    SCOPES = ["identify"]
 
     def get(self, request, *args, **kwargs):
         return redirect(self.build_oauth_url(request))

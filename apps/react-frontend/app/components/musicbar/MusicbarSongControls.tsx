@@ -1,6 +1,6 @@
 
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import { PlayPauseIcon } from "./utilities/Icons";
+import { PlayPauseIcon } from "../utilities/Icons";
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
 import { useSocketContext } from "~/contexts/SocketContext";
 import { Repeat, Shuffle, SkipBack, SkipForward } from "lucide-react";

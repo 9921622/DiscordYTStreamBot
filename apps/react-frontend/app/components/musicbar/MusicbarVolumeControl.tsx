@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import { ScalingVolumeIcon } from "./utilities/Icons";
+import { ScalingVolumeIcon } from "../utilities/Icons";
 
 export default function VolumeControl() {
     const { videoPlaybackStatus, videoVolume } = usePlaybackVideoContext();

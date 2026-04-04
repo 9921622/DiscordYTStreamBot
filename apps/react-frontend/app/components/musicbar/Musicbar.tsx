@@ -8,7 +8,6 @@ import MusicbarTags from "./MusicbarTags";
 import VolumeControl from "./MusicbarVolumeControl";
 import { useEffect, useRef } from "react";
 
-
 export default function Musicbar() {
     const { video, videoLoading, videoError} = usePlaybackVideoContext()
     const { botInChannel } = useBotContext()

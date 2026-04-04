@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NumToTime } from "./utilities/misc";
+import { NumToTime } from "../utilities/misc";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
 import { useSocketContext } from "~/contexts/SocketContext";
 

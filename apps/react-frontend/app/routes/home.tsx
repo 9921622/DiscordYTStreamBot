@@ -5,7 +5,7 @@ import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 
 import Navbar from "~/components/Navbar";
-import Musicbar from "~/components/Musicbar";
+import Musicbar from "~/components/musicbar/Musicbar";
 import SongContainer from "~/components/SongContainer";
 import SideBarContent from "~/components/SideBar";
 import SongQueue from "~/components/SongQueue";

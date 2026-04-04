@@ -1,3 +1,7 @@
+![Build and Tests](https://github.com/9921622/DiscordYTStreamBot/actions/workflows/tests.yml/badge.svg?branch=main)
+[![codecov discordbot](https://codecov.io/gh/9921622/DiscordYTStreamBot/branch/main/graph/badge.svg?flag=discordbot)](https://codecov.io/gh/9921622/DiscordYTStreamBot)
+[![codecov dj-backend](https://codecov.io/gh/9921622/DiscordYTStreamBot/branch/main/graph/badge.svg?flag=dj-backend)](https://codecov.io/gh/9921622/DiscordYTStreamBot)
+
 # DiscordYTStreamBot
 
 A self-hosted Discord music bot with a web frontend. Users authenticate via Discord OAuth, and the bot streams YouTube audio in voice channels. The stack is fully containerised and served behind Nginx.

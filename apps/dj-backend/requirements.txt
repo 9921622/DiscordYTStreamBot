@@ -14,3 +14,4 @@ Pylint          # linter
 pylint-mccabe
 pylint-django
 black           # reformatter
+coverage

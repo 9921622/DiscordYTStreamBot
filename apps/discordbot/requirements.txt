@@ -4,6 +4,7 @@
 pytest
 pytest-order
 pytest-asyncio
+pytest-cov
 polyfactory
 
 pre-commit
@@ -11,6 +12,5 @@ pre-commit
 #
 Pylint          # linter
 pylint-mccabe
-pytest-cov
 black           # reformatter
 autoflake       # reformatter

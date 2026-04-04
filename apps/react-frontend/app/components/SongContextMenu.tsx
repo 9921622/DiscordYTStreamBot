@@ -6,14 +6,14 @@ import { createPortal } from "react-dom";
 import { Heart, Plus } from "lucide-react";
 import { PlayPauseIcon } from "./utilities/Icons";
 
-type SongContextMenuProps = {
+type SongContextMenuHelperProps = {
     x: number
     y: number
     song: YoutubeVideo
     onClose: () => void
 }
 
-const SongContextMenu = forwardRef<HTMLUListElement, SongContextMenuProps>(
+const SongContextMenuHelper = forwardRef<HTMLUListElement, SongContextMenuHelperProps>(
     ({ x, y, song, onClose }, ref) => {
         const iconClass = "w-4 h-4 text-white";
         const { video, videoPlay, videoPause, videoPlaybackStatus } = usePlaybackVideoContext()
@@ -71,12 +71,12 @@ const SongContextMenu = forwardRef<HTMLUListElement, SongContextMenuProps>(
     }
 )
 
-type SongDropdownProps = {
+type SongContextMenuProps = {
     song: YoutubeVideo
     children: React.ReactNode
 }
 
-export default function SongDropdown({ song, children }: SongDropdownProps) {
+export default function SongContextMenu({ song, children }: SongContextMenuProps) {
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
     const menuRef = useRef<HTMLUListElement | null>(null)
 
@@ -107,7 +107,7 @@ export default function SongDropdown({ song, children }: SongDropdownProps) {
             </div>
 
             {menu && createPortal(
-                <SongContextMenu
+                <SongContextMenuHelper
                     ref={menuRef}
                     x={menu.x}
                     y={menu.y}

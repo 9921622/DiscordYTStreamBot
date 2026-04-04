@@ -4,6 +4,9 @@ from ws.models import WSResponse
 class CommandTestCase:
     """Abstract base class providing shared assertion helpers for command tests."""
 
+    def send_json(self, ws, type_, **kwargs):
+        ws.send_json({"type": type_, **kwargs})
+
     def to_response(self, data: dict | WSResponse) -> WSResponse:
         if isinstance(data, WSResponse):
             return data

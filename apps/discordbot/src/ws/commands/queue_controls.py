@@ -1,8 +1,9 @@
 from utils.api_backend_wrapper import QueueAPI
 from ws.ws_command import WebsocketCommand, WSCommandFlags
+from .mixins import DiscordUserMixin
 
 
-class QueueGetCommand(WebsocketCommand):
+class QueueGetCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "queue-get"
 
     async def handle(self):
@@ -14,7 +15,7 @@ class QueueGetCommand(WebsocketCommand):
         return self.response(queue=rw.data.model_dump())
 
 
-class QueueAddCommand(WebsocketCommand):
+class QueueAddCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "queue-add"
     flags = WSCommandFlags.BROADCAST
 
@@ -37,7 +38,7 @@ class QueueAddCommand(WebsocketCommand):
         return self.response(queue=rw_queue.data.model_dump())
 
 
-class QueueRemoveCommand(WebsocketCommand):
+class QueueRemoveCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "queue-remove"
     flags = WSCommandFlags.BROADCAST
 
@@ -60,7 +61,7 @@ class QueueRemoveCommand(WebsocketCommand):
         return self.response(queue=rw_queue.data.model_dump())
 
 
-class QueueReorderCommand(WebsocketCommand):
+class QueueReorderCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "queue-reorder"
     flags = WSCommandFlags.BROADCAST
 
@@ -83,7 +84,7 @@ class QueueReorderCommand(WebsocketCommand):
         return self.response(queue=rw_queue.data.model_dump())
 
 
-class QueueClearCommand(WebsocketCommand):
+class QueueClearCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "queue-clear"
     flags = WSCommandFlags.BROADCAST
 

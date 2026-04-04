@@ -1,9 +1,10 @@
 from bot.bot import bot
 from utils.api_backend_wrapper import VideoAPI
 from ws.ws_command import WebsocketCommand, WSCommandFlags
+from .mixins import DiscordUserMixin
 
 
-class PlayCommand(WebsocketCommand):
+class PlayCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "play"
     flags = WSCommandFlags.BROADCAST_STATUS
 
@@ -38,7 +39,7 @@ class PlayCommand(WebsocketCommand):
         return self.response(video_id=self.video_id)
 
 
-class PauseCommand(WebsocketCommand):
+class PauseCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "pause"
     flags = WSCommandFlags.BROADCAST
 
@@ -58,7 +59,7 @@ class PauseCommand(WebsocketCommand):
         return self.response(paused=vc.is_paused())
 
 
-class StopCommand(WebsocketCommand):
+class StopCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "stop"
     flags = WSCommandFlags.BROADCAST
 
@@ -67,7 +68,7 @@ class StopCommand(WebsocketCommand):
         return self.response()
 
 
-class LoopCommand(WebsocketCommand):
+class LoopCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "loop"
     flags = WSCommandFlags.BROADCAST
 
@@ -81,7 +82,7 @@ class LoopCommand(WebsocketCommand):
         return self.response(loop=status.loop)
 
 
-class SeekCommand(WebsocketCommand):
+class SeekCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "seek"
     flags = WSCommandFlags.BROADCAST_STATUS
 
@@ -103,7 +104,7 @@ class SeekCommand(WebsocketCommand):
         return self.response(position=self.position)
 
 
-class StatusCommand(WebsocketCommand):
+class StatusCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "status"
     flags = WSCommandFlags.BROADCAST
 
@@ -111,7 +112,7 @@ class StatusCommand(WebsocketCommand):
         return self.response(playback=bot.vc_get_status(self.guild_id).model_dump())
 
 
-class VolumeCommand(WebsocketCommand):
+class VolumeCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "volume"
     flags = WSCommandFlags.BROADCAST
 

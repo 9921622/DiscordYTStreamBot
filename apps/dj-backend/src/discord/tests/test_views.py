@@ -73,6 +73,7 @@ class GuildQueueViewTests(TestCase):
         response = self.client.get(reverse("discord:guild-queue", kwargs={"guild_id": "new_guild"}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(DiscordGuild.objects.filter(guild_id="new_guild").exists())
+        self.assertTrue(GuildQueue.objects.filter(guild__guild_id="new_guild").exists())
 
     def test_clear_queue(self):
         video = baker.make(YoutubeVideo)
@@ -84,7 +85,7 @@ class GuildQueueViewTests(TestCase):
         self.assertEqual(self.queue.items.count(), 0)
 
     def test_requires_internal_key(self):
-        client = APIClient()  # no key
+        client = APIClient()
         response = client.get(reverse("discord:guild-queue", kwargs={"guild_id": "guild_123"}))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -109,6 +110,7 @@ class GuildQueueItemViewTests(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(self.queue.items.count(), 1)
+        self.assertEqual(GuildQueueItem.objects.count(), 1)
 
     def test_add_video_missing_youtube_id(self):
         response = self.client.post(
@@ -116,31 +118,31 @@ class GuildQueueItemViewTests(TestCase):
             {},
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(GuildQueueItem.objects.count(), 0)
         self.assertIn("error", response.data)
 
-    @mock.patch("discord.views.YoutubeVideo.from_url")
-    def test_add_video_auto_fetches_if_not_in_db(self, mock_from_url):
-        def fake_from_url(url, save):
-            return baker.make(YoutubeVideo, youtube_id="unseen_vid")
-
-        mock_from_url.side_effect = fake_from_url
+    @mock.patch("discord.models.YouTubeService.fetch_and_cache_video")
+    def test_add_video_auto_fetches_if_not_in_db(self, mock_fetch):
+        mock_fetch.side_effect = lambda youtube_id: baker.make(YoutubeVideo, youtube_id=youtube_id)
 
         response = self.client.post(
             reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
             {"youtube_id": "unseen_vid"},
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        mock_from_url.assert_called_once()
+        self.assertEqual(GuildQueueItem.objects.count(), 1)
+        mock_fetch.assert_called_once_with("unseen_vid")
 
-    @mock.patch("discord.views.YoutubeVideo.from_url")
-    def test_add_video_returns_502_if_fetch_fails(self, mock_from_url):
-        mock_from_url.side_effect = Exception("fetch failed")
+    @mock.patch("discord.models.YouTubeService.fetch_and_cache_video")
+    def test_add_video_returns_502_if_fetch_fails(self, mock_fetch):
+        mock_fetch.side_effect = Exception("fetch failed")
 
         response = self.client.post(
             reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
             {"youtube_id": "bad_vid"},
         )
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.assertEqual(GuildQueueItem.objects.count(), 0)
         self.assertIn("error", response.data)
 
     def test_add_video_order_increments(self):
@@ -162,6 +164,7 @@ class GuildQueueItemViewTests(TestCase):
             reverse("discord:guild-queue-item", kwargs={"guild_id": "guild_123", "item_id": item.id})
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(GuildQueueItem.objects.count(), 0)
         self.assertFalse(GuildQueueItem.objects.filter(id=item.id).exists())
 
     def test_remove_item_not_found(self):
@@ -169,6 +172,7 @@ class GuildQueueItemViewTests(TestCase):
             reverse("discord:guild-queue-item", kwargs={"guild_id": "guild_123", "item_id": 99999})
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(GuildQueueItem.objects.count(), 0)
 
     def test_remove_item_wrong_guild(self):
         other_guild = baker.make(DiscordGuild, guild_id="other_guild")

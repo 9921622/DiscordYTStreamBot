@@ -67,7 +67,7 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
 
                 <button
                     className={[
-                        "btn btn-circle btn-lg flex-shrink-0 transition-all duration-200",
+                        "btn btn-circle btn-lg flex-shrink-0 transition-transform duration-200 transform hover:scale-105",
                         "opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0",
                         isPlaying ? "btn-secondary" : "btn-primary",
                     ].join(" ")}
@@ -75,9 +75,12 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                     disabled={!botInChannel}
                     title={isPlaying ? "Pause" : isPaused ? "Resume" : "Play"}
                 >
-                    <PlayPauseIcon
-                        className="w-5 h-5 flex-shrink-0 text-white transition-opacity duration-200 group-hover:opacity-80"
-                        isPlaying={isPlaying} />
+                    <div className="transform transition-transform duration-200 scale-100">
+                        <PlayPauseIcon
+                            className="w-5 h-5 flex-shrink-0 text-white"
+                            isPlaying={isPlaying}
+                        />
+                    </div>
                 </button>
             </div>
         </div>

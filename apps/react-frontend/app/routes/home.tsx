@@ -35,67 +35,96 @@ function useSongs() {
     return songs;
 }
 
+const MUSICBAR_HEIGHT = "var(--musicbar-height, 80px)";
+
+
+function SidebarPanel() {
+    return (
+        <aside className="bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl flex-shrink-0 h-full overflow-hidden shadow-lg">
+            <HorizontalAccordion
+                closedWidth="w-14"
+                width="w-56"
+                closeIcon={<PanelLeftClose size={16} />}
+                openIcon={<LibraryBig size={16} />}
+                iconSide="left"
+            >
+                <SideBarContent />
+            </HorizontalAccordion>
+        </aside>
+    );
+}
+
+function MainContent({ songs }: { songs: YoutubeVideo[] }) {
+    return (
+        <main className="flex-1 min-w-0 bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl overflow-y-auto shadow-lg">
+            <div className="p-6">
+                <header className="mb-5">
+                    <h1 className="text-2xl font-semibold tracking-tight">All Songs</h1>
+                    <p className="text-base-content/40 text-sm mt-0.5">
+                        {songs.length > 0 ? `${songs.length} tracks` : "Loading…"}
+                    </p>
+                </header>
+                <SongContainer songs={songs} />
+                {/* Bottom breathing room above fixed musicbar */}
+                <div className="h-4" />
+            </div>
+        </main>
+    );
+}
+
+function QueuePanel() {
+    return (
+        <aside className="bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl flex-shrink-0 h-full overflow-hidden shadow-lg">
+            <HorizontalAccordion
+                closedWidth="w-48"
+                width="w-112"
+                closeIcon={<PanelRightClose size={16} />}
+                openIcon={<ListMusic size={16} />}
+                childrenClosed={<SongQueueClosed />}
+            >
+                <SongQueue />
+            </HorizontalAccordion>
+        </aside>
+    );
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 function HomePage() {
     const songs = useSongs();
 
     return (
-        <>
-            <div className="flex flex-col h-screen">
-                <nav className="sticky top-0 z-50 navbar w-full bg-base-300 flex-shrink-0">
-                    <div className="flex-1">
-                        <Navbar />
-                    </div>
-                </nav>
+        <div className="flex flex-col h-screen bg-base-300">
 
-                <div className="flex-1 overflow-hidden p-4 pb-[calc(var(--musicbar-height,80px)+50px)]">
-                    <div className="flex gap-3 h-full overflow-hidden">
+            {/* ── Navbar ── */}
+            <nav className="sticky top-0 z-50 flex-shrink-0 navbar bg-base-300/80 backdrop-blur-md border-b border-base-content/5 shadow-sm px-4">
+                <div className="flex-1">
+                    <Navbar />
+                </div>
+            </nav>
 
-                        {/* SideBar */}
-                        <div className="bg-zinc-900 rounded-md flex-shrink-0 h-full overflow-hidden">
-                            <HorizontalAccordion
-                                closedWidth="w-14"
-                                width="w-56"
-                                closeIcon={<PanelLeftClose/>}
-                                openIcon={<LibraryBig/>}
-                                iconSide="left"
-                            >
-                                <SideBarContent />
-                            </HorizontalAccordion>
-                        </div>
-
-                        {/* Main content */}
-                        <div className="flex-1 bg-zinc-900 p-5 rounded-md overflow-y-auto">
-                            <p className="text-xl font-bold mb-3">All Songs</p>
-                            <SongContainer songs={songs} />
-                            <div>&nbsp;</div>
-                            <div>&nbsp;</div>
-                        </div>
-
-                        {/* SongQueue */}
-                        <div className="bg-zinc-900 rounded-md flex-shrink-0 h-full overflow-hidden">
-                            <HorizontalAccordion
-                                closedWidth="w-48"
-                                width="w-112"
-                                closeIcon={<PanelRightClose/>}
-                                openIcon={<ListMusic/>}
-                                childrenClosed={<SongQueueClosed />}
-                            >
-                                <SongQueue />
-                            </HorizontalAccordion>
-                        </div>
-
-                    </div>
+            {/* ── Body ── */}
+            <div
+                className="flex-1 overflow-hidden p-3"
+                style={{ paddingBottom: `calc(${MUSICBAR_HEIGHT} + 2rem)` }}
+            >
+                <div className="flex gap-3 h-full overflow-hidden">
+                    <SidebarPanel />
+                    <MainContent songs={songs} />
+                    <QueuePanel />
                 </div>
             </div>
 
+            {/* ── Musicbar ── */}
             <div className="fixed bottom-0 left-0 w-full z-50">
                 <Musicbar />
             </div>
-        </>
+        </div>
     );
 }
 
-function HomeContextWrapperWrapper() {
+
+function HomeWithSocket() {
     const { guildID } = useBotContext();
     return (
         <SocketProvider guildID={guildID ?? undefined}>
@@ -108,11 +137,11 @@ function HomeContextWrapperWrapper() {
     );
 }
 
-function HomeContextWrapper() {
+function HomeWithBot() {
     const discordUser = useUser();
     return (
         <BotProvider discordUser={discordUser}>
-            <HomeContextWrapperWrapper />
+            <HomeWithSocket />
         </BotProvider>
     );
 }
@@ -120,7 +149,7 @@ function HomeContextWrapper() {
 export default function Home() {
     return (
         <UserProvider>
-            <HomeContextWrapper />
+            <HomeWithBot />
         </UserProvider>
     );
 }

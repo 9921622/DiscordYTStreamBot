@@ -6,12 +6,17 @@ import SongProgressBar from "./MusicbarSongProgressBar";
 import SongControls from "./MusicbarSongControls";
 import MusicbarTags from "./MusicbarTags";
 import VolumeControl from "./MusicbarVolumeControl";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Musicbar() {
     const { video, videoLoading, videoError } = usePlaybackVideoContext()
     const { botInChannel } = useBotContext()
     const barRef = useRef<HTMLDivElement>(null)
+    const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
+    const [isHovered, setIsHovered] = useState(false)
+    const animFrameRef = useRef<number | null>(null)
+    const targetPos = useRef<{ x: number; y: number } | null>(null)
+    const currentPos = useRef<{ x: number; y: number } | null>(null)
 
     useEffect(() => {
         const el = barRef.current
@@ -25,6 +30,48 @@ export default function Musicbar() {
         observer.observe(el)
         return () => observer.disconnect()
     }, [])
+
+    // Smooth lerp animation loop
+    useEffect(() => {
+        const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+
+        const tick = () => {
+            if (targetPos.current) {
+                if (!currentPos.current) {
+                    currentPos.current = { ...targetPos.current }
+                } else {
+                    currentPos.current = {
+                        x: lerp(currentPos.current.x, targetPos.current.x, 0.1),
+                        y: lerp(currentPos.current.y, targetPos.current.y, 0.1),
+                    }
+                }
+                setMousePos({ ...currentPos.current })
+            }
+            animFrameRef.current = requestAnimationFrame(tick)
+        }
+
+        animFrameRef.current = requestAnimationFrame(tick)
+        return () => {
+            if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+        }
+    }, [])
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = barRef.current?.getBoundingClientRect()
+        if (!rect) return
+        targetPos.current = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+        }
+    }
+
+    const handleMouseEnter = () => setIsHovered(true)
+    const handleMouseLeave = () => {
+        setIsHovered(false)
+        targetPos.current = null
+        currentPos.current = null
+        setMousePos(null)
+    }
 
     if (videoError) return (
         <div className="fixed bottom-0 w-full flex items-center justify-center px-4 py-5 bg-[#0f0f0f]">
@@ -40,9 +87,38 @@ export default function Musicbar() {
     return (
         <div
             ref={barRef}
+            onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             className="fixed bottom-0 w-full bg-[#0f0f0f] text-white px-5 py-3.5 flex items-center justify-between shadow-xl border-t border-white/5"
             style={{ minHeight: 72 }}
         >
+            {/* Mouse-following white glow */}
+            {mousePos && isHovered && (
+                <div
+                    className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
+                    style={{
+                        maskImage: 'none',
+                    }}
+                >
+                    <div
+                        style={{
+                            position: 'absolute',
+                            left: mousePos.x,
+                            top: mousePos.y,
+                            transform: 'translate(-50%, -50%)',
+                            width: 700,
+                            height: 700,
+                            borderRadius: '50%',
+                            background: 'radial-gradient(circle, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.07) 35%, transparent 70%)',
+                            pointerEvents: 'none',
+                            transition: 'opacity 0.3s ease',
+                            opacity: isHovered ? 1 : 0,
+                        }}
+                    />
+                </div>
+            )}
+
             {/* Animated blurred background */}
             {video?.thumbnail && (
                 <>
@@ -60,7 +136,7 @@ export default function Musicbar() {
                             backgroundImage: `url(${video.thumbnail})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
-                            filter: 'blur(28px) brightness(0.3) saturate(1.4)',
+                            filter: 'blur(28px) brightness(0.5) saturate(2)',
                             animation: 'bgDrift 14s ease-in-out infinite',
                             transform: 'scale(1.15)',
                         }}

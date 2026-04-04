@@ -79,7 +79,6 @@ function QueuePanel() {
                 width="w-112"
                 closeIcon={<PanelRightClose size={16} />}
                 openIcon={<ListMusic size={16} />}
-                childrenClosed={<SongQueueClosed />}
             >
                 <SongQueue />
             </HorizontalAccordion>

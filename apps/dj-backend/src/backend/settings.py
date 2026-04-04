@@ -23,6 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG") == "True"
+BACKEND_URL = os.getenv("BACKEND_URL")
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 ALLOWED_HOSTS = json.loads(os.getenv("ALLOWED_HOSTS", "[]"))
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
     "youtube",
     "discord",
     #
+    "django_extensions",
     "rest_framework",
     "corsheaders",
 ]

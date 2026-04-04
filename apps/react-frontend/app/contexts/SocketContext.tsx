@@ -19,7 +19,8 @@ export function SocketProvider({ guildID, children }: { guildID?: string, childr
   useEffect(() => {
     if (typeof WebSocket === "undefined") return;
     if (!guildID) return;
-    const socket = new WebSocket(`ws://localhost:8080/ws/${guildID}`)  //TODO: put this in env file
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+    const socket = new WebSocket(`${protocol}//${window.location.host}${import.meta.env.VITE_DISCORD_BOT_WS}/${guildID}`)
     ws.current = socket
 
     socket.onopen = () => setConnected(true)

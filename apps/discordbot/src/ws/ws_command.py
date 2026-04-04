@@ -23,6 +23,14 @@ class WebsocketCommand(ABC, metaclass=CommandMeta):
         self.websocket = websocket
         self.guild_id = guild_id
         self.data = data
+        self.get_objects()
+        self.errors = self.get_errors()
+
+    def get_objects(self):
+        pass
+
+    def get_errors(self):
+        return None
 
     @abstractmethod
     async def handle(self):
@@ -43,6 +51,10 @@ class WebsocketCommand(ABC, metaclass=CommandMeta):
 
     async def execute(self):
         """will be called by ws_commands_router"""
+        errors = self.get_errors()
+        if errors is not None:
+            return self.response_error(msg="Validation failed", **errors), None, None
+
         result = await self.handle()
 
         if isinstance(result, dict) and result.get("error") is not None:

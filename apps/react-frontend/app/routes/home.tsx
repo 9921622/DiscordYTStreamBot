@@ -123,7 +123,7 @@ function HomePage() {
 }
 
 
-function HomeWithSocket() {
+function HomeProviders() {
     const { guildID } = useBotContext();
     return (
         <SocketProvider guildID={guildID ?? undefined}>
@@ -136,19 +136,12 @@ function HomeWithSocket() {
     );
 }
 
-function HomeWithBot() {
-    const discordUser = useUser();
-    return (
-        <BotProvider discordUser={discordUser}>
-            <HomeWithSocket />
-        </BotProvider>
-    );
-}
-
 export default function Home() {
     return (
         <UserProvider>
-            <HomeWithBot />
+        <BotProvider>
+            <HomeProviders />
+        </BotProvider>
         </UserProvider>
     );
 }

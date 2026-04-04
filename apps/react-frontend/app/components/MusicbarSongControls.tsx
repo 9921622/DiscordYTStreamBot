@@ -1,9 +1,12 @@
 
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import { PlayIcon, PauseIcon, PrevIcon, NextIcon, VolumeIcon, LoopIcon, ShuffleIcon } from "./utilities/Icons";
+import { PlayPauseIcon } from "./utilities/Icons";
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
 import { useSocketContext } from "~/contexts/SocketContext";
+import { Repeat, Shuffle, SkipBack, SkipForward } from "lucide-react";
 
+
+const iconClass = "w-6 h-6 text-white";
 
 export default function SongControls({ className }: { className : string }) {
     const { send } = useSocketContext();
@@ -25,13 +28,13 @@ export default function SongControls({ className }: { className : string }) {
     return (
         <div className={`${className} flex items-center gap-4`}>
             <button className="btn btn-ghost btn-circle hover:bg-gray-800" onClick={onShuffle}>
-                <ShuffleIcon />
+                <Shuffle className={iconClass} />
             </button>
             <button className="pointer-events-none opacity-40 btn btn-ghost btn-circle hover:bg-gray-800" onClick={onPrev}>
-                <PrevIcon />
+                <SkipBack className={iconClass} />
             </button>
             <button className="btn btn-ghost btn-circle hover:bg-gray-800" onClick={videoPause}>
-                {isPlaying && !isPaused ? <PauseIcon /> : <PlayIcon />}
+                <PlayPauseIcon isPlaying={!isPaused} className={iconClass} />
             </button>
 
             <button
@@ -40,18 +43,17 @@ export default function SongControls({ className }: { className : string }) {
                 >
 
                 <div className={!hasQueue ? "opacity-40 group-hover:opacity-0 transition-opacity" : ""}>
-                    <NextIcon />
+                    <SkipForward className={iconClass} />
                 </div>
-
             </button>
 
             <button className="btn btn-ghost btn-circle hover:bg-gray-800" onClick={handleLoop}>
                 <div className="relative">
-                    <LoopIcon />
+                    <Repeat className={iconClass} />
                     {!isLoop && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-full h-0.5 bg-current rotate-45" />
-                        </div>
+                        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="w-5 h-[2px] bg-current rotate-45 rounded" />
+                        </span>
                     )}
                 </div>
             </button>

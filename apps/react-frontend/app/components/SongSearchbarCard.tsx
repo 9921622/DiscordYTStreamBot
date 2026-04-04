@@ -1,8 +1,6 @@
-import { PlayIcon } from "./utilities/Icons";
+import { Play } from "lucide-react";
 import { NumToTime } from "./utilities/misc";
-
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
-
 
 export default function SongSearchbarCard({ song, onClick }: { song: YoutubeVideo, onClick?: () => void; }) {
   return (
@@ -21,7 +19,7 @@ export default function SongSearchbarCard({ song, onClick }: { song: YoutubeVide
         {/* Play overlay */}
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center">
           <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            <PlayIcon />
+            <Play size={12} className="text-white fill-white" />
           </div>
         </div>
 

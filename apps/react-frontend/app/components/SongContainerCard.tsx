@@ -1,9 +1,10 @@
-// SongCard.tsx
-import { PlayIcon, PauseIcon, CrossIcon } from "./utilities/Icons";
 import { useBotContext } from "~/contexts/BotContext";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
+import { Plus } from "lucide-react";
+import { PlayPauseIcon } from "./utilities/Icons";
+
 
 export default function SongCard({ song }: { song: YoutubeVideo }) {
     const { botInChannel } = useBotContext();
@@ -11,7 +12,7 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
     const { queueAdd } = usePlaybackQueueContext();
 
     const isCurrentSong = currentVideo?.youtube_id === song.youtube_id;
-    const isPlaying = isCurrentSong && videoPlaybackStatus?.playing && !videoPlaybackStatus?.paused;
+    const isPlaying = (isCurrentSong && videoPlaybackStatus?.playing && !videoPlaybackStatus?.paused) || false;
     const isPaused = isCurrentSong && videoPlaybackStatus?.paused;
 
     function handlePlay() {
@@ -49,7 +50,7 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                     disabled={!botInChannel}
                     title="Add to queue"
                 >
-                    <CrossIcon />
+                    <Plus className="w-3.5 h-3.5" />
                 </button>
             </div>
 
@@ -66,7 +67,7 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
 
                 <button
                     className={[
-                        "btn btn-circle btn-sm flex-shrink-0 transition-all duration-200",
+                        "btn btn-circle btn-lg flex-shrink-0 transition-all duration-200",
                         "opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0",
                         isPlaying ? "btn-secondary" : "btn-primary",
                     ].join(" ")}
@@ -74,7 +75,9 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                     disabled={!botInChannel}
                     title={isPlaying ? "Pause" : isPaused ? "Resume" : "Play"}
                 >
-                    {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                    <PlayPauseIcon
+                        className="w-5 h-5 flex-shrink-0 text-white transition-opacity duration-200 group-hover:opacity-80"
+                        isPlaying={isPlaying} />
                 </button>
             </div>
         </div>

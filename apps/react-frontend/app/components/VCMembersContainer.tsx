@@ -3,6 +3,7 @@ import type { DiscordUser } from "~/api/backend-types";
 import { useBotContext } from "~/contexts/BotContext";
 import { useSocketContext } from "~/contexts/SocketContext";
 import type { WSResponse } from "~/api/backend-types";
+import { Headphones } from "lucide-react";
 
 const AVATAR_SIZE = 28;
 const AVATAR_GAP = 8;
@@ -63,15 +64,11 @@ export default function VCMembersContainer() {
             "
         >
             {/* Voice icon */}
-            <svg
+            <Headphones
                 className="w-3.5 h-3.5 text-success/80 flex-shrink-0 group-hover:text-success transition-colors duration-200"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path d="M12 3a9 9 0 0 1 9 9v7a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h1.93A7.001 7.001 0 0 0 5.07 14H7a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7a9 9 0 0 1 8-8.94V3z" />
-            </svg>
+            />
 
-            {/* Avatar strip — fixed width so the pill never jumps */}
+            {/* Avatar strip */}
             <div
                 className="flex items-center overflow-hidden flex-shrink-0"
                 style={{ width: lockedAvatarWidth }}
@@ -106,14 +103,14 @@ export default function VCMembersContainer() {
                 ))}
             </div>
 
-            {/* Member count — only shown when stacked */}
+            {/* Member count */}
             {stacked && (
                 <span className="text-[10px] font-semibold tabular-nums text-base-content/50 leading-none flex-shrink-0 -ml-0.5">
                     {members.length}
                 </span>
             )}
 
-            {/* Keyframe injection — tiny, no external dep */}
+            {/* Keyframe injection */}
             <style>{`
                 @keyframes vcAvatarIn {
                     from { opacity: 0; transform: scale(0.7); }

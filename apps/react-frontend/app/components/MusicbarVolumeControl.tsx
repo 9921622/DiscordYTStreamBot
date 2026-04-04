@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { VolumeIcon } from "./utilities/Icons";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
+import { ScalingVolumeIcon } from "./utilities/Icons";
 
 export default function VolumeControl() {
     const { videoPlaybackStatus, videoVolume } = usePlaybackVideoContext();
@@ -57,7 +57,7 @@ export default function VolumeControl() {
             )}
 
             <button className="btn btn-ghost btn-circle hover:bg-gray-800">
-                <VolumeIcon />
+                <ScalingVolumeIcon className="w-4 h-4 text-white" level={volume} />
             </button>
         </div>
     );

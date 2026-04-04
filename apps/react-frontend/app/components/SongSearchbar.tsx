@@ -1,44 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { Search, X, ArrowRight } from "lucide-react";
 
 import SongSearchbarCard from "./SongSearchbarCard";
-
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
 import type { YoutubeSearch, YoutubeVideo } from "~/api/youtube/youtube-types";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
 import SongDropdown from "./SongDropdown";
+import { LoadingSpinner } from "./utilities/Icons";
 
-function SearchIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-    </svg>
-  );
-}
-
-function ClearIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14M12 5l7 7-7 7" />
-    </svg>
-  );
-}
-
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center py-6">
-      <div className="w-5 h-5 border-2 border-zinc-600 border-t-zinc-300 rounded-full animate-spin" />
-    </div>
-  );
-}
 
 function EmptyState({ query }: { query: string }) {
   return (
@@ -54,7 +23,7 @@ function SongSearchbarDropdownExtra({ query }: { query: string }) {
     <div className="border-t border-zinc-800 mt-1 pt-1">
       <button className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-md transition flex items-center justify-between gap-2">
         <span className="truncate">Show full results for "{query}"</span>
-        <ArrowRightIcon />
+        <ArrowRight size={13} strokeWidth={2} />
       </button>
     </div>
   );
@@ -71,7 +40,6 @@ export default function SongSearchbar() {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // search handler with loading state
   useEffect(() => {
     if (!search) {
       setResults([]);
@@ -101,7 +69,6 @@ export default function SongSearchbar() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // close on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (!containerRef.current?.contains(e.target as Node)) {
@@ -125,11 +92,8 @@ export default function SongSearchbar() {
 
   return (
     <div ref={containerRef} className="relative w-full md:w-[600px]">
-      {/* Input wrapper */}
       <div className="flex items-center gap-2 rounded-full bg-gray-900 border border-gray-700 px-3.5 focus-within:border-gray-500 transition-colors">
-        <span className="text-zinc-500 flex-shrink-0">
-          <SearchIcon />
-        </span>
+        <Search size={14} strokeWidth={2} className="text-zinc-500 flex-shrink-0" />
 
         <input
           ref={inputRef}
@@ -157,12 +121,11 @@ export default function SongSearchbar() {
             className="text-zinc-500 hover:text-zinc-200 transition flex-shrink-0"
             aria-label="Clear search"
           >
-            <ClearIcon />
+            <X size={14} strokeWidth={2.5} />
           </button>
         )}
       </div>
 
-      {/* Dropdown */}
       {showDropdown && (
         <ul className="absolute left-0 mt-2 w-full bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 z-[999] p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-top-1 duration-150">
           {isLoading && <LoadingSpinner />}

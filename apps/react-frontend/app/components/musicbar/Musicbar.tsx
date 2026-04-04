@@ -9,11 +9,10 @@ import VolumeControl from "./MusicbarVolumeControl";
 import { useEffect, useRef } from "react";
 
 export default function Musicbar() {
-    const { video, videoLoading, videoError} = usePlaybackVideoContext()
+    const { video, videoLoading, videoError } = usePlaybackVideoContext()
     const { botInChannel } = useBotContext()
     const barRef = useRef<HTMLDivElement>(null)
 
-    // to sync the music bar height when song changes
     useEffect(() => {
         const el = barRef.current
         if (!el) return
@@ -28,9 +27,10 @@ export default function Musicbar() {
     }, [])
 
     if (videoError) return (
-        <div className="bg-gray-900 text-white px-4 py-5 fixed bottom-0 w-full flex items-center justify-center">
-            <div className="alert alert-error w-auto">
-                <span>⚠️ {videoError}</span>
+        <div className="fixed bottom-0 w-full flex items-center justify-center px-4 py-5 bg-[#0f0f0f]">
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">
+                <span>⚠️</span>
+                <span>{videoError}</span>
             </div>
         </div>
     )
@@ -38,54 +38,57 @@ export default function Musicbar() {
     const disabled = !video || !botInChannel
 
     return (
-        <div ref={barRef} className="bg-gray-900 text-white px-4 py-5 flex items-center justify-between shadow-inner fixed bottom-0 w-full">
+        <div
+            ref={barRef}
+            className="fixed bottom-0 w-full bg-[#0f0f0f] text-white px-5 py-3.5 flex items-center justify-between shadow-xl border-t border-white/5"
+            style={{ minHeight: 72 }}
+        >
+            {/* Animated blurred background */}
             {video?.thumbnail && (
                 <>
                     <style>{`
                         @keyframes bgDrift {
-                            0%   { transform: scale(1.1) translate(0%, 0%)    skew(0deg, 0deg); }
-                            25%  { transform: scale(1.2) translate(-2%, 1%)   skew(1deg, 0.5deg); }
-                            50%  { transform: scale(1.15) translate(2%, -1%)  skew(-1deg, 1deg); }
-                            75%  { transform: scale(1.2) translate(-1%, 2%)   skew(0.5deg, -1deg); }
-                            100% { transform: scale(1.1) translate(0%, 0%)    skew(0deg, 0deg); }
+                            0%   { transform: scale(1.1) translate(0%, 0%); }
+                            33%  { transform: scale(1.18) translate(-1.5%, 1%); }
+                            66%  { transform: scale(1.14) translate(1.5%, -1%); }
+                            100% { transform: scale(1.1) translate(0%, 0%); }
                         }
                     `}</style>
                     <div
                         className="absolute inset-0 transition-all duration-1000"
                         style={{
-                            backgroundImage: `url(${video?.thumbnail})`,
+                            backgroundImage: `url(${video.thumbnail})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
-                            filter: 'blur(20px) brightness(0.4)',
-                            animation: 'bgDrift 12s ease-in-out infinite',
+                            filter: 'blur(28px) brightness(0.3) saturate(1.4)',
+                            animation: 'bgDrift 14s ease-in-out infinite',
+                            transform: 'scale(1.15)',
                         }}
                     />
                     <div className="absolute inset-0 bg-black/50" />
                 </>
             )}
-            {!video?.thumbnail && <div className="absolute inset-0 bg-gray-900" />}
+            {!video?.thumbnail && <div className="absolute inset-0 bg-[#0f0f0f]" />}
 
-            <div className="relative z-10 flex items-center gap-3 w-1/4 min-w-0">
+            {/* Left — artist info */}
+            <div className="relative z-10 flex items-center gap-3 w-100 min-w-0 flex-shrink-0">
                 <ArtistInfo video={video} loading={videoLoading} />
             </div>
 
-            <div className={`absolute left-1/2 -translate-x-1/2 ${disabled ? "cursor-not-allowed" : ""}`}>
-                <div className={`flex flex-col items-center gap-2 w-150 ${disabled ? "opacity-40 pointer-events-none" : ""}`}>
+            {/* Center — controls + progress */}
+            <div className={`absolute left-1/2 -translate-x-1/2 z-10 ${disabled ? "cursor-not-allowed" : ""}`}>
+                <div className={`flex flex-col items-center gap-2 w-[700px] ${disabled ? "opacity-30 pointer-events-none" : ""}`}>
                     {!botInChannel && video && (
-                        <p className="text-xs text-warning">Bot is not in your voice channel</p>
+                        <p className="text-[11px] text-amber-400/80 tracking-wide">Bot is not in your voice channel</p>
                     )}
-                    <SongControls className="w-1/2" />
-                    <SongProgressBar
-                        className="w-full"
-                    />
+                    <SongControls className="w-full justify-center" />
+                    <SongProgressBar className="w-full" />
                 </div>
             </div>
 
-            <div className="relative z-10 flex items-center gap-2 w-1/6 justify-end ml-auto">
+            {/* Right — tags + volume */}
+            <div className="relative z-10 flex items-center gap-3 ml-auto flex-shrink-0">
                 <MusicbarTags tags={video?.tags ?? []} />
-            </div>
-
-            <div className="relative z-10 flex items-center gap-3">
                 <VolumeControl />
             </div>
         </div>

@@ -1,6 +1,6 @@
 import SongCard from "~/components/SongContainerCard";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
-import SongDropdown from "./SongDropdown";
+import SongContextMenu from "./SongContextMenu";
 
 export default function SongContainer({ songs, className }: { songs: YoutubeVideo[]; className?: string }) {
     if (!songs?.length) {
@@ -11,9 +11,9 @@ export default function SongContainer({ songs, className }: { songs: YoutubeVide
         <div className={className}>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
                 {songs.map((song) => (
-                    <SongDropdown key={song.youtube_id} song={song}>
+                    <SongContextMenu key={song.youtube_id} song={song}>
                         <SongCard song={song} />
-                    </SongDropdown>
+                    </SongContextMenu>
                 ))}
             </div>
         </div>

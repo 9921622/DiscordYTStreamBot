@@ -5,7 +5,7 @@ import SongSearchbarCard from "./SongSearchbarCard";
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
 import type { YoutubeSearch, YoutubeVideo } from "~/api/youtube/youtube-types";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import SongDropdown from "./SongDropdown";
+import SongContextMenu from "./SongContextMenu";
 import { LoadingSpinner } from "./utilities/Icons";
 
 
@@ -134,7 +134,7 @@ export default function SongSearchbar() {
 
           {!isLoading && results.map((item) => (
             <li key={item.youtube_id}>
-              <SongDropdown song={item}>
+              <SongContextMenu song={item}>
                 <SongSearchbarCard
                   song={item}
                   onClick={() => {
@@ -142,7 +142,7 @@ export default function SongSearchbar() {
                     setIsOpen(false);
                   }}
                 />
-              </SongDropdown>
+              </SongContextMenu>
             </li>
           ))}
 

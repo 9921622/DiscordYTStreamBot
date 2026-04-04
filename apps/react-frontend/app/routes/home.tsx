@@ -5,7 +5,7 @@ import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
 
 import Navbar from "~/components/Navbar";
-import Musicbar from "~/components/Musicbar";
+import Musicbar from "~/components/musicbar/Musicbar";
 import SongContainer from "~/components/SongContainer";
 import SideBarContent from "~/components/SideBar";
 import SongQueue from "~/components/SongQueue";
@@ -16,6 +16,7 @@ import { SocketProvider } from "~/contexts/SocketContext";
 import { PlaybackVideoProvider } from "~/contexts/PlaybackVideoContext";
 import { PlaybackQueueProvider } from "~/contexts/PlaybackQueueContext";
 import SongQueueClosed from "~/components/SongQueueClosed";
+import { LibraryBig, ListMusic, PanelLeftClose, PanelRightClose } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -34,62 +35,94 @@ function useSongs() {
     return songs;
 }
 
+const MUSICBAR_HEIGHT = "var(--musicbar-height, 80px)";
+
+
+function SidebarPanel() {
+    return (
+        <aside className="bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl flex-shrink-0 h-full overflow-hidden shadow-lg">
+            <HorizontalAccordion
+                closedWidth="w-14"
+                width="w-56"
+                closeIcon={<PanelLeftClose size={16} />}
+                openIcon={<LibraryBig size={16} />}
+                iconSide="left"
+            >
+                <SideBarContent />
+            </HorizontalAccordion>
+        </aside>
+    );
+}
+
+function MainContent({ songs }: { songs: YoutubeVideo[] }) {
+    return (
+        <main className="flex-1 min-w-0 bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl overflow-y-auto shadow-lg">
+            <div className="p-6">
+                <header className="mb-5">
+                    <h1 className="text-2xl font-semibold tracking-tight">All Songs</h1>
+                    <p className="text-base-content/40 text-sm mt-0.5">
+                        {songs.length > 0 ? `${songs.length} tracks` : "Loading…"}
+                    </p>
+                </header>
+                <SongContainer songs={songs} />
+                <div className="h-4" />
+            </div>
+        </main>
+    );
+}
+
+function QueuePanel() {
+    return (
+        <aside className="bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl flex-shrink-0 h-full overflow-hidden shadow-lg">
+            <HorizontalAccordion
+                closedWidth="w-48"
+                width="w-112"
+                closeIcon={<PanelRightClose size={16} />}
+                openIcon={<ListMusic size={16} />}
+            >
+                <SongQueue />
+            </HorizontalAccordion>
+        </aside>
+    );
+}
+
+// Page =====================================================================
+
 function HomePage() {
     const songs = useSongs();
 
     return (
-        <>
-            <div className="flex flex-col h-screen">
-                <nav className="sticky top-0 z-50 navbar w-full bg-base-300 flex-shrink-0">
-                    <div className="flex-1">
-                        <Navbar />
-                    </div>
-                </nav>
+        <div className="flex flex-col h-screen bg-zinc-950">
 
-                <div className="flex-1 overflow-hidden p-4 pb-[calc(var(--musicbar-height,80px)+50px)]">
-                    <div className="flex gap-3 h-full overflow-hidden">
+            {/* Navbar */}
+            <nav className="sticky top-0 z-50 flex-shrink-0 navbar bg-zinc-950/80 backdrop-blur-md border-b border-base-content/5 shadow-sm px-4">
+                <div className="flex-1">
+                    <Navbar />
+                </div>
+            </nav>
 
-                        {/* Sidebar as left HorizontalAccordion */}
-                        <div className="bg-zinc-900 rounded-md flex-shrink-0 h-full overflow-hidden">
-                            <HorizontalAccordion
-                                closedWidth="w-14"
-                                width="w-56"
-                            >
-                                <SideBarContent />
-                            </HorizontalAccordion>
-                        </div>
-
-                        {/* Main content */}
-                        <div className="flex-1 bg-zinc-900 p-5 rounded-md overflow-y-auto">
-                            <p className="text-xl font-bold mb-3">All Songs</p>
-                            <SongContainer songs={songs} />
-                            <div>&nbsp;</div>
-                            <div>&nbsp;</div>
-                        </div>
-
-                        {/* Queue as right HorizontalAccordion */}
-                        <div className="bg-zinc-900 rounded-md flex-shrink-0 h-full overflow-hidden">
-                            <HorizontalAccordion
-                                closedWidth="w-48"
-                                width="w-112"
-                                childrenClosed={<SongQueueClosed />}
-                            >
-                                <SongQueue />
-                            </HorizontalAccordion>
-                        </div>
-
-                    </div>
+            {/* Body */}
+            <div
+                className="flex-1 overflow-hidden p-3"
+                style={{ paddingBottom: `calc(${MUSICBAR_HEIGHT} + 2rem)` }}
+            >
+                <div className="flex gap-3 h-full overflow-hidden">
+                    <SidebarPanel />
+                    <MainContent songs={songs} />
+                    <QueuePanel />
                 </div>
             </div>
 
+            {/* Musicbar */}
             <div className="fixed bottom-0 left-0 w-full z-50">
                 <Musicbar />
             </div>
-        </>
+        </div>
     );
 }
 
-function HomeContextWrapperWrapper() {
+
+function HomeProviders() {
     const { guildID } = useBotContext();
     return (
         <SocketProvider guildID={guildID ?? undefined}>
@@ -102,19 +135,12 @@ function HomeContextWrapperWrapper() {
     );
 }
 
-function HomeContextWrapper() {
-    const discordUser = useUser();
-    return (
-        <BotProvider discordUser={discordUser}>
-            <HomeContextWrapperWrapper />
-        </BotProvider>
-    );
-}
-
 export default function Home() {
     return (
         <UserProvider>
-            <HomeContextWrapper />
+        <BotProvider>
+            <HomeProviders />
+        </BotProvider>
         </UserProvider>
     );
 }

@@ -6,11 +6,27 @@ import SongProgressBar from "./MusicbarSongProgressBar";
 import SongControls from "./MusicbarSongControls";
 import MusicbarTags from "./MusicbarTags";
 import VolumeControl from "./MusicbarVolumeControl";
+import { useEffect, useRef } from "react";
 
 
 export default function Musicbar() {
     const { video, videoLoading, videoError} = usePlaybackVideoContext()
     const { botInChannel } = useBotContext()
+    const barRef = useRef<HTMLDivElement>(null)
+
+    // to sync the music bar height when song changes
+    useEffect(() => {
+        const el = barRef.current
+        if (!el) return
+        const observer = new ResizeObserver(([entry]) => {
+            document.documentElement.style.setProperty(
+                "--musicbar-height",
+                `${entry.contentRect.height}px`
+            )
+        })
+        observer.observe(el)
+        return () => observer.disconnect()
+    }, [])
 
     if (videoError) return (
         <div className="bg-gray-900 text-white px-4 py-5 fixed bottom-0 w-full flex items-center justify-center">
@@ -23,7 +39,7 @@ export default function Musicbar() {
     const disabled = !video || !botInChannel
 
     return (
-        <div className="bg-gray-900 text-white px-4 py-5 flex items-center justify-between shadow-inner fixed bottom-0 w-full">
+        <div ref={barRef} className="bg-gray-900 text-white px-4 py-5 flex items-center justify-between shadow-inner fixed bottom-0 w-full">
             {video?.thumbnail && (
                 <>
                     <style>{`

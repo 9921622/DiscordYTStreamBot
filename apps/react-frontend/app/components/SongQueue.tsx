@@ -240,7 +240,7 @@ export default function QueueSidebar() {
                         onDragEnd={handleDragEnd}
                         modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor ]}>
                     <SortableContext items={queue.map(q => q.id)} strategy={verticalListSortingStrategy}>
-                        <ul className="flex-1 overflow-y-auto divide-y divide-zinc-800">
+                        <ul className="flex-1 overflow-y-auto divide-y divide-zinc-800 pb-[var(--musicbar-height,80px)]">
                             {queue.map((item, index) => (
                                 <SortableItem
                                     key={item.id}

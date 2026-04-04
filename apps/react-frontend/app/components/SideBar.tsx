@@ -35,7 +35,7 @@ export default function SideBar({ navbar, content }: { navbar: React.ReactNode; 
 					</label>
 					<div className="flex-1">{navbar}</div>
 				</nav>
-				<div className="flex-1 overflow-hidden p-4 pb-[var(--musicbar-height,80px)]">
+				<div className="flex-1 overflow-hidden p-4 pb-[calc(var(--musicbar-height,80px)+50px)]">
 					{content}
 				</div>
 			</div>

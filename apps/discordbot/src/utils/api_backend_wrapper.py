@@ -1,6 +1,6 @@
 import httpx
-from pydantic import BaseModel
-from typing import Literal
+from pydantic import BaseModel, field_validator
+from typing import Literal, Optional
 
 from dataclasses import dataclass
 from settings import settings
@@ -33,7 +33,17 @@ class GuildQueueItemSchema(BaseModel):
     id: int
     video: YoutubeVideoSchema
     order: int
-    added_by: DiscordUserSchema | None
+    added_by: int | None
+
+    @field_validator("added_by", mode="before")
+    def parse_added_by(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, int):
+            return v
+        if isinstance(v, str) and v.isdigit():
+            return int(v)
+        raise ValueError(f"Invalid added_by value: {v}")
 
 
 class GuildQueueSchema(BaseModel):
@@ -105,11 +115,11 @@ class QueueAPI(AbstractAPI):
         return ResponseWrapper(response=response, data=data)
 
     @classmethod
-    async def add(cls, guild_id, youtube_id) -> ResponseWrapper:
+    async def add(cls, guild_id, youtube_id, discord_id) -> ResponseWrapper:
         response = await cls.request(
             "POST",
             cls.guild_queue_items_url(guild_id),
-            json={"youtube_id": youtube_id},
+            json={"youtube_id": youtube_id, "discord_id": discord_id},
         )
         data = GuildQueueItemSchema.model_validate(response.json()) if response.is_success else None
         return ResponseWrapper(response=response, data=data)

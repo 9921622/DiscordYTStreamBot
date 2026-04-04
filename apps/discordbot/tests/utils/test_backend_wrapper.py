@@ -17,6 +17,7 @@ HTTPX_ASYNC_CLIENT = "utils.api_backend_wrapper.httpx.AsyncClient"
 GUILD_ID = "123"
 VIDEO_ID = "video_id"
 ITEM_ID = "23123"
+DISCORD_ID = "123213"
 
 
 class TestVideoAPI:
@@ -57,7 +58,7 @@ class TestQueueAPI:
         item = GuildQueueItemSchemaFactory.build()
         mock_response = make_mock_httpx_response(201, item.model_dump())
         with patch.object(QueueAPI, "request", AsyncMock(return_value=mock_response)):
-            rw = await QueueAPI.add(GUILD_ID, VIDEO_ID)
+            rw = await QueueAPI.add(GUILD_ID, VIDEO_ID, DISCORD_ID)
 
         assert isinstance(rw.data, GuildQueueItemSchema)
 

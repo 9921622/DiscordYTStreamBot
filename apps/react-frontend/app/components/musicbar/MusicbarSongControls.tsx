@@ -3,9 +3,13 @@ import { PlayPauseIcon } from "../utilities/Icons";
 import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
 import { useSocketContext } from "~/contexts/SocketContext";
 import { Repeat, Shuffle, SkipBack, SkipForward } from "lucide-react";
+import { useUser } from "~/contexts/UserContext";
+import { useBotContext } from "~/contexts/BotContext";
 
 export default function SongControls({ className }: { className?: string }) {
+    const discordUser = useUser()
     const { send } = useSocketContext();
+    const { guildID, botInChannel } = useBotContext();
     const { videoPlaybackStatus, videoPause } = usePlaybackVideoContext()
     const { queue, queueNext } = usePlaybackQueueContext()
 
@@ -13,7 +17,10 @@ export default function SongControls({ className }: { className?: string }) {
     const isLoop   = videoPlaybackStatus?.loop   ?? false;
     const hasQueue = (queue?.length || 0) > 0;
 
-    const handleLoop = () => send({ type: "loop" })
+    const handleLoop = () => {
+        if (!botInChannel || !discordUser) return
+        send({ type: "loop", discord_id: discordUser.discord_id })
+    }
     const onShuffle = () => {}
     const onPrev = () => {}
 

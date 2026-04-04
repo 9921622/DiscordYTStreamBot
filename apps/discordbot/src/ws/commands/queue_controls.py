@@ -29,7 +29,7 @@ class QueueAddCommand(DiscordUserMixin, WebsocketCommand):
         return super().get_errors()
 
     async def handle(self):
-        rw = await QueueAPI.add(self.guild_id, self.youtube_id)
+        rw = await QueueAPI.add(self.guild_id, self.youtube_id, self.user_id)
         if not rw.response.is_success:
             return self.response_error("failed to add item", detail=rw.response.json())
 

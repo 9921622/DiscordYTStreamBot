@@ -4,6 +4,7 @@ import { useBotContext } from "~/contexts/BotContext";
 import { useSocketContext } from "~/contexts/SocketContext";
 import type { WSResponse } from "~/api/backend-types";
 import { Headphones } from "lucide-react";
+import { useUser } from "~/contexts/UserContext";
 
 const AVATAR_SIZE = 28;
 const AVATAR_GAP = 8;
@@ -11,8 +12,9 @@ const STACK_OVERLAP = 5;
 const MEMBER_STACK = 3;
 
 function useMembers() {
-    const { guildID, botInChannel } = useBotContext();
+    const discordUser = useUser()
     const { send, on, connected } = useSocketContext();
+    const { guildID, botInChannel } = useBotContext();
     const [members, setMembers] = useState<DiscordUser[]>([]);
 
     useEffect(() => on("users", (resp: WSResponse) => {
@@ -20,8 +22,8 @@ function useMembers() {
     }), [on]);
 
     useEffect(() => {
-        if (!guildID || !botInChannel || !connected) return;
-        send({ type: "users" });
+        if (!guildID || !botInChannel || !connected || !discordUser) return;
+        send({ type: "users", discord_id: discordUser.discord_id });
     }, [guildID, botInChannel, connected]);
 
     return { members };

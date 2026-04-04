@@ -202,11 +202,20 @@ class GuildQueueItemView(APIView):
         if not youtube_id:
             return Response({"error": "youtube_id required"}, status=400)
 
+        discord_id = request.data.get("discord_id")
+        if not discord_id:
+            return Response({"error": "discord_id required"}, status=400)
+
         try:
-            item = GuildQueue.objects.add_item(guild_id, youtube_id)
+            added_by = DiscordUser.objects.get(discord_id=discord_id)
+        except DiscordUser.DoesNotExist:
+            return Response({"error": "User has not authenticated with the web app"}, status=403)
+
+        try:
+            item = GuildQueue.objects.add_item(guild_id, youtube_id, added_by=added_by)
         except YoutubeVideo.DoesNotExist:
             try:
-                item = GuildQueue.objects.add_item(guild_id, youtube_id, fetch=True)
+                item = GuildQueue.objects.add_item(guild_id, youtube_id, added_by=added_by, fetch=True)
             except Exception as e:
                 return Response({"error": f"Failed to fetch video from YouTube: {str(e)}"}, status=502)
 

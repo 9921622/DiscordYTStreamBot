@@ -99,6 +99,7 @@ class GuildQueueViewTests(TestCase):
 class GuildQueueItemViewTests(TestCase):
     def setUp(self):
         self.client = internal_client()
+        self.discord_user = baker.make(DiscordUser, discord_id="user_123")
         self.guild = baker.make(DiscordGuild, guild_id="guild_123")
         self.queue = baker.make(GuildQueue, guild=self.guild)
         self.video = baker.make(YoutubeVideo, youtube_id="vid_1")
@@ -106,18 +107,45 @@ class GuildQueueItemViewTests(TestCase):
     def test_add_existing_video(self):
         response = self.client.post(
             reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
-            {"youtube_id": "vid_1"},
+            {"youtube_id": self.video.youtube_id, "discord_id": self.discord_user.discord_id},
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(self.queue.items.count(), 1)
         self.assertEqual(GuildQueueItem.objects.count(), 1)
 
+    def test_add_video_sets_added_by(self):
+        response = self.client.post(
+            reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
+            {"youtube_id": self.video.youtube_id, "discord_id": self.discord_user.discord_id},
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        item = GuildQueueItem.objects.get()
+        self.assertEqual(item.added_by, self.discord_user)
+
     def test_add_video_missing_youtube_id(self):
         response = self.client.post(
             reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
-            {},
+            {"discord_id": self.discord_user.discord_id},
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(GuildQueueItem.objects.count(), 0)
+        self.assertIn("error", response.data)
+
+    def test_add_video_missing_discord_id(self):
+        response = self.client.post(
+            reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
+            {"youtube_id": self.video.youtube_id},
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(GuildQueueItem.objects.count(), 0)
+        self.assertIn("error", response.data)
+
+    def test_add_video_unauthenticated_discord_user(self):
+        response = self.client.post(
+            reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
+            {"youtube_id": self.video.youtube_id, "discord_id": "unknown_user"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(GuildQueueItem.objects.count(), 0)
         self.assertIn("error", response.data)
 
@@ -127,7 +155,7 @@ class GuildQueueItemViewTests(TestCase):
 
         response = self.client.post(
             reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
-            {"youtube_id": "unseen_vid"},
+            {"youtube_id": "unseen_vid", "discord_id": self.discord_user.discord_id},
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(GuildQueueItem.objects.count(), 1)
@@ -139,7 +167,7 @@ class GuildQueueItemViewTests(TestCase):
 
         response = self.client.post(
             reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
-            {"youtube_id": "bad_vid"},
+            {"youtube_id": "bad_vid", "discord_id": self.discord_user.discord_id},
         )
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertEqual(GuildQueueItem.objects.count(), 0)
@@ -151,7 +179,7 @@ class GuildQueueItemViewTests(TestCase):
 
         response = self.client.post(
             reverse("discord:guild-queue-items", kwargs={"guild_id": "guild_123"}),
-            {"youtube_id": "vid_2"},
+            {"youtube_id": video2.youtube_id, "discord_id": self.discord_user.discord_id},
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         new_item = GuildQueueItem.objects.get(video=video2)

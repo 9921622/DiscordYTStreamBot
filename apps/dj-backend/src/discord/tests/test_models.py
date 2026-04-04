@@ -2,7 +2,7 @@ from django.test import TestCase
 from unittest import mock
 from model_bakery import baker
 
-from discord.models import DiscordGuild, GuildQueue, GuildQueueItem
+from discord.models import DiscordUser, DiscordGuild, GuildQueue, GuildQueueItem
 from youtube.models import YoutubeVideo
 
 
@@ -33,6 +33,7 @@ class GuildQueueManagerAddItemTests(TestCase):
         self.guild = baker.make(DiscordGuild, guild_id="guild_123")
         self.queue = baker.make(GuildQueue, guild=self.guild)
         self.video = baker.make(YoutubeVideo, youtube_id="vid_1")
+        self.discord_user = baker.make(DiscordUser)
 
     def test_adds_existing_video(self):
         item = GuildQueue.objects.add_item("guild_123", "vid_1")
@@ -50,6 +51,14 @@ class GuildQueueManagerAddItemTests(TestCase):
 
         item = GuildQueue.objects.add_item("guild_123", "vid_2")
         self.assertEqual(item.order, 2)
+
+    def test_added_by_is_set(self):
+        item = GuildQueue.objects.add_item("guild_123", "vid_1", added_by=self.discord_user)
+        self.assertEqual(item.added_by, self.discord_user)
+
+    def test_added_by_defaults_to_none(self):
+        item = GuildQueue.objects.add_item("guild_123", "vid_1")
+        self.assertIsNone(item.added_by)
 
     def test_raises_if_video_not_found_and_no_fetch(self):
         with self.assertRaises(YoutubeVideo.DoesNotExist):

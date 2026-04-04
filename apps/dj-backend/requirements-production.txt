@@ -3,6 +3,7 @@ Django==5.2.12
 djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
+django-extensions
 
 requests
 

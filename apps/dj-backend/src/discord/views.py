@@ -48,8 +48,13 @@ def get_oauth_redirect(request):
         point to the wrong environment and silently succeed or fail.
     """
     # https://docs.discord.com/developers/topics/oauth2#authorization-code-grant
-    # this is also so it can work with different endpoints
-    return request.build_absolute_uri(reverse("discord:login"))
+    # request.build_absolute_uri() would return the internal Docker hostname (dj-backend:8000)
+    # which Discord cannot reach — use the public-facing BACKEND_URL instead
+
+    # if using non docker. just change the backend url
+    from django.conf import settings
+    path = reverse("discord:login")
+    return f"{settings.BACKEND_URL}{path}"
 
 
 class DiscordUserCreateUpdateMixin:
@@ -117,6 +122,8 @@ class DiscordLoginView(View, DiscordUserCreateUpdateMixin, RefreshTokenMixin):
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         response = requests.post(self.OAUTH2_TOKEN_ENDPOINT, data=data, headers=headers)
+        print("STATUS:", response.status_code)
+        print("BODY:", response.text)
         response.raise_for_status()
         return response.json()
 

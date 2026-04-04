@@ -9,7 +9,7 @@ from .views import (
     GuildQueueItemView,
 )
 
-app_name = "django"
+app_name = "discord"
 urlpatterns = [
     path("oauth", DiscordOAuthView.as_view(), name="oauth"),
     path("login", DiscordLoginView.as_view(), name="login"),

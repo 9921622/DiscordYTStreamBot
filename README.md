@@ -4,7 +4,7 @@
 
 # DiscordYTStreamBot
 
-![Homepage](assets/homepage.webp)
+![Homepage](assets/homepage.png)
 
 A self-hosted Discord music bot with a web frontend. Users authenticate via Discord OAuth, and the bot streams YouTube audio in voice channels. The stack is fully containerised and served behind Nginx.
 

@@ -65,7 +65,6 @@ function MainContent({ songs }: { songs: YoutubeVideo[] }) {
                     </p>
                 </header>
                 <SongContainer songs={songs} />
-                {/* Bottom breathing room above fixed musicbar */}
                 <div className="h-4" />
             </div>
         </main>
@@ -88,22 +87,22 @@ function QueuePanel() {
     );
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
+// Page =====================================================================
 
 function HomePage() {
     const songs = useSongs();
 
     return (
-        <div className="flex flex-col h-screen bg-base-300">
+        <div className="flex flex-col h-screen bg-zinc-950">
 
-            {/* ── Navbar ── */}
-            <nav className="sticky top-0 z-50 flex-shrink-0 navbar bg-base-300/80 backdrop-blur-md border-b border-base-content/5 shadow-sm px-4">
+            {/* Navbar */}
+            <nav className="sticky top-0 z-50 flex-shrink-0 navbar bg-zinc-950/80 backdrop-blur-md border-b border-base-content/5 shadow-sm px-4">
                 <div className="flex-1">
                     <Navbar />
                 </div>
             </nav>
 
-            {/* ── Body ── */}
+            {/* Body */}
             <div
                 className="flex-1 overflow-hidden p-3"
                 style={{ paddingBottom: `calc(${MUSICBAR_HEIGHT} + 2rem)` }}
@@ -115,7 +114,7 @@ function HomePage() {
                 </div>
             </div>
 
-            {/* ── Musicbar ── */}
+            {/* Musicbar */}
             <div className="fixed bottom-0 left-0 w-full z-50">
                 <Musicbar />
             </div>

@@ -14,28 +14,26 @@ from pathlib import Path
 
 import os
 import json
-from dotenv import load_dotenv
+from .settings_schema import env
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = env.SECRET_KEY
+DEBUG = env.DEBUG
+BACKEND_URL = env.BACKEND_URL
+FRONTEND_URL = env.FRONTEND_URL
 
-load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = os.getenv("DEBUG") == "True"
-BACKEND_URL = os.getenv("BACKEND_URL")
-FRONTEND_URL = os.getenv("FRONTEND_URL")
+ALLOWED_HOSTS = env.ALLOWED_HOSTS
+CORS_ALLOWED_ORIGINS = env.CORS_ALLOWED_ORIGINS
 
-ALLOWED_HOSTS = json.loads(os.getenv("ALLOWED_HOSTS", "[]"))
-CORS_ALLOWED_ORIGINS = json.loads(os.getenv("CORS_ALLOWED_ORIGINS", "[]"))
+DISCORD_CLIENT_SECRET = env.DISCORD_CLIENT_SECRET
+DISCORD_CLIENT_ID = env.DISCORD_CLIENT_ID
 
-DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
-DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
+INTERNAL_API_KEY = env.INTERNAL_API_KEY
 
-INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
-
-if FRONTEND_URL and FRONTEND_URL not in CORS_ALLOWED_ORIGINS:
-    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
+if env.FRONTEND_URL not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(env.FRONTEND_URL)
 
 # Application definition
 

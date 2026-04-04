@@ -8,7 +8,7 @@ django-extensions
 requests
 
 # utils
-python-dotenv
+pydantic-settings
 yt-dlp
 
 #

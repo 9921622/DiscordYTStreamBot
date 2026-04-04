@@ -1,0 +1,37 @@
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class AppSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
+    # Django
+    SECRET_KEY: str
+    DEBUG: bool = False
+    BACKEND_URL: str
+    FRONTEND_URL: str
+    ALLOWED_HOSTS: list[str] = ["127.0.0.1", "localhost"]
+    CORS_ALLOWED_ORIGINS: list[str] = []
+
+    # Discord
+    DISCORD_CLIENT_SECRET: str
+    DISCORD_CLIENT_ID: str
+
+    # Internal
+    INTERNAL_API_KEY: str
+
+    @field_validator("ALLOWED_HOSTS", "CORS_ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_list(cls, v):
+        if isinstance(v, str):
+            import json
+
+            return json.loads(v)
+        return v
+
+
+env = AppSettings()

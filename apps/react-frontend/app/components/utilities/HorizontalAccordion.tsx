@@ -7,6 +7,9 @@ interface HorizontalAccordionProps {
     width?: string;
     closedWidth?: string;
     defaultOpen?: boolean;
+    closeIcon?: React.ReactNode;
+    openIcon?: React.ReactNode;
+    iconSide?: "left" | "right";
 }
 
 export default function HorizontalAccordion({
@@ -15,22 +18,37 @@ export default function HorizontalAccordion({
     peek,
     width = "w-112",
     closedWidth = "w-10",
-    defaultOpen = true
+    defaultOpen = true,
+    closeIcon = "›",
+    openIcon = "‹",
+    iconSide = "right",
 }: HorizontalAccordionProps) {
     const [open, setOpen] = useState(defaultOpen);
 
-    const showPeeking = !open && !childrenClosed;
+    const toggleButton = (
+        <button
+            onClick={() => setOpen((o) => !o)}
+            className="btn btn-ghost btn-xs m-1 flex-shrink-0"
+            title={open ? "Close" : "Open"}
+        >
+            {open ? closeIcon : openIcon}
+        </button>
+    );
 
     return (
-        <div className={`flex-shrink-0 h-full flex flex-col transition-[width] duration-300 overflow-hidden ${open ? width : closedWidth}`}>
-
-            <button
-                onClick={() => setOpen(o => !o)}
-                className="btn btn-ghost btn-xs self-end m-1 flex-shrink-0"
-                title={open ? "Close" : "Open"}
+        <div
+            className={`flex-shrink-0 h-full flex flex-col transition-[width] duration-300 overflow-hidden ${
+                open ? width : closedWidth
+            }`}
+        >
+            {/* Toggle button row — left or right aligned */}
+            <div
+                className={`flex flex-shrink-0 ${
+                    iconSide === "left" ? "justify-start" : "justify-end"
+                }`}
             >
-                {open ? "›" : "‹"}
-            </button>
+                {toggleButton}
+            </div>
 
             {peek && <div className="flex-shrink-0">{peek}</div>}
 

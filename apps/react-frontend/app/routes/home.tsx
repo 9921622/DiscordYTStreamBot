@@ -16,6 +16,7 @@ import { SocketProvider } from "~/contexts/SocketContext";
 import { PlaybackVideoProvider } from "~/contexts/PlaybackVideoContext";
 import { PlaybackQueueProvider } from "~/contexts/PlaybackQueueContext";
 import SongQueueClosed from "~/components/SongQueueClosed";
+import { LibraryBig, ListMusic, PanelLeftClose, PanelRightClose } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -49,11 +50,14 @@ function HomePage() {
                 <div className="flex-1 overflow-hidden p-4 pb-[calc(var(--musicbar-height,80px)+50px)]">
                     <div className="flex gap-3 h-full overflow-hidden">
 
-                        {/* Sidebar as left HorizontalAccordion */}
+                        {/* SideBar */}
                         <div className="bg-zinc-900 rounded-md flex-shrink-0 h-full overflow-hidden">
                             <HorizontalAccordion
                                 closedWidth="w-14"
                                 width="w-56"
+                                closeIcon={<PanelLeftClose/>}
+                                openIcon={<LibraryBig/>}
+                                iconSide="left"
                             >
                                 <SideBarContent />
                             </HorizontalAccordion>
@@ -67,11 +71,13 @@ function HomePage() {
                             <div>&nbsp;</div>
                         </div>
 
-                        {/* Queue as right HorizontalAccordion */}
+                        {/* SongQueue */}
                         <div className="bg-zinc-900 rounded-md flex-shrink-0 h-full overflow-hidden">
                             <HorizontalAccordion
                                 closedWidth="w-48"
                                 width="w-112"
+                                closeIcon={<PanelRightClose/>}
+                                openIcon={<ListMusic/>}
                                 childrenClosed={<SongQueueClosed />}
                             >
                                 <SongQueue />

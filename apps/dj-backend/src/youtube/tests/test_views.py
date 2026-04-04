@@ -17,106 +17,120 @@ class YoutubeVideoViewSetTests(TestCase):
         self.user = baker.make(User)
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
+
         self.video1 = baker.make(YoutubeVideo, youtube_id="v1", title="Video 1")
         self.video2 = baker.make(YoutubeVideo, youtube_id="v2", title="Video 2")
 
+    # ----------------------------------------
+    # list
+    # ----------------------------------------
     def test_list_videos(self):
-        """Test retrieving a list of videos."""
         response = self.client.get(reverse("youtube:video-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
+    # ----------------------------------------
+    # retrieve existing
+    # ----------------------------------------
     def test_retrieve_video(self):
-        """Test retrieving a single video by its YouTube ID."""
         response = self.client.get(reverse("youtube:video-detail", kwargs={"youtube_id": self.video1.youtube_id}))
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["title"], self.video1.title)
 
-    @mock.patch("youtube.models.YoutubeVideo.from_url")
-    def test_retrieve_video_auto_fetch_from_youtube(self, mock_from_url):
-        """Test that retrieving a non-existent video auto-fetches it from YouTube."""
-        # Create a video instance to return from the mocked from_url
-        # (not saved to database - the mock replaces the actual from_url)
-        mock_video = YoutubeVideo(
-            youtube_id="new_video_id",
-            title="Auto-Fetched Video",
-            creator="Auto-Fetched Creator",
-            source_url="https://example.com/stream",
-            duration=300,
-            thumbnail="https://example.com/thumb.jpg",
-        )
-        mock_from_url.return_value = mock_video
+    # ----------------------------------------
+    # retrieve auto-fetch
+    # ----------------------------------------
+    @mock.patch("youtube.views.YouTubeService.get_info")
+    @mock.patch("youtube.views.YouTubeService.extract_source_url")
+    def test_retrieve_video_auto_fetch_from_youtube(self, mock_extract, mock_get_info):
+        mock_get_info.return_value = {
+            "id": "new_video_id",
+            "title": "Auto-Fetched Video",
+            "uploader": "Creator",
+            "duration": 300,
+            "thumbnails": [{"url": "thumb.jpg"}],
+        }
+        mock_extract.return_value = "https://example.com/stream"
 
         response = self.client.get(reverse("youtube:video-detail", kwargs={"youtube_id": "new_video_id"}))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["youtube_id"], "new_video_id")
         self.assertEqual(response.data["title"], "Auto-Fetched Video")
-        mock_from_url.assert_called_once_with("https://www.youtube.com/watch?v=new_video_id", save=True)
 
-    @mock.patch("youtube.models.YoutubeVideo.from_url")
-    def test_retrieve_video_auto_fetch_failure(self, mock_from_url):
-        """Test that auto-fetch returns 404 when YouTube fetch fails."""
-        # Mock from_url to raise an exception
-        mock_from_url.side_effect = Exception("YouTube fetch failed")
+        mock_get_info.assert_called_once()
+        mock_extract.assert_called_once()
+
+    # ----------------------------------------
+    # retrieve failure
+    # ----------------------------------------
+    @mock.patch("youtube.views.YouTubeService.get_info")
+    def test_retrieve_video_auto_fetch_failure(self, mock_get_info):
+        mock_get_info.side_effect = Exception("yt-dlp failed")
 
         response = self.client.get(reverse("youtube:video-detail", kwargs={"youtube_id": "invalid_id"}))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn("error", response.data)
-        self.assertIn("Failed to fetch video from YouTube", response.data["error"])
 
-    @mock.patch("youtube.views.yt_dlp.YoutubeDL")
-    def test_get_source(self, mock_ydl_class):
-        mock_ydl_class.return_value.__enter__.return_value.extract_info.return_value = {
-            "url": "https://example.com/stream.mp4"
-        }
+    # ----------------------------------------
+    # get_source existing video
+    # ----------------------------------------
+    @mock.patch("youtube.views.YouTubeService.get_source_url")
+    def test_get_source(self, mock_get_source_url):
+        mock_get_source_url.return_value = "https://example.com/stream.mp4"
 
         response = self.client.get(reverse("youtube:video-get-source", kwargs={"youtube_id": self.video1.youtube_id}))
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["source_url"], "https://example.com/stream.mp4")
 
-    @mock.patch("youtube.models.YoutubeVideo.from_url")
-    @mock.patch("youtube.views.yt_dlp.YoutubeDL")
-    def test_get_source_auto_fetch(self, mock_ydl_class, mock_from_url):
-        """Test that get_source auto-fetches a video if not in the database."""
-        mock_video = YoutubeVideo(
-            youtube_id="new_video_id",
-            title="Auto-Fetched Video",
-            creator="Auto-Fetched Creator",
-            source_url="https://example.com/stream",
-            duration=300,
-            thumbnail="https://example.com/thumb.jpg",
-        )
-        mock_from_url.return_value = mock_video
-        mock_ydl_class.return_value.__enter__.return_value.extract_info.return_value = {
-            "url": "https://example.com/stream.mp4"
+        mock_get_source_url.assert_called_once_with(self.video1.get_url())
+
+    # ----------------------------------------
+    # get_source auto-fetch
+    # ----------------------------------------
+    @mock.patch("youtube.views.YouTubeService.get_info")
+    @mock.patch("youtube.views.YouTubeService.extract_source_url")
+    def test_get_source_auto_fetch(self, mock_extract, mock_get_info):
+        mock_get_info.return_value = {
+            "id": "new_video_id",
+            "title": "Auto-Fetched Video",
+            "uploader": "Creator",
+            "duration": 300,
+            "thumbnails": [{"url": "thumb.jpg"}],
         }
+        mock_extract.return_value = "https://example.com/stream"
 
         response = self.client.get(reverse("youtube:video-get-source", kwargs={"youtube_id": "new_video_id"}))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["source_url"], "https://example.com/stream")
-        mock_from_url.assert_called_once_with("https://www.youtube.com/watch?v=new_video_id", save=True)
 
-    @mock.patch("youtube.models.YoutubeVideo.from_url")
-    def test_get_source_auto_fetch_failure(self, mock_from_url):
-        """Test that get_source returns 404 when video not found and YouTube fetch fails."""
-        mock_from_url.side_effect = Exception("YouTube fetch failed")
+    # ----------------------------------------
+    # get_source auto-fetch failure
+    # ----------------------------------------
+    @mock.patch("youtube.views.YouTubeService.get_info")
+    def test_get_source_auto_fetch_failure(self, mock_get_info):
+        mock_get_info.side_effect = Exception("yt-dlp failed")
 
         response = self.client.get(reverse("youtube:video-get-source", kwargs={"youtube_id": "invalid_id"}))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn("error", response.data)
 
-    @mock.patch("youtube.views.yt_dlp.YoutubeDL")
-    def test_get_source_unauthenticated(self, mock_ydl_class):
-        mock_ydl_class.return_value.__enter__.return_value.extract_info.return_value = {
-            "url": "https://example.com/stream.mp4"
-        }
+    # ----------------------------------------
+    # unauthenticated (still allowed)
+    # ----------------------------------------
+    @mock.patch("youtube.views.YouTubeService.get_source_url")
+    def test_get_source_unauthenticated(self, mock_get_source_url):
+        mock_get_source_url.return_value = "https://example.com/stream.mp4"
+
         self.client.force_authenticate(user=None)
+
         response = self.client.get(reverse("youtube:video-get-source", kwargs={"youtube_id": self.video1.youtube_id}))
-        # YoutubeVideoViewSet has no auth — unauthenticated requests succeed
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 

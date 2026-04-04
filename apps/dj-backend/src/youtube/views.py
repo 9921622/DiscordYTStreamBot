@@ -18,13 +18,16 @@ from youtube.serializers import YoutubeVideoSerializer, YoutubePlaylistSerialize
 class YoutubeVideoViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API to list or retrieve cached YouTube videos.
-    If a video is not found, it will automatically fetch and cache it from YouTube.
+    If a video is not found, it will automatically fetch and cache it.
     """
 
     queryset = YoutubeVideo.objects.all()
     serializer_class = YoutubeVideoSerializer
     lookup_field = "youtube_id"
 
+    # ----------------------------------------
+    # retrieve
+    # ----------------------------------------
     def retrieve(self, request, *args, **kwargs):
         """
         Override retrieve to auto-fetch videos from YouTube if not in cache.
@@ -37,26 +40,30 @@ class YoutubeVideoViewSet(viewsets.ReadOnlyModelViewSet):
         except Http404:
             # If not found, fetch from YouTube and create it
             try:
-                youtube_url = YoutubeVideo.URL_TEMPLATE.format(youtube_id=youtube_id)
-                video = YoutubeVideo.from_url(youtube_url, save=True)
+                video = self._fetch_and_cache_video(youtube_id)
                 serializer = self.get_serializer(video)
                 return Response(serializer.data)
+
             except Exception as e:
                 return Response(
                     {"error": f"Failed to fetch video from YouTube: {str(e)}"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
+    # ----------------------------------------
+    # get_source
+    # ----------------------------------------
     @action(detail=True, methods=["get"], url_path="get-source")
     def get_source(self, request, youtube_id=None):
         """Get the streamable source URL for a video, auto-fetching if not cached."""
         try:
             video = YoutubeVideo.objects.get(youtube_id=youtube_id)
+
         except YoutubeVideo.DoesNotExist:
             try:
-                youtube_url = YoutubeVideo.URL_TEMPLATE.format(youtube_id=youtube_id)
-                video = YoutubeVideo.from_url(youtube_url, save=True)
+                video = self._fetch_and_cache_video(youtube_id)
                 return Response({"source_url": video.source_url})
+
             except Exception as e:
                 return Response(
                     {"error": f"Failed to fetch video from YouTube: {str(e)}"},
@@ -64,13 +71,38 @@ class YoutubeVideoViewSet(viewsets.ReadOnlyModelViewSet):
                 )
 
         try:
-            source_url = YoutubeVideo.get_source_url(video.get_url())
+            source_url = YouTubeService.get_source_url(video.get_url())
             return Response({"source_url": source_url})
+
         except Exception as e:
             return Response(
                 {"error": f"Failed to extract source URL: {str(e)}"},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
+
+    # ----------------------------------------
+    # helpers
+    # ----------------------------------------
+    def _fetch_and_cache_video(self, youtube_id: str) -> YoutubeVideo:
+        """
+        Fetch video info using service and store in DB.
+        """
+        youtube_url = YoutubeVideo.URL_TEMPLATE.format(youtube_id=youtube_id)
+        info = YouTubeService.get_info(youtube_url)
+        if not info.get("id"):
+            raise Exception("Invalid YouTube response: missing video id")
+
+        video, _ = YoutubeVideo.objects.update_or_create(
+            youtube_id=info["id"],
+            defaults={
+                "title": info.get("title"),
+                "creator": info.get("uploader"),
+                "duration": info.get("duration"),
+                "thumbnail": (info.get("thumbnails") or [{}])[0].get("url"),
+                "source_url": YouTubeService.extract_source_url(info),
+            },
+        )
+        return video
 
 
 class YoutubePlaylistViewSet(viewsets.ModelViewSet):

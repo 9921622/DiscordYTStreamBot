@@ -113,7 +113,7 @@ class YouTubeService:
                 "title": info.get("title"),
                 "creator": info.get("uploader"),
                 "duration": info.get("duration"),
-                "thumbnail": (info.get("thumbnails") or [{}])[0].get("url"),
+                "thumbnail": (info.get("thumbnails") or [{}])[-1].get("url"),
                 "source_url": cls.extract_source_url(info),
             },
         )

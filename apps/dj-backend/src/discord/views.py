@@ -158,7 +158,7 @@ class DiscordProfileView(APIView):
                 "discord_id": discord_user.discord_id,
                 "username": discord_user.username,
                 "global_name": discord_user.global_name,
-                "avatar": discord_user.get_avatar_uri(),
+                "avatar_url": discord_user.get_avatar_uri(),
             }
         )
 

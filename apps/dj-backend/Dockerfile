@@ -13,4 +13,5 @@ FROM base AS production
 RUN pip install --no-cache-dir -r requirements-production.txt
 COPY . .
 EXPOSE 8000
-CMD ["sh", "-c", "python src/manage.py migrate && gunicorn src.backend.wsgi:application --bind 0.0.0.0:8000 --workers 3"]
+ENV PYTHONPATH=/app/src
+CMD ["sh", "-c", "python src/manage.py migrate && gunicorn backend.wsgi:application --bind 0.0.0.0:8000 --workers 3"]

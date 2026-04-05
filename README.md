@@ -65,10 +65,17 @@ DiscordYTStreamBot/
 Each service has its own `.env` file. Copy the examples to get started:
 
 ```bash
+cp .env
 cp apps/discordbot/.env.example apps/discordbot/.env
 cp apps/dj-backend/.env.example apps/dj-backend/.env
 cp apps/react-frontend/.env.development.example apps/react-frontend/.env.development
 ```
+
+### `./.env`
+```dotenv
+HOST_PORT=  # port this service can be accessed 
+```
+
 
 ### `apps/discordbot/.env`
 

@@ -22,8 +22,7 @@ services:
     volumes:
       - ./apps/react-frontend/app:/app/app
       - ./apps/react-frontend/public:/app/public
-    ports:
-      - "5173:5173"
+      
     command: npm run dev -- --host --force
     environment:
       - DOCKER=true
@@ -32,4 +31,4 @@ services:
     volumes:
       - ./apps/nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      - "80:80"
+      - "${HOST_PORT}:80"

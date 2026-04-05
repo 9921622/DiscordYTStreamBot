@@ -12,13 +12,13 @@ export interface DiscordUser {
     discord_id : string;
     username : string;
     global_name : string;
-    avatar : string;
+    avatar_url : string;
 }
 export interface DiscordGuildQueueItem {
     id: number
     video: YoutubeVideo
     order: number
-    added_by: string | null
+    added_by: DiscordUser | null
     added_at: string
 }
 

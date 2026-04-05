@@ -24,26 +24,15 @@ class VideoSourceSchema(BaseModel):
 
 class DiscordUserSchema(BaseModel):
     discord_id: str
-    username: str
     global_name: str | None
-    avatar: str | None
+    avatar_url: str | None
 
 
 class GuildQueueItemSchema(BaseModel):
     id: int
     video: YoutubeVideoSchema
     order: int
-    added_by: int | None
-
-    @field_validator("added_by", mode="before")
-    def parse_added_by(cls, v):
-        if v is None:
-            return None
-        if isinstance(v, int):
-            return v
-        if isinstance(v, str) and v.isdigit():
-            return int(v)
-        raise ValueError(f"Invalid added_by value: {v}")
+    added_by: DiscordUserSchema | None
 
 
 class GuildQueueSchema(BaseModel):
@@ -60,7 +49,12 @@ class AbstractAPI:
 
     @classmethod
     async def request(
-        cls, method: HTTPMethod, url: str, *, json: dict | None = None, params: dict | None = None
+        cls,
+        method: HTTPMethod,
+        url: str,
+        *,
+        json: dict | None = None,
+        params: dict | None = None,
     ) -> httpx.Response:
 
         async with httpx.AsyncClient(timeout=60.0) as client:
@@ -90,7 +84,11 @@ class VideoAPI:
     async def get_source(cls, video_id) -> ResponseWrapper:
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.get(cls.play_url(video_id=video_id))
-        data = VideoSourceSchema.model_validate(response.json()) if response.is_success else None
+        data = (
+            VideoSourceSchema.model_validate(response.json())
+            if response.is_success
+            else None
+        )
         return ResponseWrapper(response=response, data=data)
 
 
@@ -111,7 +109,11 @@ class QueueAPI(AbstractAPI):
     @classmethod
     async def get(cls, guild_id) -> ResponseWrapper:
         response = await cls.request("GET", cls.guild_queue_url(guild_id))
-        data = GuildQueueSchema.model_validate(response.json()) if response.is_success else None
+        data = (
+            GuildQueueSchema.model_validate(response.json())
+            if response.is_success
+            else None
+        )
         return ResponseWrapper(response=response, data=data)
 
     @classmethod
@@ -121,12 +123,18 @@ class QueueAPI(AbstractAPI):
             cls.guild_queue_items_url(guild_id),
             json={"youtube_id": youtube_id, "discord_id": discord_id},
         )
-        data = GuildQueueItemSchema.model_validate(response.json()) if response.is_success else None
+        data = (
+            GuildQueueItemSchema.model_validate(response.json())
+            if response.is_success
+            else None
+        )
         return ResponseWrapper(response=response, data=data)
 
     @classmethod
     async def remove(cls, guild_id, item_id) -> ResponseWrapper:
-        response = await cls.request("DELETE", cls.guild_queue_item_url(guild_id, item_id))
+        response = await cls.request(
+            "DELETE", cls.guild_queue_item_url(guild_id, item_id)
+        )
         return ResponseWrapper(response=response, data=None)
 
     @classmethod

@@ -32,13 +32,7 @@ class AudioMixin:
 
         async def _run():
             if state.loop:
-                await self.vc_play(
-                    guild_id,
-                    state.video_id,
-                    state.source_url,
-                    offset=0.0,
-                    volume=state.volume,
-                )
+                await self.vc_play(guild_id, state.video_id, state.source_url, offset=0.0)
             else:
                 await self.on_song_end(guild_id)
 
@@ -50,7 +44,7 @@ class AudioMixin:
         video_id: str,
         source_url: str,
         offset: float = 0.0,
-        volume: float = 0.5,
+        volume: float | None = None,
     ):
         vc = self.get_voice_client(guild_id)
         if not vc or not vc.is_connected():
@@ -58,6 +52,7 @@ class AudioMixin:
 
         prior = self._playback.get(guild_id)
         loop = prior.loop if prior else False
+        volume = volume if volume is not None else (prior.volume if prior else 0.5)
 
         if prior:
             prior.manually_stopped = True

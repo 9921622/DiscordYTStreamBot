@@ -98,6 +98,18 @@ function SortableItem({ item, index, onPlay, onRemove }: {
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded transition">
                             <Play className="w-4 h-4 text-white" />
                         </div>
+                        {item.added_by && (
+                            <div
+                                className="absolute -top-2 -left-2 tooltip tooltip-right"
+                                data-tip={item.added_by.global_name ?? item.added_by.username}
+                                >
+                                <img
+                                    src={item.added_by.avatar_url}
+                                    alt={item.added_by.username}
+                                    className="w-5 h-5 rounded-full object-cover ring-1 ring-zinc-900 group-hover:brightness-50 transition"
+                                />
+                            </div>
+                        )}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-white text-sm truncate">{item.video.title}</p>

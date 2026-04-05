@@ -284,6 +284,65 @@ class TestVcPlay:
 
         assert bot._playback[guild_id].loop is True
 
+    @pytest.mark.asyncio
+    async def test_play_inherits_volume_from_prior_state(self, bot, guild_id, vc):
+        """No volume passed → should carry over prior state's volume."""
+        bot._inject_vc(vc)
+        bot._create_playback(guild_id, "old", "http://old.url", volume=0.8)
+
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
+            await bot.vc_play(guild_id, "new", "http://new.url")  # no volume arg
+
+        assert bot._playback[guild_id].volume == 0.8
+
+    @pytest.mark.asyncio
+    async def test_play_explicit_volume_overrides_prior_state(self, bot, guild_id, vc):
+        """Explicit volume= must win over whatever was stored."""
+        bot._inject_vc(vc)
+        bot._create_playback(guild_id, "old", "http://old.url", volume=0.8)
+
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
+            await bot.vc_play(guild_id, "new", "http://new.url", volume=0.3)
+
+        assert bot._playback[guild_id].volume == 0.3
+
+    @pytest.mark.asyncio
+    async def test_play_defaults_to_0_5_when_no_prior_state(self, bot, guild_id, vc):
+        """First play with no prior state and no volume arg → default 0.5."""
+        bot._inject_vc(vc)
+
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
+            await bot.vc_play(guild_id, "vid", "http://url")
+
+        assert bot._playback[guild_id].volume == 0.5
+
+    @pytest.mark.asyncio
+    async def test_loop_restart_inherits_volume(self, bot, guild_id, vc):
+        """When loop fires _handle_playback_end, the restarted track keeps volume."""
+        bot._inject_vc(vc)
+        bot._create_playback(guild_id, "vid", "http://url", volume=0.9)
+        bot._playback[guild_id].loop = True
+        generation = bot._generation[guild_id]
+
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()):
+            with patch("asyncio.run_coroutine_threadsafe", side_effect=lambda coro, _loop: asyncio.ensure_future(coro)):
+                bot._handle_playback_end(guild_id, generation, error=None)
+                await asyncio.sleep(0)
+
+        assert bot._playback[guild_id].volume == 0.9
+
+    @pytest.mark.asyncio
+    async def test_audio_source_receives_correct_volume(self, bot, guild_id, vc):
+        """_create_audio_source must be called with the resolved volume, not None."""
+        bot._inject_vc(vc)
+        bot._create_playback(guild_id, "old", "http://old.url", volume=0.7)
+
+        with patch.object(bot, "_create_audio_source", return_value=MagicMock()) as mock_source:
+            await bot.vc_play(guild_id, "new", "http://new.url")
+
+        _, kwargs = mock_source.call_args
+        assert kwargs["volume"] == 0.7  # inherited, never None
+
 
 # ── vc_disconnect ──────────────────────────────────────────────────────────────
 

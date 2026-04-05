@@ -17,4 +17,5 @@ class WebsocketHook(ABC, metaclass=HookMeta):
         pass
 
     async def send(self, response: WSResponse):
+        """mimics `ws_manager.send()`"""
         await ws_manager.send(self.guild_id, response.model_dump())

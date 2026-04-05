@@ -44,6 +44,11 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     const [queue, setQueue] = useState<QueueItem[]>([])
 
     // ---- sync ----
+    useEffect(() => on("on_disconnect", (resp: WSResponse) => {
+        if (!resp.success) return;
+        setQueue([]);
+    }), [on]);
+
     useEffect(() => on("queue-get", (resp: WSResponse) => {
         if (!resp.success || !resp.data?.queue) return
         setQueue(resp.data.queue.items as QueueItem[])

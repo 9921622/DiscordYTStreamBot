@@ -48,6 +48,12 @@ export function PlaybackVideoProvider({ children }: { children: ReactNode }) {
     // websocket hooks
     // ==============================================================================================================
 
+    useEffect(() => on("on_disconnect", (resp: WSResponse) => {
+        if (!resp.success) return;
+        setVideo(null);
+        setVideoLoading(false);
+    }), [on]);
+
     useEffect(() => on("status", async (resp: WSResponse) => {
         if (!resp.success || !resp.data) return;
 

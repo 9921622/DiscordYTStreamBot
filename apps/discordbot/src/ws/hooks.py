@@ -11,6 +11,7 @@ class OnDisconnect(WebsocketHook):
     events = ["on_disconnect"]
 
     async def handle(self):
+        await self.send(WSResponse(type="on_disconnect", success=True))
         await ws_manager.disconnect_all(self.guild_id)
 
 

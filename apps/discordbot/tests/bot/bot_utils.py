@@ -20,6 +20,9 @@ class FakeBot(EventHandler, DiscordBotGeneric, DiscordBotVoice):
 
         asyncio.set_event_loop(self.loop)
 
+        self.user = MagicMock(spec=discord.ClientUser)
+        self.user.id = 123456789
+
     def get_guild(self, guild_id):
         return None
 

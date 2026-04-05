@@ -21,7 +21,7 @@ jobs:
       APP_HOST: "localhost"
       APP_PORT: "8080"
       BACKEND_HOST: "http://localhost:8000"
-      CORS_HOSTS: '["http://localhost:5173"]'
+      CORS_ALLOWED_ORIGINS: '["http://localhost:5173"]'
       DEBUG: "True"
 
     steps:
@@ -58,11 +58,12 @@ jobs:
       DEBUG: "True"
       BACKEND_URL: "http://localhost:8000"
       FRONTEND_URL: "http://localhost:5173"
-      ALLOWED_HOSTS: '["localhost", "127.0.0.1"]'
-      CORS_ALLOWED_ORIGINS: '[]'
+      ALLOWED_HOSTS: '["localhost","127.0.0.1","dj-backend","nginx"]'
+      CORS_ALLOWED_ORIGINS: '["http://localhost:5173"]'
       DISCORD_CLIENT_SECRET: "test"
       DISCORD_CLIENT_ID: "123"
       INTERNAL_API_KEY: "test"
+      DISCORD_OAUTH_REDIRECT_URL: "http://localhost:5173/dj"
 
     steps:
       - uses: actions/checkout@v4

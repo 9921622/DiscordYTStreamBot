@@ -12,12 +12,12 @@ class AppSettings(BaseSettings):
     # Django
     SECRET_KEY: str
     DEBUG: bool = False
-    BACKEND_URL: str
     FRONTEND_URL: str
     ALLOWED_HOSTS: list[str] = ["127.0.0.1", "localhost"]
     CORS_ALLOWED_ORIGINS: list[str] = []
 
     # Discord
+    DISCORD_OAUTH_REDIRECT_URL: str  # this is the login page where it should redirect after oauth
     DISCORD_CLIENT_SECRET: str
     DISCORD_CLIENT_ID: str
 

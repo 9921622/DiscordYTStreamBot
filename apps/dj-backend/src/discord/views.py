@@ -55,7 +55,7 @@ def get_oauth_redirect(request):
     from django.conf import settings
 
     path = reverse("discord:login")
-    return f"{settings.BACKEND_URL}{path}"
+    return f"{settings.DISCORD_OAUTH_REDIRECT_URL}{path}"
 
 
 class DiscordUserCreateUpdateMixin:

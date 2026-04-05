@@ -24,78 +24,67 @@ class YoutubeVideoModelTests(TestCase):
         self.assertEqual(video.youtube_id, "abc123")
         self.assertEqual(str(video), "Test Video (Test Creator)")
 
-    def test_from_ydl_info_creates_instance(self):
-        """Test that from_ydl_info correctly creates a YoutubeVideo instance from ydl info."""
-        mock_info = {
+    def test_from_info_dict_creates_instance_without_save(self):
+        """Test that from_info_dict correctly creates a YoutubeVideo instance (unsaved)."""
+        info_dict = {
+            "id": "vid123",
             "title": "Mock Video",
             "uploader": "Mock Channel",
-            "url": "https://youtube.com/mockvideo",
+            "source_url": "https://youtube.com/mockvideo",
             "duration": 123,
             "thumbnail": "https://example.com/thumb.jpg",
+            "tags": ["Music", "Pop"],
         }
 
-        video = YoutubeVideo.from_ydl_info(mock_info, save=False)
+        video = YoutubeVideo.from_info_dict(info_dict, save=False)
+
+        self.assertEqual(video.youtube_id, "vid123")
         self.assertEqual(video.title, "Mock Video")
         self.assertEqual(video.creator, "Mock Channel")
         self.assertEqual(video.source_url, "https://youtube.com/mockvideo")
         self.assertEqual(video.duration, 123)
         self.assertEqual(video.thumbnail, "https://example.com/thumb.jpg")
+        self.assertTrue(video._state.adding)
 
-    @mock.patch("youtube.models.YoutubeVideo.get_info")
-    def test_from_url_calls_get_info(self, mock_get_info):
-        """Test that from_url calls get_info and creates a video instance."""
-        mock_info = {"title": "Mock", "uploader": "Uploader", "url": "http://mock"}
-        mock_get_info.return_value = mock_info
-
-        video = YoutubeVideo.from_url("https://fake.url", save=False)
-        mock_get_info.assert_called_once_with("https://fake.url", None)
-        self.assertEqual(video.title, "Mock")
-        self.assertEqual(video.source_url, "http://mock")
-
-    def test_real(self):
-        """Test that from_url can create a real video instance from an actual YouTube URL."""
-        url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        video = YoutubeVideo.from_url(url, save=False)
-
-        self.assertEqual(video.youtube_id, "dQw4w9WgXcQ")
-        self.assertEqual(video.title, "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)")
-        self.assertEqual(video.creator, "Rick Astley")
-        self.assertTrue(video.source_url.startswith("https://"))
-        self.assertGreater(video.duration, 0)
-        self.assertTrue(video.thumbnail.startswith("https://"))
-
-    def test_tags_lowercase_enforcement(self):
-        """Test that tags are stored in lowercase."""
-        mock_info = {
-            "title": "Test Video",
-            "uploader": "Test Channel",
-            "url": "https://example.com/video",
-            "duration": 100,
-            "tags": ["Music", "POP", "Rock"],
+    def test_from_info_dict_creates_instance_with_save_and_tags(self):
+        """Test that from_info_dict saves the instance and adds tags (lowercased, deduplicated)."""
+        info_dict = {
+            "id": "vid456",
+            "title": "Another Video",
+            "uploader": "Another Channel",
+            "source_url": "https://youtube.com/another",
+            "duration": 200,
+            "thumbnail": "https://example.com/thumb2.jpg",
+            "tags": ["Music", "music", "POP"],
         }
 
-        video = YoutubeVideo.from_ydl_info(mock_info, save=True)
-        tags = video.tags.all()
+        video = YoutubeVideo.from_info_dict(info_dict, save=True)
 
-        self.assertEqual(tags.count(), 3)
+        self.assertIsNotNone(video.pk)
+        tags = video.tags.all()
+        self.assertEqual(tags.count(), 2)
         tag_names = sorted([tag.name for tag in tags])
-        self.assertEqual(tag_names, ["music", "pop", "rock"])
+        self.assertEqual(tag_names, ["music", "pop"])
 
-    def test_tag_deduplication(self):
-        """Test that duplicate tags are deduplicated."""
-        mock_info = {
-            "title": "Test Video",
-            "uploader": "Test Channel",
-            "url": "https://example.com/video",
-            "duration": 100,
-            "tags": ["Music", "music", "MUSIC"],
-        }
+    def test_get_url_returns_correct_url(self):
+        """Test that get_url() generates the correct YouTube URL."""
+        video = YoutubeVideo(
+            youtube_id="abc123",
+            title="Test Video",
+            creator="Test Creator",
+            source_url="https://youtube.com/watch?v=abc123",
+        )
+        self.assertEqual(video.get_url(), "https://www.youtube.com/watch?v=abc123")
 
-        video = YoutubeVideo.from_ydl_info(mock_info, save=True)
-        tags = video.tags.all()
-
-        self.assertEqual(tags.count(), 1)
-        self.assertEqual(tags.first().name, "music")
+    def test_str_representation(self):
+        """Test the string representation of a video."""
+        video = YoutubeVideo(
+            youtube_id="abc123",
+            title="Test Video",
+            creator="Test Creator",
+            source_url="https://youtube.com/watch?v=abc123",
+        )
+        self.assertEqual(str(video), "Test Video (Test Creator)")
 
 
 class YoutubePlaylistModelTests(TestCase):

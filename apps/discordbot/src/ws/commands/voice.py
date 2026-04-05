@@ -1,8 +1,9 @@
 from bot.bot import bot
 from ws.ws_command import WebsocketCommand
+from .mixins import DiscordUserMixin
 
 
-class UsersCommand(WebsocketCommand):
+class UsersCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "users"
 
     async def handle(self):

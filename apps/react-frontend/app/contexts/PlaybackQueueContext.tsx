@@ -6,6 +6,7 @@ import type { DiscordGuildQueueItem, DiscordGuildQueue } from "~/api/backend-typ
 import type { YoutubeVideo } from "~/api/youtube/youtube-types"
 import { usePlaybackVideoContext } from "./PlaybackVideoContext"
 import type { WSResponse } from "~/api/backend-types"
+import { useUser } from "./UserContext"
 
 interface SkeletonQueueItem {
     id: string
@@ -36,12 +37,18 @@ const PlaybackQueueContext = createContext<PlaybackQueueContextType>({
 })
 
 export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
+    const discordUser = useUser()
     const { guildID, botInChannel } = useBotContext()
     const { videoPlay } = usePlaybackVideoContext()
     const { send, on, connected } = useSocketContext()
     const [queue, setQueue] = useState<QueueItem[]>([])
 
     // ---- sync ----
+    useEffect(() => on("on_disconnect", (resp: WSResponse) => {
+        if (!resp.success) return;
+        setQueue([]);
+    }), [on]);
+
     useEffect(() => on("queue-get", (resp: WSResponse) => {
         if (!resp.success || !resp.data?.queue) return
         setQueue(resp.data.queue.items as QueueItem[])
@@ -68,14 +75,14 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
     }), [on])
 
     useEffect(() => {
-        if (!guildID || !botInChannel || !connected) return
-        send({ type: "queue-get" })
+        if (!guildID || !botInChannel || !connected || !discordUser) return
+        send({ type: "queue-get", discord_id: discordUser.discord_id })
     }, [guildID, botInChannel, connected])
 
     // ---- actions ----
 
     async function queueAdd(item: YoutubeVideo, playingNow: boolean) {
-        if (!guildID || !botInChannel) return
+        if (!guildID || !botInChannel || !discordUser) return
 
         const nothingPlaying = !playingNow && queue.length === 0
         if (nothingPlaying) {
@@ -91,19 +98,19 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
             }
             setQueue(prev => [...prev, skeleton])
         }
-        send({ type: "queue-add", youtube_id: item.youtube_id })
+        send({ type: "queue-add", youtube_id: item.youtube_id, discord_id: discordUser.discord_id })
     }
 
     async function queueNext(): Promise<void> {
-        if (!guildID || !botInChannel) return
+        if (!guildID || !botInChannel || !discordUser) return
         const next = queue[0]
         if (!next || 'isSkeleton' in next) return
         videoPlay(next.video);
-        send({ type: "queue-remove", item_id: next.id })
+        send({ type: "queue-remove", item_id: next.id, discord_id: discordUser.discord_id })
     }
 
     async function queueRemove(index: number) {
-        if (!guildID || !botInChannel) return
+        if (!guildID || !botInChannel || !discordUser) return
         const item = queue[index]
         if (!item) return
         if ('isSkeleton' in item) {
@@ -111,21 +118,21 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
             return
         }
         setQueue(prev => prev.filter((_, i) => i !== index))  // optimistic
-        send({ type: "queue-remove", item_id: item.id })
+        send({ type: "queue-remove", item_id: item.id, discord_id: discordUser.discord_id })
     }
 
     async function queuePlayFrom(index: number): Promise<YoutubeVideo | null> {
-        if (!guildID || !botInChannel) return null
+        if (!guildID || !botInChannel || !discordUser) return null
         const item = queue[index]
         if (!item || 'isSkeleton' in item) return null
         videoPlay(item.video);
-        send({ type: "queue-remove", item_id: item.id })
+        send({ type: "queue-remove", item_id: item.id, discord_id: discordUser.discord_id })
         setQueue(prev => prev.filter((_, i) => i !== index))
         return item.video
     }
 
     async function queueSwap(fromIndex: number, toIndex: number) {
-        if (!guildID || !botInChannel) return
+        if (!guildID || !botInChannel || !discordUser) return
         const reordered = [...queue]
         const [moved] = reordered.splice(fromIndex, 1)
         reordered.splice(toIndex, 0, moved)
@@ -133,12 +140,12 @@ export function PlaybackQueueProvider({ children }: { children: ReactNode }) {
         const realIds = reordered
             .filter((q): q is DiscordGuildQueueItem => !('isSkeleton' in q))
             .map(q => q.id)
-        send({ type: "queue-reorder", order: realIds })
+        send({ type: "queue-reorder", order: realIds, discord_id: discordUser.discord_id })
     }
 
     async function queueClear() {
-        if (!guildID || !botInChannel) return
-        send({ type: "queue-clear" })
+        if (!guildID || !botInChannel || !discordUser) return
+        send({ type: "queue-clear", discord_id: discordUser.discord_id })
     }
 
     return (

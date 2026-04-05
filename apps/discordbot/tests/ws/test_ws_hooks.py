@@ -59,9 +59,13 @@ class TestOnDisconnect(TestHookCase):
 
     @pytest.mark.asyncio
     async def test_disconnects_all(self):
-        hook = self.make_hook(OnDisconnect)
-        await hook.handle()
-        hook.ws_manager.disconnect_all.assert_called_once_with(GUILD_ID)
+        with patch("ws.hooks.ws_manager") as mock_ws_manager:
+            mock_ws_manager.disconnect_all = AsyncMock()
+            hook = self.make_hook(OnDisconnect)
+            hook.send = AsyncMock()
+            await hook.handle()
+        hook.send.assert_called_once_with(WSResponse(type="on_disconnect", success=True))
+        mock_ws_manager.disconnect_all.assert_called_once_with(GUILD_ID)
 
 
 class TestOnVoice(TestHookCase):

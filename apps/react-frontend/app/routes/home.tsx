@@ -1,5 +1,5 @@
 import type { Route } from "./+types/home";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
 import type { YoutubeVideo } from "~/api/youtube/youtube-types";
@@ -12,11 +12,12 @@ import SongQueue from "~/components/SongQueue";
 import HorizontalAccordion from "~/components/utilities/HorizontalAccordion";
 import { BotProvider, useBotContext } from "~/contexts/BotContext";
 import { UserProvider, useUser } from "~/contexts/UserContext";
-import { SocketProvider } from "~/contexts/SocketContext";
+import { SocketProvider, useSocketContext } from "~/contexts/SocketContext";
 import { PlaybackVideoProvider } from "~/contexts/PlaybackVideoContext";
 import { PlaybackQueueProvider } from "~/contexts/PlaybackQueueContext";
 import SongQueueClosed from "~/components/SongQueueClosed";
 import { LibraryBig, ListMusic, PanelLeftClose, PanelRightClose } from "lucide-react";
+import type { WSResponse } from "~/api/backend-types";
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -122,15 +123,25 @@ function HomePage() {
 }
 
 
-function HomeProviders() {
+function BotSocketBridge() {
+    /* This is here so when the bot sends the on_disconnect event. we can disable the bot */
+    const { setBotInChannel } = useBotContext();
+    const { on } = useSocketContext();
+
+    useEffect(() => on("on_disconnect", (resp: WSResponse) => {
+        if (!resp.success) return;
+        setBotInChannel(false);
+    }), [on]);
+
+    return null;
+}
+
+function SocketProviderWrapper({ children }: { children: ReactNode }) {
     const { guildID } = useBotContext();
     return (
         <SocketProvider guildID={guildID ?? undefined}>
-            <PlaybackVideoProvider>
-                <PlaybackQueueProvider>
-                    <HomePage />
-                </PlaybackQueueProvider>
-            </PlaybackVideoProvider>
+            <BotSocketBridge />
+            {children}
         </SocketProvider>
     );
 }
@@ -138,9 +149,15 @@ function HomeProviders() {
 export default function Home() {
     return (
         <UserProvider>
-        <BotProvider>
-            <HomeProviders />
-        </BotProvider>
+            <BotProvider>
+                <SocketProviderWrapper>
+                    <PlaybackVideoProvider>
+                        <PlaybackQueueProvider>
+                            <HomePage />
+                        </PlaybackQueueProvider>
+                    </PlaybackVideoProvider>
+                </SocketProviderWrapper>
+            </BotProvider>
         </UserProvider>
     );
 }

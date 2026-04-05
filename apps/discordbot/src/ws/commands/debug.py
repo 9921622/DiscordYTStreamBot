@@ -1,8 +1,9 @@
 from bot.bot import bot
 from ws.ws_command import WebsocketCommand
+from .mixins import DiscordUserMixin
 
 
-class PingCommand(WebsocketCommand):
+class PingCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "ping"
 
     async def handle(self):

@@ -3,7 +3,8 @@ from django.contrib.auth.models import User
 from django.conf import settings
 
 from discord.api import DiscordCDNAPI
-from youtube.models import AbstractPlaylist, AbstractPlaylistItem
+from youtube.services import YouTubeService
+from youtube.models import YoutubeVideo, AbstractPlaylist, AbstractPlaylistItem
 
 
 class DiscordUser(models.Model):
@@ -37,10 +38,48 @@ class DiscordGuild(models.Model):
         return self.name or "Guild"
 
 
+class GuildQueueManager(models.Manager):
+    """A Manager is the interface through which database query operations are provided to Django models"""
+
+    def get_for_guild(self, guild_id: str) -> "GuildQueue":
+        guild, _ = DiscordGuild.objects.get_or_create(guild_id=guild_id)
+        queue, _ = self.get_or_create(guild=guild)
+        return queue
+
+    def add_item(
+        self, guild_id: str, youtube_id: str, added_by: DiscordUser | None = None, fetch: bool = False
+    ) -> "GuildQueueItem":
+        queue = self.get_for_guild(guild_id)
+
+        if fetch:
+            video = YouTubeService.fetch_and_cache_video(youtube_id)
+        else:
+            video = YoutubeVideo.objects.get(youtube_id=youtube_id)
+
+        last_order = queue.items.aggregate(models.Max("order"))["order__max"] or 0
+        return GuildQueueItem.objects.create(queue=queue, video=video, order=last_order + 1, added_by=added_by)
+
+    def remove_item(self, guild_id: str, item_id: int) -> None:
+        item = GuildQueueItem.objects.get(id=item_id, queue__guild__guild_id=guild_id)
+        item.delete()
+
+    def reorder_items(self, guild_id: str, item_ids: list[int]) -> None:
+        queue = self.get_for_guild(guild_id)
+
+        items = GuildQueueItem.objects.filter(id__in=item_ids, queue=queue)
+        if items.count() != len(item_ids):
+            raise ValueError("One or more item IDs are invalid")
+
+        updates = [GuildQueueItem(id=item_id, order=i + 1) for i, item_id in enumerate(item_ids)]
+        GuildQueueItem.objects.bulk_update(updates, ["order"])
+
+
 class GuildQueue(AbstractPlaylist):
     """Temporary playback queue for a guild. One queue per guild."""
 
     guild = models.OneToOneField(DiscordGuild, on_delete=models.CASCADE, related_name="queue")
+
+    objects = GuildQueueManager()
 
     def __str__(self):
         return f"Queue for {self.guild.name}"
@@ -50,6 +89,9 @@ class GuildQueueItem(AbstractPlaylistItem):
     """A video in a guild's playback queue."""
 
     queue = models.ForeignKey(GuildQueue, on_delete=models.CASCADE, related_name="items")
+    added_by = models.ForeignKey(
+        DiscordUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="queue_items"
+    )
 
     def __str__(self):
         return f"{self.video.title} in {self.queue.guild.name}"

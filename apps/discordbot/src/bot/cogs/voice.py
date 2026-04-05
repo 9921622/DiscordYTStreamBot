@@ -19,37 +19,34 @@ class VoiceCog(commands.Cog, name="voice"):
         """
         Triggered whenever a member joins, leaves, or moves between voice channels.
         """
-        # if bot is forcefully disconnected...
+        # Handle bot being forcefully disconnected
         if member.id == self.bot.user.id:
             if before.channel is not None and after.channel is None:
                 await self.bot._emit("on_disconnect", member.guild.id)
                 self.bot._delete_playback(member.guild.id)
             return
 
-        # someone joined a channel
-        if before.channel is None and after.channel is not None:
+        bot_vc = member.guild.voice_client
+
+        # Ignore events if bot isn't in a voice channel
+        if not bot_vc:
+            return
+
+        user_joined = before.channel is None and after.channel is not None
+        user_left = before.channel is not None and after.channel != before.channel
+
+        # Only care about events in the bot's channel
+        user_joined_bots_channel = user_joined and after.channel == bot_vc.channel
+        user_left_bots_channel = user_left and before.channel == bot_vc.channel
+
+        if user_joined_bots_channel:
             await self.bot._emit("on_voice_connect", member.guild.id)
-        if before.channel is not None and after.channel != before.channel:
-            await self.bot._emit("on_voice_disconnect", member.guild.id)
 
-        # Only care about members leaving a channel
-        if before.channel is not None and after.channel != before.channel:
-            # Check if the channel the bot is in is now empty
-            bot_vc = member.guild.voice_client
-            if bot_vc and bot_vc.channel == before.channel:
-                if len(bot_vc.channel.members) == 1:  # only the bot remains
-                    await bot_vc.disconnect()
-                    await self.bot._emit("on_disconnect", member.guild.id)
-                    self.bot._delete_playback(member.guild.id)
-
-        # someone joined a channel
-        if before.channel is None and after.channel is not None:
             embed = discord.Embed(
                 title="🎵 Music Session",
                 description="A new session is ready! Click below to open the player.",
                 color=discord.Color.blurple(),
             )
-
             view = discord.ui.View()
             view.add_item(
                 discord.ui.Button(
@@ -58,8 +55,16 @@ class VoiceCog(commands.Cog, name="voice"):
                     style=discord.ButtonStyle.link,
                 )
             )
-
             await after.channel.send(embed=embed, view=view)
+
+        if user_left_bots_channel:
+            await self.bot._emit("on_voice_disconnect", member.guild.id)
+
+            # Disconnect bot if it's now alone
+            if len(bot_vc.channel.members) == 1:
+                await self.bot._emit("on_disconnect", member.guild.id)
+                self.bot._delete_playback(member.guild.id)
+                await bot_vc.disconnect()
 
     @voice_group.command(name="connect")
     async def connect(self, ctx: commands.Context):

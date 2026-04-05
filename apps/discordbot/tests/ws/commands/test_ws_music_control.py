@@ -10,6 +10,7 @@ from tests.bot.factories import PlaybackStatusFactory
 from tests.utils.mocks import make_mock_video_response
 
 GUILD_ID = 123878273492
+DISCORD_ID = 123456789
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +100,7 @@ class TestStatusCommand(TestCaseMusic):
         mock_status = PlaybackStatusFactory.build()
         with patch_bot_status(mock_status):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "status"})
+                self.send_json(ws, "status", discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_success(data, "status")
@@ -111,7 +112,7 @@ class TestStatusCommand(TestCaseMusic):
         mock_status = PlaybackStatusFactory.build()
         with patch_bot_status(mock_status):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-                ws1.send_json({"type": "status"})
+                self.send_json(ws1, "status", discord_id=DISCORD_ID)
                 self.assert_success(ws1.receive_json(), "status")
                 self.assert_not_broadcast(ws2)
 
@@ -131,7 +132,7 @@ class TestPlayCommand(TestCaseMusic):
 
         with patch_bot_play(status=status), patch_video_source():
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "play", "video_id": "abc", "offset": 0.0, "volume": 0.5})
+                self.send_json(ws, "play", discord_id=DISCORD_ID, video_id="abc", offset=0.0, volume=0.5)
 
                 ack = ws.receive_json()
                 self.assert_success(ack, "play")
@@ -143,7 +144,7 @@ class TestPlayCommand(TestCaseMusic):
 
     def test_play_missing_video_id(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
-            ws.send_json({"type": "play"})
+            self.send_json(ws, "play", discord_id=DISCORD_ID)
             data = ws.receive_json()
 
         self.assert_error(data, "video_id")
@@ -151,7 +152,7 @@ class TestPlayCommand(TestCaseMusic):
     def test_play_bot_not_in_channel(self, client):
         with patch_bot_play(error=RuntimeError("not connected")), patch_video_source():
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "play", "video_id": "abc"})
+                self.send_json(ws, "play", discord_id=DISCORD_ID, video_id="abc")
                 data = ws.receive_json()
 
         self.assert_error(data)
@@ -159,7 +160,7 @@ class TestPlayCommand(TestCaseMusic):
     def test_play_source_url_failure(self, client):
         with patch_video_source(status_code=500):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "play", "video_id": "abc"})
+                self.send_json(ws, "play", discord_id=DISCORD_ID, video_id="abc")
                 data = ws.receive_json()
 
         self.assert_error(data)
@@ -168,7 +169,7 @@ class TestPlayCommand(TestCaseMusic):
         status = PlaybackStatusFactory.build(video_id="abc")
         with patch_bot_play(status=status), patch_video_source():
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-                ws1.send_json({"type": "play", "video_id": "abc"})
+                self.send_json(ws1, "play", discord_id=DISCORD_ID, video_id="abc")
                 ws1.receive_json()  # ack
                 ws1.receive_json()  # status broadcast to sender
                 data = ws2.receive_json()
@@ -195,7 +196,7 @@ class TestPauseCommand(TestCaseMusic):
         with patch_voice_client(mock_vc) as mock_bot:
             mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(paused=False)
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "pause"})
+                self.send_json(ws, "pause", discord_id=DISCORD_ID)
                 ack = ws.receive_json()
 
         self.assert_success(ack, "pause")
@@ -205,7 +206,7 @@ class TestPauseCommand(TestCaseMusic):
     def test_pause_not_connected(self, client):
         with patch_voice_client(None):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "pause"})
+                self.send_json(ws, "pause", discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_error(data)
@@ -216,7 +217,7 @@ class TestPauseCommand(TestCaseMusic):
         mock_vc.is_playing.return_value = False
         with patch_voice_client(mock_vc):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "pause"})
+                self.send_json(ws, "pause", discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_error(data)
@@ -234,7 +235,7 @@ class TestSeekCommand(TestCaseMusic):
     def test_seek_success(self, client):
         with patch_bot_seek(status=PlaybackStatusFactory.build(position=42.0)):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "seek", "position": 42.0})
+                self.send_json(ws, "seek", discord_id=DISCORD_ID, position=42.0)
 
                 ack = ws.receive_json()
                 self.assert_success(ack, "seek")
@@ -246,7 +247,7 @@ class TestSeekCommand(TestCaseMusic):
 
     def test_seek_missing_position(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
-            ws.send_json({"type": "seek"})
+            self.send_json(ws, "seek", discord_id=DISCORD_ID)
             data = ws.receive_json()
 
         self.assert_error(data, "position")
@@ -254,7 +255,7 @@ class TestSeekCommand(TestCaseMusic):
     def test_seek_nothing_playing(self, client):
         with patch_bot_seek(error=RuntimeError("nothing is playing")):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "seek", "position": 10.0})
+                self.send_json(ws, "seek", discord_id=DISCORD_ID, position=10.0)
                 data = ws.receive_json()
 
         self.assert_error(data)
@@ -272,7 +273,7 @@ class TestLoopCommand(TestCaseMusic):
     def test_loop_toggles_on(self, client):
         with patch_bot_loop(status=PlaybackStatusFactory.build(loop=True)):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "loop"})
+                self.send_json(ws, "loop", discord_id=DISCORD_ID)
                 ack = ws.receive_json()
                 broadcast = ws.receive_json()
 
@@ -284,7 +285,7 @@ class TestLoopCommand(TestCaseMusic):
     def test_loop_toggles_off(self, client):
         with patch_bot_loop(status=PlaybackStatusFactory.build(loop=False)):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "loop"})
+                self.send_json(ws, "loop", discord_id=DISCORD_ID)
                 ack = ws.receive_json()
                 broadcast = ws.receive_json()
 
@@ -296,7 +297,7 @@ class TestLoopCommand(TestCaseMusic):
     def test_loop_nothing_playing(self, client):
         with patch_bot_loop(error=RuntimeError("Nothing is playing")):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "loop"})
+                self.send_json(ws, "loop", discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_error(data)
@@ -315,7 +316,7 @@ class TestVolumeCommand(TestCaseMusic):
         with patch_bot_volume(return_value=0.8) as mock_bot:
             mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(volume=0.8)
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "volume", "level": 0.8})
+                self.send_json(ws, "volume", discord_id=DISCORD_ID, level=0.8)
                 ack = ws.receive_json()
                 broadcast = ws.receive_json()
 
@@ -328,7 +329,7 @@ class TestVolumeCommand(TestCaseMusic):
         with patch_bot_volume(return_value=0.5) as mock_bot:
             mock_bot.vc_get_status.return_value = PlaybackStatusFactory.build(volume=0.5)
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "volume"})  # no level = get
+                self.send_json(ws, "volume", discord_id=DISCORD_ID)  # no level = get
                 ack = ws.receive_json()
 
         self.assert_success(ack, "volume")
@@ -338,7 +339,7 @@ class TestVolumeCommand(TestCaseMusic):
     def test_volume_no_audio_source(self, client):
         with patch_bot_volume(return_value=None):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "volume", "level": 0.8})
+                self.send_json(ws, "volume", discord_id=DISCORD_ID, level=0.8)
                 data = ws.receive_json()
 
         self.assert_error(data)
@@ -365,14 +366,14 @@ class TestMultiSession(TestCaseMusic):
         with patch_bot_seek(status=PlaybackStatusFactory.build()):
             with self.ws_connect(client, GUILD_ID) as ws1:
                 with self.ws_connect(client, OTHER_GUILD) as ws2:
-                    ws1.send_json({"type": "seek", "position": 30.0})
+                    self.send_json(ws1, "seek", discord_id=DISCORD_ID, position=30.0)
                     ws1.receive_json()  # ack
                     ws1.receive_json()  # status
                     self.assert_not_broadcast(ws2)
 
     def test_errors_only_go_to_sender(self, client):
         with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-            ws1.send_json({"type": "seek"})  # missing position — will error
+            self.send_json(ws1, "seek", discord_id=DISCORD_ID)  # missing position — will error
             self.assert_error(ws1.receive_json())
             self.assert_not_broadcast(ws2)
 
@@ -381,7 +382,7 @@ class TestMultiSession(TestCaseMusic):
             with self.ws_connect(client, GUILD_ID) as ws1:
                 with self.ws_connect(client, GUILD_ID) as ws2:
                     with self.ws_connect(client, GUILD_ID) as ws3:
-                        ws1.send_json({"type": "seek", "position": 99.0})
+                        self.send_json(ws1, "seek", discord_id=DISCORD_ID, position=99.0)
                         ws1.receive_json()  # ack
                         ws1.receive_json()  # status
                         d2 = ws2.receive_json()

@@ -15,6 +15,7 @@ from tests.utils.mocks import make_mock_response_wrapper
 # ---------------------------------------------------------------------------
 
 GUILD_ID = 123213
+DISCORD_ID = 987654
 
 
 @contextmanager
@@ -139,7 +140,7 @@ class TestQueueGet(TestQueue):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_get(mock_queue):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "queue-get"})
+                self.send_json(ws, "queue-get", discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_queue_response(data, "queue-get", mock_queue.model_dump())
@@ -148,7 +149,7 @@ class TestQueueGet(TestQueue):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_get(mock_queue):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-                ws1.send_json({"type": "queue-get"})
+                self.send_json(ws1, "queue-get", discord_id=DISCORD_ID)
                 self.assert_success(ws1.receive_json(), "queue-get")
                 self.assert_not_broadcast(ws2)
 
@@ -166,21 +167,21 @@ class TestQueueAdd(TestQueue):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_add(), patch_queue_get(mock_queue):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "queue-add", "youtube_id": "abc"})
+                self.send_json(ws, "queue-add", youtube_id="abc", discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_queue_response(data, "queue-add", mock_queue.model_dump())
 
     def test_queue_add_missing_youtube_id(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
-            ws.send_json({"type": "queue-add"})
+            self.send_json(ws, "queue-add", discord_id=DISCORD_ID)
             data = ws.receive_json()
         self.assert_error(data, "youtube_id")
 
     def test_queue_add_backend_failure(self, client):
         with patch_queue_add_error(502, {"detail": "upstream error"}):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "queue-add", "youtube_id": "abc"})
+                self.send_json(ws, "queue-add", youtube_id="abc", discord_id=DISCORD_ID)
                 data = ws.receive_json()
         self.assert_error(data)
 
@@ -188,14 +189,14 @@ class TestQueueAdd(TestQueue):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_add(), patch_queue_get(mock_queue):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-                ws1.send_json({"type": "queue-add", "youtube_id": "abc"})
+                self.send_json(ws1, "queue-add", youtube_id="abc", discord_id=DISCORD_ID)
                 ws1.receive_json()  # ack
                 data = ws2.receive_json()
         self.assert_queue_response(data, "queue-add", mock_queue.model_dump())
 
     def test_queue_add_error_not_broadcast(self, client):
         with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-            ws1.send_json({"type": "queue-add"})  # missing youtube_id
+            self.send_json(ws1, "queue-add", discord_id=DISCORD_ID)  # missing youtube_id
             self.assert_error(ws1.receive_json(), "youtube_id")
             self.assert_not_broadcast(ws2)
 
@@ -213,21 +214,21 @@ class TestQueueRemove(TestQueue):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_remove(), patch_queue_get(mock_queue):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "queue-remove", "item_id": 1})
+                self.send_json(ws, "queue-remove", item_id=1, discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_queue_response(data, "queue-remove", mock_queue.model_dump())
 
     def test_queue_remove_missing_item_id(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
-            ws.send_json({"type": "queue-remove"})
+            self.send_json(ws, "queue-remove", discord_id=DISCORD_ID)
             data = ws.receive_json()
         self.assert_error(data, "item_id")
 
     def test_queue_remove_backend_failure(self, client):
         with patch_queue_remove_error(404, {"error": "not found"}):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "queue-remove", "item_id": 99})
+                self.send_json(ws, "queue-remove", item_id=99, discord_id=DISCORD_ID)
                 data = ws.receive_json()
         self.assert_error(data)
 
@@ -235,7 +236,7 @@ class TestQueueRemove(TestQueue):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_remove(), patch_queue_get(mock_queue):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-                ws1.send_json({"type": "queue-remove", "item_id": 1})
+                self.send_json(ws1, "queue-remove", item_id=1, discord_id=DISCORD_ID)
                 ws1.receive_json()  # ack
                 data = ws2.receive_json()
         self.assert_success(data, "queue-remove")
@@ -254,19 +255,19 @@ class TestQueueReorder(TestQueue):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_reorder(), patch_queue_get(mock_queue):
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "queue-reorder", "order": [2, 1]})
+                self.send_json(ws, "queue-reorder", order=[2, 1], discord_id=DISCORD_ID)
                 data = ws.receive_json()
         self.assert_queue_response(data, "queue-reorder", mock_queue.model_dump())
 
     def test_queue_reorder_missing_order(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
-            ws.send_json({"type": "queue-reorder"})
+            self.send_json(ws, "queue-reorder", discord_id=DISCORD_ID)
             data = ws.receive_json()
         self.assert_error(data)
 
     def test_queue_reorder_invalid_order_not_list(self, client):
         with self.ws_connect(client, GUILD_ID) as ws:
-            ws.send_json({"type": "queue-reorder", "order": "not-a-list"})
+            self.send_json(ws, "queue-reorder", order="not-a-list", discord_id=DISCORD_ID)
             data = ws.receive_json()
         self.assert_error(data)
 
@@ -274,7 +275,7 @@ class TestQueueReorder(TestQueue):
         mock_queue = GuildQueueSchemaFactory.build()
         with patch_queue_reorder(), patch_queue_get(mock_queue):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-                ws1.send_json({"type": "queue-reorder", "order": [2, 1]})
+                self.send_json(ws1, "queue-reorder", order=[2, 1], discord_id=DISCORD_ID)
                 ws1.receive_json()  # ack
                 data = ws2.receive_json()
         self.assert_success(data, "queue-reorder")
@@ -292,7 +293,7 @@ class TestQueueClear(TestQueue):
     def test_queue_clear_success(self, client):
         with patch_queue_clear():
             with self.ws_connect(client, GUILD_ID) as ws:
-                ws.send_json({"type": "queue-clear"})
+                self.send_json(ws, "queue-clear", discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_success(data, "queue-clear")
@@ -302,6 +303,6 @@ class TestQueueClear(TestQueue):
     def test_queue_clear_error_not_broadcast(self, client):
         with patch_queue_clear_error(500, {"detail": "db error"}):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
-                ws1.send_json({"type": "queue-clear"})
+                self.send_json(ws1, "queue-clear", discord_id=DISCORD_ID)
                 self.assert_error(ws1.receive_json())
                 self.assert_not_broadcast(ws2)

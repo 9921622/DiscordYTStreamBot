@@ -2,9 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { NumToTime } from "../utilities/misc";
 import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
 import { useSocketContext } from "~/contexts/SocketContext";
+import { useUser } from "~/contexts/UserContext";
+import { useBotContext } from "~/contexts/BotContext";
 
 export default function SongProgressBar({ className }: { className?: string }) {
+    const discordUser = useUser()
     const { send } = useSocketContext();
+    const { guildID, botInChannel } = useBotContext();
     const { video, videoPlaybackStatus } = usePlaybackVideoContext();
 
     const isPlaying = videoPlaybackStatus?.playing ?? false;
@@ -44,10 +48,11 @@ export default function SongProgressBar({ className }: { className?: string }) {
     }, [sliderValue]);
 
     const handleRelease = () => {
+        if (!botInChannel || !discordUser) return
         const time = (sliderValue / 100) * duration;
         setDragging(false);
         setCurrentTime(time);
-        send({ type: "seek", position: time });
+        send({ type: "seek", discord_id: discordUser.discord_id, position: time });
     };
 
     return (

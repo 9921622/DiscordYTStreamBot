@@ -2,6 +2,7 @@ from bot.bot import bot
 from utils.api_backend_wrapper import QueueAPI, VideoAPI, GuildQueueItemSchema
 from ws.ws_hook import WebsocketHook
 from ws.models import WSResponse
+from ws.ws_manager import ws_manager
 
 
 class OnDisconnect(WebsocketHook):
@@ -10,7 +11,8 @@ class OnDisconnect(WebsocketHook):
     events = ["on_disconnect"]
 
     async def handle(self):
-        await self.ws_manager.disconnect_all(self.guild_id)
+        await self.send(WSResponse(type="on_disconnect", success=True))
+        await ws_manager.disconnect_all(self.guild_id)
 
 
 class OnVoice(WebsocketHook):

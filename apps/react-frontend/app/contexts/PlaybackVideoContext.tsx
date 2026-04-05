@@ -6,6 +6,7 @@ import { useBotContext } from "./BotContext"
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper"
 import { useSocketContext } from "./SocketContext"
 import type { WSResponse } from "~/api/backend-types"
+import { useUser } from "./UserContext"
 
 
 interface PlaybackVideoContextType {
@@ -31,6 +32,7 @@ const PlaybackVideoContext = createContext<PlaybackVideoContextType>({
 })
 
 export function PlaybackVideoProvider({ children }: { children: ReactNode }) {
+    const discordUser = useUser()
     const { send, on, connected } = useSocketContext();
     const { guildID, botInChannel } = useBotContext();
     const [video, setVideo] = useState<YoutubeVideo | null>(null);
@@ -39,12 +41,18 @@ export function PlaybackVideoProvider({ children }: { children: ReactNode }) {
     const [videoPlaybackStatus, setVideoPlaybackStatus] = useState<PlaybackStatus | null>(null);
 
     useEffect(() => {
-        if (!guildID || !botInChannel || !connected) return
-        send({ type: "status" })
+        if (!guildID || !botInChannel || !connected || !discordUser) return
+        send({ type: "status", discord_id: discordUser.discord_id })
     }, [guildID, botInChannel, connected])
 
     // websocket hooks
     // ==============================================================================================================
+
+    useEffect(() => on("on_disconnect", (resp: WSResponse) => {
+        if (!resp.success) return;
+        setVideo(null);
+        setVideoLoading(false);
+    }), [on]);
 
     useEffect(() => on("status", async (resp: WSResponse) => {
         if (!resp.success || !resp.data) return;
@@ -123,28 +131,31 @@ export function PlaybackVideoProvider({ children }: { children: ReactNode }) {
 
 
     function videoPlay(item: YoutubeVideo) {
-        if (!botInChannel) return
+        if (!botInChannel || !discordUser) return
         setVideoError(null)
         setVideoLoading(true)
-        send({ type: "play", video_id: item.youtube_id, offset: 0, volume: videoPlaybackStatus?.volume || 0.5 })
+        send({ type: "play", discord_id: discordUser.discord_id, video_id: item.youtube_id, offset: 0, volume: videoPlaybackStatus?.volume || 0.5 })
 
         // optimistically set video so UI responds immediately
         setVideo(item)
     }
 
     function videoStop() {
-        send({ type: "stop" })
+        if (!botInChannel || !discordUser) return
+        send({ type: "stop", discord_id: discordUser.discord_id})
         setVideo(null)
         setVideoPlaybackStatus(null)
         setVideoLoading(false)
     }
 
     function videoPause() {
-        send({ type: "pause" })
+        if (!botInChannel || !discordUser) return
+        send({ type: "pause", discord_id: discordUser.discord_id })
     }
 
     function videoVolume(level: number) {
-        send({ type: "volume", level })
+        if (!botInChannel || !discordUser) return
+        send({ type: "volume", discord_id: discordUser.discord_id, level })
         // optimistically update so the slider feels instant
         setVideoPlaybackStatus(prev => prev ? { ...prev, volume: level } : prev)
     }

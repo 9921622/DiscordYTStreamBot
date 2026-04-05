@@ -1,18 +1,26 @@
 from bot.bot import bot
 from utils.api_backend_wrapper import VideoAPI
 from ws.ws_command import WebsocketCommand, WSCommandFlags
+from .mixins import DiscordUserMixin
 
 
-class PlayCommand(WebsocketCommand):
+class PlayCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "play"
     flags = WSCommandFlags.BROADCAST_STATUS
 
-    async def handle(self):
-        video_id = self.data.get("video_id")
-        if not video_id:
-            return self.response_error("missing 'video_id'")
+    def get_objects(self):
+        super().get_objects()
+        self.video_id = self.data.get("video_id")
+        self.offset = self.data.get("offset", 0.0)
+        self.volume = self.data.get("volume", 0.5)
 
-        rw = await VideoAPI.get_source(video_id)
+    def get_errors(self):
+        if not self.video_id:
+            return self.response_error("missing 'video_id'")
+        return super().get_errors()
+
+    async def handle(self):
+        rw = await VideoAPI.get_source(self.video_id)
 
         if not rw.response.is_success:
             return self.response_error("bot not connected to a voice channel", detail=rw.response.json())
@@ -20,18 +28,18 @@ class PlayCommand(WebsocketCommand):
         try:
             await bot.vc_play(
                 self.guild_id,
-                video_id,
+                self.video_id,
                 rw.data.source_url,
-                offset=self.data.get("offset", 0.0),
-                volume=self.data.get("volume", 0.5),
+                offset=self.offset,
+                volume=self.volume,
             )
         except RuntimeError:
             return self.response_error("bot not connected to a voice channel")
 
-        return self.response(video_id=video_id)
+        return self.response(video_id=self.video_id)
 
 
-class PauseCommand(WebsocketCommand):
+class PauseCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "pause"
     flags = WSCommandFlags.BROADCAST
 
@@ -51,7 +59,7 @@ class PauseCommand(WebsocketCommand):
         return self.response(paused=vc.is_paused())
 
 
-class StopCommand(WebsocketCommand):
+class StopCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "stop"
     flags = WSCommandFlags.BROADCAST
 
@@ -60,7 +68,7 @@ class StopCommand(WebsocketCommand):
         return self.response()
 
 
-class LoopCommand(WebsocketCommand):
+class LoopCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "loop"
     flags = WSCommandFlags.BROADCAST
 
@@ -74,25 +82,29 @@ class LoopCommand(WebsocketCommand):
         return self.response(loop=status.loop)
 
 
-class SeekCommand(WebsocketCommand):
+class SeekCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "seek"
     flags = WSCommandFlags.BROADCAST_STATUS
 
-    async def handle(self):
-        position = self.data.get("position")
+    def get_objects(self):
+        super().get_objects()
+        self.position = self.data.get("position")
 
-        if position is None:
+    def get_errors(self):
+        if self.position is None:
             return self.response_error("missing 'position'")
+        return super().get_errors()
 
+    async def handle(self):
         try:
-            await bot.vc_seek(self.guild_id, float(position))
+            await bot.vc_seek(self.guild_id, float(self.position))
         except RuntimeError:
             return self.response_error("nothing is playing")
 
-        return self.response(position=position)
+        return self.response(position=self.position)
 
 
-class StatusCommand(WebsocketCommand):
+class StatusCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "status"
     flags = WSCommandFlags.BROADCAST
 
@@ -100,13 +112,16 @@ class StatusCommand(WebsocketCommand):
         return self.response(playback=bot.vc_get_status(self.guild_id).model_dump())
 
 
-class VolumeCommand(WebsocketCommand):
+class VolumeCommand(DiscordUserMixin, WebsocketCommand):
     prefix = "volume"
     flags = WSCommandFlags.BROADCAST
 
+    def get_objects(self):
+        super().get_objects()
+        self.level = self.data.get("level")
+
     async def handle(self):
-        level = self.data.get("level")
-        result = await bot.vc_volume(self.guild_id, level)
+        result = await bot.vc_volume(self.guild_id, self.level)
 
         if result is None:
             return self.response_error("no active audio source")

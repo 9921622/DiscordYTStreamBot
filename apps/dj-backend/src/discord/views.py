@@ -14,7 +14,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from backend.mixins import RefreshTokenMixin
 from backend.permissions import IsInternalService
 from discord.api import DiscordAPIClient, DiscordCDNAPI
-from discord.models import DiscordUser, DiscordGuild, GuildQueue, GuildQueueItem
+from discord.models import DiscordUser, DiscordGuild, GuildQueueManager, GuildQueue, GuildQueueItem
 from discord.serializers import (
     DiscordGuildSerializer,
     GuildQueueSerializer,
@@ -180,19 +180,14 @@ class GuildQueueView(APIView):
     authentication_classes = []
     permission_classes = [IsInternalService]
 
-    def get_queue(self, guild_id: str) -> GuildQueue:
-        guild, _ = DiscordGuild.objects.get_or_create(guild_id=guild_id)
-        queue, _ = GuildQueue.objects.get_or_create(guild=guild)
-        return queue
-
     def get(self, request, guild_id: str):
         """Get the current queue for a guild"""
-        queue = self.get_queue(guild_id)
+        queue = GuildQueue.objects.get_for_guild(guild_id)
         return Response(GuildQueueSerializer(queue).data)
 
     def delete(self, request, guild_id: str):
         """Clear the queue"""
-        queue = self.get_queue(guild_id)
+        queue = GuildQueue.objects.get_for_guild(guild_id)
         queue.clear()
         return Response({"ok": True})
 
@@ -207,30 +202,29 @@ class GuildQueueItemView(APIView):
         if not youtube_id:
             return Response({"error": "youtube_id required"}, status=400)
 
-        guild, _ = DiscordGuild.objects.get_or_create(guild_id=guild_id)
-        queue, _ = GuildQueue.objects.get_or_create(guild=guild)
+        discord_id = request.data.get("discord_id")
+        if not discord_id:
+            return Response({"error": "discord_id required"}, status=400)
 
         try:
-            video = YoutubeVideo.objects.get(youtube_id=youtube_id)
+            added_by = DiscordUser.objects.get(discord_id=discord_id)
+        except DiscordUser.DoesNotExist:
+            return Response({"error": "User has not authenticated with the web app"}, status=403)
+
+        try:
+            item = GuildQueue.objects.add_item(guild_id, youtube_id, added_by=added_by)
         except YoutubeVideo.DoesNotExist:
             try:
-                youtube_url = YoutubeVideo.URL_TEMPLATE.format(youtube_id=youtube_id)
-                video = YoutubeVideo.from_url(youtube_url, save=True)
+                item = GuildQueue.objects.add_item(guild_id, youtube_id, added_by=added_by, fetch=True)
             except Exception as e:
-                return Response(
-                    {"error": f"Failed to fetch video from YouTube: {str(e)}"},
-                    status=502,
-                )
+                return Response({"error": f"Failed to fetch video from YouTube: {str(e)}"}, status=502)
 
-        last_order = queue.items.aggregate(models.Max("order"))["order__max"] or 0
-        item = GuildQueueItem.objects.create(queue=queue, video=video, order=last_order + 1)
         return Response(GuildQueueItemSerializer(item).data, status=201)
 
     def delete(self, request, guild_id: str, item_id: int):
         """Remove a specific item from the queue"""
         try:
-            item = GuildQueueItem.objects.get(id=item_id, queue__guild__guild_id=guild_id)
-            item.delete()
+            GuildQueue.objects.remove_item(guild_id, item_id)
             return Response({"ok": True})
         except GuildQueueItem.DoesNotExist:
             return Response({"error": "Item not found"}, status=404)
@@ -241,16 +235,9 @@ class GuildQueueItemView(APIView):
         if not item_ids or not isinstance(item_ids, list):
             return Response({"error": "order must be a list of item IDs"}, status=400)
 
-        guild, _ = DiscordGuild.objects.get_or_create(guild_id=guild_id)
-        queue, _ = GuildQueue.objects.get_or_create(guild=guild)
-
-        # Validate all items belong to this queue
-        items = GuildQueueItem.objects.filter(id__in=item_ids, queue=queue)
-        if items.count() != len(item_ids):
-            return Response({"error": "One or more item IDs are invalid"}, status=400)
-
-        # Bulk update order based on position in the list
-        updates = [GuildQueueItem(id=item_id, order=index + 1) for index, item_id in enumerate(item_ids)]
-        GuildQueueItem.objects.bulk_update(updates, ["order"])
+        try:
+            GuildQueue.objects.reorder_items(guild_id, item_ids)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
 
         return Response({"ok": True})

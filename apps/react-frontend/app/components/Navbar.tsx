@@ -29,7 +29,7 @@ function ProfileDropdown({ profile }: { profile?: DiscordUser }) {
         <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar w-12 h-12 min-h-0">
                 <div className="w-12 rounded-full ring-1 ring-base-content/10">
-                    <img alt="Profile" src={profile.avatar} />
+                    <img alt="Profile" src={profile.avatar_url} />
                 </div>
             </div>
             <ul

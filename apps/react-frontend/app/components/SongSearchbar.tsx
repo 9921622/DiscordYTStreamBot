@@ -72,6 +72,9 @@ export default function SongSearchbar() {
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (!containerRef.current?.contains(e.target as Node)) {
+        // context menu is a data portal; this stops the bug of closing the searchbar when using the contextmenu
+        const inPortal = (e.target as HTMLElement).closest('[data-portal]');
+        if (inPortal) return;
         setIsOpen(false);
       }
     }

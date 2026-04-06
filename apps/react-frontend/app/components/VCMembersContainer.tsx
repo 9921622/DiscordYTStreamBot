@@ -89,7 +89,7 @@ export default function VCMembersContainer() {
                         }}
                     >
                         <img
-                            src={member.avatar}
+                            src={member.avatar_url}
                             alt={member.global_name}
                             style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
                             className={`

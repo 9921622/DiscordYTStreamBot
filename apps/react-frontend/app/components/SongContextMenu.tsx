@@ -32,9 +32,7 @@ const SongContextMenuHelper = forwardRef<HTMLUListElement, SongContextMenuHelper
                     </span>
                 ),
                 action: () => {
-                    if (isPlaying)
-                        videoPause()
-                    else if (isPaused)
+                    if (isCurrentSong)
                         videoPause()
                     else
                         videoPlay(song)
@@ -54,6 +52,7 @@ const SongContextMenuHelper = forwardRef<HTMLUListElement, SongContextMenuHelper
         return (
             <ul
                 ref={ref}
+                data-portal
                 className="fixed z-50 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg py-1 w-44"
                 style={{ top: y, left: x }}>
 

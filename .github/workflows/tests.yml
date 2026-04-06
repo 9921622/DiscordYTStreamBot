@@ -53,17 +53,39 @@ jobs:
       run:
         working-directory: apps/dj-backend
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U test_user -d test_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
-      SECRET_KEY: "github-actions-test-secret-key"
+      DJANGO_SECRET_KEY: "github-actions-test-secret-key"
       DEBUG: "True"
       BACKEND_URL: "http://localhost:8000"
-      FRONTEND_URL: "http://localhost:5173"
-      ALLOWED_HOSTS: '["localhost","127.0.0.1","dj-backend","nginx"]'
-      CORS_ALLOWED_ORIGINS: '["http://localhost:5173"]'
+      FRONTEND_URL: "http://localhost:3000"
+      ALLOWED_HOSTS: '["localhost", "127.0.0.1", "dj-backend", "nginx"]'
+      CORS_ALLOWED_ORIGINS: '["http://localhost:3000", "http://localhost:5173"]'
       DISCORD_CLIENT_SECRET: "test"
       DISCORD_CLIENT_ID: "123"
       INTERNAL_API_KEY: "test"
-      DISCORD_OAUTH_REDIRECT_URL: "http://localhost:5173/dj"
+      DISCORD_OAUTH_REDIRECT_URL: "http://localhost:3000/dj"
+      DJANGO_ADMIN_USERNAME: "admin"
+      DJANGO_ADMIN_PASSWORD: "test_admin_password"
+      DB_HOST: "localhost"
+      DB_PORT: "5432"
+      DB_NAME: "test_db"
+      DB_USER: "test_user"
+      DB_PASSWORD: "test_password"
 
     steps:
       - uses: actions/checkout@v4

@@ -23,14 +23,18 @@ services:
     build:
       context: ./apps/discordbot
       dockerfile: Dockerfile
+      target: development
     restart: unless-stopped
     env_file:
       - ./apps/discordbot/.env
     environment:
       - DEBUG=${DEBUG}
       - CORS_ALLOWED_ORIGINS=["${HOST_ADDR}"]
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
     volumes:
       - ./apps/discordbot:/app
+    ports:
+      - "8080:8080"
     networks:
       - app-network
 
@@ -38,6 +42,7 @@ services:
     build:
       context: ./apps/dj-backend
       dockerfile: Dockerfile
+      target: development
     restart: unless-stopped
     env_file:
       - ./apps/dj-backend/.env
@@ -47,11 +52,14 @@ services:
       - CORS_ALLOWED_ORIGINS=["${HOST_ADDR}", "http://localhost:3000"]
       - FRONTEND_URL=${HOST_ADDR}
       - DISCORD_OAUTH_REDIRECT_URL=${HOST_ADDR}/dj
+      - DJANGO_ADMIN_USERNAME=${DJANGO_ADMIN_USERNAME}
+      - DJANGO_ADMIN_PASSWORD=${DJANGO_ADMIN_PASSWORD}
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
     volumes:
       - ./apps/dj-backend:/app
     ports:

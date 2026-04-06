@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 
 import os
+import sys
 import json
 from .settings_schema import env
 
@@ -32,13 +33,18 @@ DISCORD_CLIENT_ID = env.DISCORD_CLIENT_ID
 
 INTERNAL_API_KEY = env.INTERNAL_API_KEY
 
-# 
+#
 if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# OTHER
+
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+
 
 # Application definition
 
@@ -60,6 +66,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -137,7 +144,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/dj/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+FORCE_SCRIPT_NAME = "/dj"
+
+# "/dj" screws with the tests
+if TESTING:
+    FORCE_SCRIPT_NAME = None
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

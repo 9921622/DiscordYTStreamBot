@@ -5,7 +5,7 @@ COPY requirements.txt requirements-production.txt ./
 
 FROM base AS development
 RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
+# COPY . .  # mount from dev.
 EXPOSE 8080
 ENV PYTHONPATH=/app/src
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]

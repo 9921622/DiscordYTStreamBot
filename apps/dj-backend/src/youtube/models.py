@@ -38,9 +38,9 @@ class YoutubeVideo(models.Model):
     youtube_id = models.CharField(primary_key=True, max_length=20, unique=True)
     title = models.CharField(max_length=255)
     creator = models.CharField(max_length=255)
-    source_url = models.URLField()
+    source_url = models.TextField()  # because youtube source urls can go 1k+ characters
     duration = models.PositiveIntegerField(default=0)
-    thumbnail = models.URLField(blank=True, null=True)
+    thumbnail = models.URLField(max_length=500, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField(YoutubeTag, related_name="videos", blank=True)
 

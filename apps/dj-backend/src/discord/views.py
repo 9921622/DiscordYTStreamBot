@@ -16,6 +16,7 @@ from backend.permissions import IsInternalService
 from discord.api import DiscordAPIClient, DiscordCDNAPI
 from discord.models import DiscordUser, DiscordGuild, GuildQueueManager, GuildQueue, GuildQueueItem
 from discord.serializers import (
+    DiscordUserSerializer,
     DiscordGuildSerializer,
     GuildQueueSerializer,
     GuildQueueItemSerializer,
@@ -149,14 +150,16 @@ class DiscordProfileView(APIView):
 
     def get(self, request):
         discord_user = request.user.discord
-        return Response(
-            {
-                "discord_id": discord_user.discord_id,
-                "username": discord_user.username,
-                "global_name": discord_user.global_name,
-                "avatar_url": discord_user.get_avatar_uri(),
-            }
-        )
+        return Response(DiscordUserSerializer(discord_user).data)
+
+
+class DiscordUserView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def get(self, request, user_id: str):
+        discord_user = DiscordUser.objects.get(discord_id=user_id)
+        return Response(DiscordUserSerializer(discord_user).data)
 
 
 class DiscordGuildView(APIView):

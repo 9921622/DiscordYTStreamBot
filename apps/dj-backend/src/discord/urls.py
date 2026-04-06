@@ -4,6 +4,7 @@ from .views import (
     DiscordOAuthView,
     DiscordLoginView,
     DiscordProfileView,
+    DiscordUserView,
     DiscordGuildView,
     GuildQueueView,
     GuildQueueItemView,
@@ -14,6 +15,7 @@ urlpatterns = [
     path("oauth", DiscordOAuthView.as_view(), name="oauth"),
     path("login", DiscordLoginView.as_view(), name="login"),
     path("profile", DiscordProfileView.as_view(), name="profile"),
+    path("user/<str:user_id>/", DiscordUserView.as_view(), name="user"),
     path("guild/<str:guild_id>/", DiscordGuildView.as_view(), name="guild"),
     path("guild/<str:guild_id>/queue/", GuildQueueView.as_view(), name="guild-queue"),
     path(

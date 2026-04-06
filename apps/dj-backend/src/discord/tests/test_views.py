@@ -17,9 +17,7 @@ User = get_user_model()
 class DiscordProfileViewTests(TestCase):
     def setUp(self):
         self.user = baker.make(User)
-        self.discord_user = baker.make(
-            DiscordUser, user=self.user, discord_id="123", username="testuser", global_name="Test User"
-        )
+        self.discord_user = baker.make(DiscordUser, user=self.user, discord_id="123", global_name="Test User")
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
@@ -27,7 +25,6 @@ class DiscordProfileViewTests(TestCase):
         response = self.client.get(reverse("discord:profile"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["discord_id"], "123")
-        self.assertEqual(response.data["username"], "testuser")
         self.assertEqual(response.data["global_name"], "Test User")
 
     def test_get_profile_unauthenticated(self):

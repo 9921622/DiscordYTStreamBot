@@ -74,6 +74,9 @@ services:
       context: ./apps/react-frontend
       dockerfile: Dockerfile.dev
     restart: unless-stopped
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     volumes:
       - ./apps/react-frontend:/app
       - /app/node_modules

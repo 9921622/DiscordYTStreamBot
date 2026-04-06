@@ -50,12 +50,8 @@ def get_oauth_redirect(request):
     # https://docs.discord.com/developers/topics/oauth2#authorization-code-grant
     # request.build_absolute_uri() would return the internal Docker hostname (dj-backend:8000)
     # which Discord cannot reach — use the public-facing BACKEND_URL instead
-
-    # if using non docker. just change the backend url
-    from django.conf import settings
-
     path = reverse("discord:login")
-    return f"{settings.DISCORD_OAUTH_REDIRECT_URL}{path}"
+    return request.build_absolute_uri(path)
 
 
 class DiscordUserCreateUpdateMixin:

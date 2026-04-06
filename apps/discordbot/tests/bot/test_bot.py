@@ -2,12 +2,12 @@ import pytest
 import asyncio
 from unittest.mock import MagicMock, AsyncMock, patch
 
-from bot.models import PlaybackStatus, Member, MemberList
+from bot.models import PlaybackStatus, DiscordUser, DiscordUserList
 from bot.bot_voice.voice_events_mixin import VoiceEventsMixin
 
 from tests.test_case import CommandTestCase
 from tests.bot.bot_utils import bot, guild_id, vc  # NOQA  # prevent autoflake removal
-from tests.bot.factories import PlaybackStatusFactory, MemberFactory
+from tests.bot.factories import PlaybackStatusFactory, DiscordUserFactory
 
 GUILD_ID = 2327328
 
@@ -380,22 +380,21 @@ class TestVcDisconnect:
 # ── vc_get_members ─────────────────────────────────────────────────────────────
 
 
-class TestVcGetMembers:
+class TestVcGetDiscordUserdUsers:
 
     def test_returns_empty_when_no_guild(self, bot, guild_id):
         result = bot.vc_get_members(guild_id)
-        assert isinstance(result, MemberList)
+        assert isinstance(result, DiscordUserList)
         assert len(result.root) == 0
 
-    def test_returns_members_matching_factory_shape(self, bot, guild_id):
-        """Inject a fake guild/channel with two human members and one bot."""
-        reference = MemberFactory.build()
+    def test_returns_DiscordUsers_matching_factory_shape(self, bot, guild_id):
+        """Inject a fake guild/channel with two human DiscordUsers and one bot."""
+        reference = DiscordUserFactory.build()
 
         human1 = MagicMock()
         human1.id = 1
-        human1.name = reference.username
         human1.display_name = reference.global_name
-        human1.display_avatar.url = reference.avatar
+        human1.display_avatar.url = reference.avatar_url
         human1.bot = False
 
         bot_member = MagicMock()
@@ -415,9 +414,9 @@ class TestVcGetMembers:
 
         assert len(result.root) == 1  # bot was filtered out
         member = result.root[0]
-        assert member.username == reference.username
-        assert set(Member.model_fields) == set(Member.model_fields)
-        assert isinstance(member, Member)
+        assert member.global_name == reference.global_name
+        assert set(DiscordUser.model_fields) == set(DiscordUser.model_fields)
+        assert isinstance(member, DiscordUser)
 
     def test_bots_are_filtered_from_members(self, bot, guild_id):
         bot_member = MagicMock()

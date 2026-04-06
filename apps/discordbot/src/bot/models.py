@@ -1,6 +1,7 @@
 import time
 from dataclasses import dataclass
 from pydantic import BaseModel, RootModel
+from utils.api_backend_wrapper import DiscordUserSchema
 
 
 @dataclass
@@ -35,14 +36,9 @@ class PlaybackStatus(BaseModel):
     loop: bool
 
 
-class Member(BaseModel):
+class DiscordUser(DiscordUserSchema):
     """ """
 
-    discord_id: str
-    username: str
-    global_name: str
-    avatar: str
 
-
-class MemberList(RootModel[list[Member]]):
+class DiscordUserList(RootModel[list[DiscordUser]]):
     pass

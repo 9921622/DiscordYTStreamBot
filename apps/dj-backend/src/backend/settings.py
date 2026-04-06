@@ -19,7 +19,7 @@ from .settings_schema import env
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = env.SECRET_KEY
+SECRET_KEY = env.DJANGO_SECRET_KEY
 DEBUG = env.DEBUG
 FRONTEND_URL = env.FRONTEND_URL
 
@@ -31,6 +31,14 @@ DISCORD_CLIENT_SECRET = env.DISCORD_CLIENT_SECRET
 DISCORD_CLIENT_ID = env.DISCORD_CLIENT_ID
 
 INTERNAL_API_KEY = env.INTERNAL_API_KEY
+
+# 
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # Application definition
 
@@ -52,14 +60,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    #
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "backend.urls"
@@ -87,11 +94,14 @@ WSGI_APPLICATION = "backend.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env.DB_NAME,
+        "USER": env.DB_USER,
+        "PASSWORD": env.DB_PASSWORD,
+        "HOST": env.DB_HOST,
+        "PORT": env.DB_PORT,
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

@@ -1,4 +1,22 @@
 services:
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./apps/postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
   discordbot:
     build:
       context: ./apps/discordbot
@@ -7,7 +25,7 @@ services:
     env_file:
       - ./apps/discordbot/.env
     environment:
-      - DEBUG=false
+      - DEBUG=$DEBUG
       - CORS_ALLOWED_ORIGINS=["${HOST_ADDR}"]
     networks:
       - app-network
@@ -20,11 +38,16 @@ services:
     env_file:
       - ./apps/dj-backend/.env
     environment:
-      - DEBUG=false
+      - DEBUG=$DEBUG
       - ALLOWED_HOSTS=["${HOST_ADDR}", "dj-backend","nginx"] 
       - CORS_ALLOWED_ORIGINS=["${HOST_ADDR}"]
       - FRONTEND_URL=${HOST_ADDR}
       - DISCORD_OAUTH_REDIRECT_URL=${HOST_ADDR}/dj
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
     networks:
       - app-network
 

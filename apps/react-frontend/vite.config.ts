@@ -10,24 +10,6 @@ export default defineConfig(({ mode }) => {
     plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
     server: {
       host: '0.0.0.0',
-      ...(mode === 'development' && !env.DOCKER && {
-        proxy: {
-          '/dj': {
-            target: env.DJ_BACKEND_URL,
-            changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/dj/, ''),
-          },
-          '/bot': {
-            target: env.DISCORD_BOT_URL,
-            changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/bot/, ''),
-          },
-          '/ws': {
-            target: env.DISCORD_BOT_WS,
-            ws: true,
-          },
-        }
-      }),
     },
   };
 });

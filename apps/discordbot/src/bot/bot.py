@@ -36,4 +36,4 @@ class DiscordBot(EventHandler, DiscordBotGeneric, DiscordBotVoice, commands.Bot)
         self.run(token=self._token)
 
 
-bot = DiscordBot(token=settings.DISCORD_TOKEN)
+bot = DiscordBot(token=settings.DISCORD_BOT_TOKEN)

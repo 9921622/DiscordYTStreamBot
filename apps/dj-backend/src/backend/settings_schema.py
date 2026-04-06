@@ -10,11 +10,18 @@ class AppSettings(BaseSettings):
     )
 
     # Django
-    SECRET_KEY: str
+    DJANGO_SECRET_KEY: str
     DEBUG: bool = False
     FRONTEND_URL: str
     ALLOWED_HOSTS: list[str] = []
     CORS_ALLOWED_ORIGINS: list[str] = []
+
+    # POSTgres DB
+    DB_NAME: str
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: str
 
     # Discord
     DISCORD_OAUTH_REDIRECT_URL: str  # this is the login page where it should redirect after oauth

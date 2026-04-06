@@ -15,7 +15,7 @@ jobs:
         working-directory: apps/discordbot
 
     env:
-      DISCORD_TOKEN: "test"
+      DISCORD_BOT_TOKEN: "test"
       INTERNAL_API_KEY: "test"
       FRONTEND_URL: "http://localhost:5173"
       APP_HOST: "localhost"

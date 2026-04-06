@@ -10,7 +10,7 @@ from api.routers import misc, admin, voice, debug, websockets
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    asyncio.create_task(bot.start(settings.DISCORD_TOKEN))
+    asyncio.create_task(bot.start(settings.DISCORD_BOT_TOKEN))
     yield
 
 

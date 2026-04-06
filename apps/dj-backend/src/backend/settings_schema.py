@@ -13,7 +13,7 @@ class AppSettings(BaseSettings):
     SECRET_KEY: str
     DEBUG: bool = False
     FRONTEND_URL: str
-    ALLOWED_HOSTS: list[str] = ["127.0.0.1", "localhost"]
+    ALLOWED_HOSTS: list[str] = []
     CORS_ALLOWED_ORIGINS: list[str] = []
 
     # Discord
@@ -24,12 +24,19 @@ class AppSettings(BaseSettings):
     # Internal
     INTERNAL_API_KEY: str
 
-    @field_validator("ALLOWED_HOSTS", "CORS_ALLOWED_ORIGINS", mode="before")
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def parse_allowed_hosts(cls, v):
+        if isinstance(v, str):
+            import json
+            v = json.loads(v)
+        return [host.removeprefix("https://").removeprefix("http://") for host in v]
+
+    @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_list(cls, v):
         if isinstance(v, str):
             import json
-
             return json.loads(v)
         return v
 

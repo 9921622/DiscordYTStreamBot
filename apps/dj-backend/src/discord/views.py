@@ -14,12 +14,12 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from backend.mixins import RefreshTokenMixin
 from backend.permissions import IsInternalService
 from discord.api import DiscordAPIClient, DiscordCDNAPI
-from discord.models import DiscordUser, DiscordGuild, GuildQueueManager, GuildQueue, GuildQueueItem
+from discord.models import DiscordUser, DiscordGuild, GuildPlaylistManager, GuildPlaylist, GuildPlaylistItem
 from discord.serializers import (
     DiscordUserSerializer,
     DiscordGuildSerializer,
-    GuildQueueSerializer,
-    GuildQueueItemSerializer,
+    GuildPlaylistSerializer,
+    GuildPlaylistItemSerializer,
 )
 from youtube.models import YoutubeVideo
 
@@ -175,23 +175,42 @@ class DiscordGuildView(APIView):
             return Response({"error": "Guild not found"}, status=404)
 
 
-class GuildQueueView(APIView):
+class GuildPlaylistView(APIView):
     authentication_classes = []
     permission_classes = [IsInternalService]
 
     def get(self, request, guild_id: str):
         """Get the current queue for a guild"""
-        queue = GuildQueue.objects.get_for_guild(guild_id)
-        return Response(GuildQueueSerializer(queue).data)
+        queue = GuildPlaylist.objects.get_for_guild(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
 
     def delete(self, request, guild_id: str):
         """Clear the queue"""
-        queue = GuildQueue.objects.get_for_guild(guild_id)
+        queue = GuildPlaylist.objects.get_for_guild(guild_id)
         queue.clear()
         return Response({"ok": True})
 
 
-class GuildQueueItemView(APIView):
+class GuildPlaylistNavigationView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def post(self, request, guild_id: str, direction: str):
+        """Advance the playlist position. direction must be 'next' or 'prev'."""
+        if direction == "next":
+            item = GuildPlaylist.objects.next_item(guild_id)
+        elif direction == "prev":
+            item = GuildPlaylist.objects.prev_item(guild_id)
+        else:
+            return Response({"error": "direction must be 'next' or 'prev'"}, status=400)
+
+        if item is None:
+            return Response({"ok": True, "item": None})  # end/start of playlist
+
+        return Response(GuildPlaylistItemSerializer(item).data)
+
+
+class GuildPlaylistItemView(APIView):
     authentication_classes = []
     permission_classes = [IsInternalService]
 
@@ -211,21 +230,21 @@ class GuildQueueItemView(APIView):
             return Response({"error": "User has not authenticated with the web app"}, status=403)
 
         try:
-            item = GuildQueue.objects.add_item(guild_id, youtube_id, added_by=added_by)
+            item = GuildPlaylist.objects.add_item(guild_id, youtube_id, added_by=added_by)
         except YoutubeVideo.DoesNotExist:
             try:
-                item = GuildQueue.objects.add_item(guild_id, youtube_id, added_by=added_by, fetch=True)
+                item = GuildPlaylist.objects.add_item(guild_id, youtube_id, added_by=added_by, fetch=True)
             except Exception as e:
                 return Response({"error": f"Failed to fetch video from YouTube: {str(e)}"}, status=502)
 
-        return Response(GuildQueueItemSerializer(item).data, status=201)
+        return Response(GuildPlaylistItemSerializer(item).data, status=201)
 
     def delete(self, request, guild_id: str, item_id: int):
         """Remove a specific item from the queue"""
         try:
-            GuildQueue.objects.remove_item(guild_id, item_id)
+            GuildPlaylist.objects.remove_item(guild_id, item_id)
             return Response({"ok": True})
-        except GuildQueueItem.DoesNotExist:
+        except GuildPlaylistItem.DoesNotExist:
             return Response({"error": "Item not found"}, status=404)
 
     def patch(self, request, guild_id: str):
@@ -235,7 +254,7 @@ class GuildQueueItemView(APIView):
             return Response({"error": "order must be a list of item IDs"}, status=400)
 
         try:
-            GuildQueue.objects.reorder_items(guild_id, item_ids)
+            GuildPlaylist.objects.reorder_items(guild_id, item_ids)
         except ValueError as e:
             return Response({"error": str(e)}, status=400)
 

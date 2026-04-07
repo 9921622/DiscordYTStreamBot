@@ -6,8 +6,9 @@ from .views import (
     DiscordProfileView,
     DiscordUserView,
     DiscordGuildView,
-    GuildQueueView,
-    GuildQueueItemView,
+    GuildPlaylistView,
+    GuildPlaylistItemView,
+    GuildPlaylistNavigationView,
 )
 
 app_name = "discord"
@@ -16,16 +17,17 @@ urlpatterns = [
     path("login", DiscordLoginView.as_view(), name="login"),
     path("profile", DiscordProfileView.as_view(), name="profile"),
     path("user/<str:user_id>/", DiscordUserView.as_view(), name="user"),
-    path("guild/<str:guild_id>/", DiscordGuildView.as_view(), name="guild"),
-    path("guild/<str:guild_id>/queue/", GuildQueueView.as_view(), name="guild-queue"),
+    path("guilds/<str:guild_id>/", DiscordGuildView.as_view(), name="guild"),
+    path("guilds/<str:guild_id>/playlist/", GuildPlaylistView.as_view(), name="guild-playlist"),
+    path("guilds/<str:guild_id>/playlist/items/", GuildPlaylistItemView.as_view(), name="guild-playlist-items"),
     path(
-        "guild/<str:guild_id>/queue/items/",
-        GuildQueueItemView.as_view(),
-        name="guild-queue-items",
+        "guilds/<str:guild_id>/playlist/items/<int:item_id>/",
+        GuildPlaylistItemView.as_view(),
+        name="guild-playlist-item",
     ),
     path(
-        "guild/<str:guild_id>/queue/items/<int:item_id>/",
-        GuildQueueItemView.as_view(),
-        name="guild-queue-item",
+        "guilds/<str:guild_id>/playlist/<str:direction>/",
+        GuildPlaylistNavigationView.as_view(),
+        name="guild-playlist-navigate",
     ),
 ]

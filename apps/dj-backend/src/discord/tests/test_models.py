@@ -8,14 +8,14 @@ from discord.models import GuildPlaylist, GuildPlaylistItem, DiscordUser, Discor
 
 class GuildPlaylistManagerGetForGuildTest(TestCase):
     def test_creates_guild_and_playlist_if_not_exist(self):
-        playlist = GuildPlaylist.objects.get_for_guild("guild_123")
+        playlist = GuildPlaylist.objects.get_playlist("guild_123")
 
         self.assertIsNotNone(playlist)
         self.assertEqual(playlist.guild.guild_id, "guild_123")
 
     def test_returns_existing_playlist(self):
-        playlist1 = GuildPlaylist.objects.get_for_guild("guild_123")
-        playlist2 = GuildPlaylist.objects.get_for_guild("guild_123")
+        playlist1 = GuildPlaylist.objects.get_playlist("guild_123")
+        playlist2 = GuildPlaylist.objects.get_playlist("guild_123")
 
         self.assertEqual(playlist1.pk, playlist2.pk)
 
@@ -74,7 +74,7 @@ class GuildPlaylistManagerRemoveItemTest(TestCase):
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
         item2 = GuildPlaylist.objects.add_item("guild_1", "vid2", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item1
         playlist.save(update_fields=["current_item"])
 
@@ -89,7 +89,7 @@ class GuildPlaylistManagerRemoveItemTest(TestCase):
         baker.make(YoutubeVideo, youtube_id="vid1")
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item1
         playlist.save(update_fields=["current_item"])
 
@@ -135,8 +135,10 @@ class GuildPlaylistManagerReorderItemsTest(TestCase):
 
 
 class GuildPlaylistManagerNextItemTest(TestCase):
-    def test_next_item_from_none_returns_first(self):
+    def setUp(self):
+        self.user = baker.make(DiscordUser)
 
+    def test_next_item_from_none_returns_first(self):
         baker.make(YoutubeVideo, youtube_id="vid1")
         baker.make(YoutubeVideo, youtube_id="vid2")
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
@@ -152,7 +154,7 @@ class GuildPlaylistManagerNextItemTest(TestCase):
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
         item2 = GuildPlaylist.objects.add_item("guild_1", "vid2", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item1
         playlist.save(update_fields=["current_item"])
 
@@ -164,7 +166,7 @@ class GuildPlaylistManagerNextItemTest(TestCase):
         baker.make(YoutubeVideo, youtube_id="vid1")
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item1
         playlist.save(update_fields=["current_item"])
 
@@ -178,7 +180,7 @@ class GuildPlaylistManagerNextItemTest(TestCase):
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
         item2 = GuildPlaylist.objects.add_item("guild_1", "vid2", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item1
         playlist.save(update_fields=["current_item"])
 
@@ -186,6 +188,89 @@ class GuildPlaylistManagerNextItemTest(TestCase):
 
         playlist.refresh_from_db()
         self.assertEqual(playlist.current_item, item2)
+
+    def test_next_item_as_video_creates(self):
+        video = baker.make(YoutubeVideo, youtube_id="vid1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+
+        item = GuildPlaylist.objects.next_item_as_video("guild_1", video, self.user)
+
+        playlist.refresh_from_db()
+        self.assertEqual(playlist.current_item, item)
+        self.assertEqual(playlist.items.count(), 1)
+
+    def test_next_item_with_explicit_playlist_item(self):
+        """Passing a playlist_item directly sets that item as current, ignoring order."""
+        baker.make(YoutubeVideo, youtube_id="vid1")
+        baker.make(YoutubeVideo, youtube_id="vid2")
+        baker.make(YoutubeVideo, youtube_id="vid3")
+        item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
+        item2 = GuildPlaylist.objects.add_item("guild_1", "vid2", fetch=False)
+        item3 = GuildPlaylist.objects.add_item("guild_1", "vid3", fetch=False)
+
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        playlist.current_item = item1
+        playlist.save(update_fields=["current_item"])
+
+        # Skip item2, jump directly to item3
+        result = GuildPlaylist.objects.next_item("guild_1", playlist_item=item3)
+
+        self.assertEqual(result, item3)
+        playlist.refresh_from_db()
+        self.assertEqual(playlist.current_item, item3)
+
+    def test_next_item_explicit_playlist_item_updates_db(self):
+        """Explicit playlist_item is persisted to current_item in the DB."""
+        baker.make(YoutubeVideo, youtube_id="vid1")
+        baker.make(YoutubeVideo, youtube_id="vid2")
+        item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
+        item2 = GuildPlaylist.objects.add_item("guild_1", "vid2", fetch=False)
+
+        result = GuildPlaylist.objects.next_item("guild_1", playlist_item=item2)
+
+        self.assertIsNotNone(result)
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        self.assertEqual(playlist.current_item, item2)
+
+    def test_next_item_empty_playlist_returns_none(self):
+        """next_item on an empty playlist returns None and sets current_item to None."""
+        result = GuildPlaylist.objects.next_item("guild_1")
+
+        self.assertIsNone(result)
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        self.assertIsNone(playlist.current_item)
+
+    def test_next_item_as_video_is_not_none(self):
+        """next_item_as_video never returns None — asserts internally and returns the item."""
+        video = baker.make(YoutubeVideo, youtube_id="vid1")
+
+        result = GuildPlaylist.objects.next_item_as_video("guild_1", video, self.user)
+
+        self.assertIsNotNone(result)
+
+    def test_next_item_as_video_appends_to_existing(self):
+        """next_item_as_video adds a new item even when the playlist already has items."""
+        baker.make(YoutubeVideo, youtube_id="vid1")
+        GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
+        video2 = baker.make(YoutubeVideo, youtube_id="vid2")
+
+        item = GuildPlaylist.objects.next_item_as_video("guild_1", video2, self.user)
+
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        self.assertEqual(playlist.items.count(), 2)
+        self.assertEqual(playlist.current_item, item)
+        self.assertIsNotNone(playlist.current_item)
+
+    def test_next_item_as_video_current_item_is_not_none_after_call(self):
+        """current_item is never None after next_item_as_video, regardless of prior state."""
+        video = baker.make(YoutubeVideo, youtube_id="vid1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        self.assertIsNone(playlist.current_item)  # confirm starting state
+
+        GuildPlaylist.objects.next_item_as_video("guild_1", video, self.user)
+
+        playlist.refresh_from_db()
+        self.assertIsNotNone(playlist.current_item)
 
 
 class GuildPlaylistManagerPrevItemTest(TestCase):
@@ -205,7 +290,7 @@ class GuildPlaylistManagerPrevItemTest(TestCase):
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
         item2 = GuildPlaylist.objects.add_item("guild_1", "vid2", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item2
         playlist.save(update_fields=["current_item"])
 
@@ -217,7 +302,7 @@ class GuildPlaylistManagerPrevItemTest(TestCase):
         baker.make(YoutubeVideo, youtube_id="vid1")
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item1
         playlist.save(update_fields=["current_item"])
 
@@ -231,7 +316,7 @@ class GuildPlaylistManagerPrevItemTest(TestCase):
         item1 = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
         item2 = GuildPlaylist.objects.add_item("guild_1", "vid2", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item2
         playlist.save(update_fields=["current_item"])
 
@@ -255,7 +340,7 @@ class GuildPlaylistModelTest(TestCase):
         GuildPlaylist.objects.add_item("guild_1", "vid2", fetch=False)
         GuildPlaylist.objects.next_item("guild_1")  # set a current item
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.clear()
         playlist.refresh_from_db()
 
@@ -266,14 +351,14 @@ class GuildPlaylistModelTest(TestCase):
         baker.make(YoutubeVideo, youtube_id="vid1")
         item = GuildPlaylist.objects.add_item("guild_1", "vid1", fetch=False)
 
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
         playlist.current_item = item
         playlist.save(update_fields=["current_item"])
 
         self.assertEqual(playlist.next(), item)
 
     def test_next_returns_none_when_no_current(self):
-        playlist = GuildPlaylist.objects.get_for_guild("guild_1")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
 
         self.assertIsNone(playlist.next())
 

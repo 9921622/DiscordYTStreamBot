@@ -40,15 +40,17 @@ class DiscordGuild(models.Model):
 
 class GuildPlaylistManager(models.Manager):
 
-    def get_for_guild(self, guild_id: str) -> "GuildPlaylist":
+    def get_playlist(self, guild_id: str) -> "GuildPlaylist":
         guild, _ = DiscordGuild.objects.get_or_create(guild_id=guild_id)
         playlist, _ = self.get_or_create(guild=guild)
+        # Refresh to ensure current_item FK is up to date after recent saves
+        playlist.refresh_from_db()
         return playlist
 
     def add_item(
         self, guild_id: str, youtube_id: str, added_by: DiscordUser | None = None, fetch: bool = False
     ) -> "GuildPlaylistItem":
-        playlist = self.get_for_guild(guild_id)
+        playlist = self.get_playlist(guild_id)
 
         if fetch:
             video = YouTubeService.fetch_and_cache_video(youtube_id)
@@ -60,10 +62,9 @@ class GuildPlaylistManager(models.Manager):
 
     def remove_item(self, guild_id: str, item_id: int) -> None:
         item = GuildPlaylistItem.objects.get(id=item_id, playlist__guild__guild_id=guild_id)
-
         playlist = item.playlist
+
         if playlist.current_item_id == item.id:
-            # Advance past the item being removed before deleting it
             next_item = playlist.items.filter(order__gt=item.order).first()
             playlist.current_item = next_item
             playlist.save(update_fields=["current_item"])
@@ -71,7 +72,7 @@ class GuildPlaylistManager(models.Manager):
         item.delete()
 
     def reorder_items(self, guild_id: str, item_ids: list[int]) -> None:
-        playlist = self.get_for_guild(guild_id)
+        playlist = self.get_playlist(guild_id)
 
         items = GuildPlaylistItem.objects.filter(id__in=item_ids, playlist=playlist)
         if items.count() != len(item_ids):
@@ -80,37 +81,58 @@ class GuildPlaylistManager(models.Manager):
         updates = [GuildPlaylistItem(id=item_id, order=i + 1) for i, item_id in enumerate(item_ids)]
         GuildPlaylistItem.objects.bulk_update(updates, ["order"])
 
-    def next_item(self, guild_id: str) -> "GuildPlaylistItem | None":
-        playlist = self.get_for_guild(guild_id)
-        items = playlist.items.order_by("order")
+    def next_item(self, guild_id: str, playlist_item: "GuildPlaylistItem | None" = None) -> "GuildPlaylistItem | None":
+        """sets the current item as the next item in order.
+        Or if playlist_item is not None; the playlist_item"""
+        playlist = self.get_playlist(guild_id)
 
-        if playlist.current_item is None:
-            next_item = items.first()
+        if playlist_item:
+            next_item = playlist_item
         else:
-            next_item = items.filter(order__gt=playlist.current_item.order).first()
+            items = playlist.items.order_by("order")
+            next_item = (
+                items.first()
+                if playlist.current_item is None
+                else items.filter(order__gt=playlist.current_item.order).first()
+            )
 
         playlist.current_item = next_item
         playlist.save(update_fields=["current_item", "updated_at"])
         return next_item
 
+    def next_item_as_video(self, guild_id: str, video: YoutubeVideo, added_by: DiscordUser):
+        item = self.add_item(guild_id, youtube_id=video.youtube_id, added_by=added_by, fetch=False)
+        result = self.next_item(guild_id, item)
+
+        assert result is not None, f"next_item returned None after adding item {item.id}"
+        return result
+
     def prev_item(self, guild_id: str) -> "GuildPlaylistItem | None":
-        playlist = self.get_for_guild(guild_id)
+        playlist = self.get_playlist(guild_id)
         items = playlist.items.order_by("-order")
 
-        if playlist.current_item is None:
-            prev_item = items.first()  # wrap to last if nothing is playing
-        else:
-            prev_item = items.filter(order__lt=playlist.current_item.order).first()
+        prev_item = (
+            items.first()
+            if playlist.current_item is None
+            else items.filter(order__lt=playlist.current_item.order).first()
+        )
 
         playlist.current_item = prev_item
         playlist.save(update_fields=["current_item", "updated_at"])
         return prev_item
 
+    def clear(self, guild_id: str) -> None:
+        playlist = self.get_playlist(guild_id)
+        playlist.current_item = None
+        playlist.save(update_fields=["current_item"])
+        playlist.items.all().delete()
+
 
 class GuildPlaylist(AbstractPlaylist):
     """
     Ephemeral playback playlist for a guild. One playlist per guild.
-    Note: intended to be backed by a cache (e.g. Redis) in the future rather than persisted to the DB.
+    Designed for Redis migration: all mutations go through the manager,
+    instance methods are intentionally minimal.
     """
 
     guild = models.OneToOneField(DiscordGuild, on_delete=models.CASCADE, related_name="playlist")
@@ -126,15 +148,6 @@ class GuildPlaylist(AbstractPlaylist):
 
     def __str__(self):
         return f"Playlist for {self.guild.name}"
-
-    def clear(self):
-        self.current_item = None
-        self.save(update_fields=["current_item"])
-        self.items.all().delete()
-
-    def next(self) -> "GuildPlaylistItem | None":
-        """Returns the current item without advancing. Use manager.next_item() to advance."""
-        return self.current_item
 
 
 class GuildPlaylistItem(AbstractPlaylistItem):

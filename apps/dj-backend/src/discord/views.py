@@ -21,6 +21,7 @@ from discord.serializers import (
     GuildPlaylistSerializer,
     GuildPlaylistItemSerializer,
 )
+from youtube.services import YouTubeService
 from youtube.models import YoutubeVideo
 
 import requests
@@ -180,42 +181,23 @@ class GuildPlaylistView(APIView):
     permission_classes = [IsInternalService]
 
     def get(self, request, guild_id: str):
-        """Get the current queue for a guild"""
-        queue = GuildPlaylist.objects.get_for_guild(guild_id)
+        """Get the current queue for a guild."""
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
         return Response(GuildPlaylistSerializer(queue).data)
 
     def delete(self, request, guild_id: str):
-        """Clear the queue"""
-        queue = GuildPlaylist.objects.get_for_guild(guild_id)
-        queue.clear()
-        return Response({"ok": True})
+        """Clear the queue."""
+        GuildPlaylist.objects.clear(guild_id)
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
 
 
-class GuildPlaylistNavigationView(APIView):
+class GuildPlaylistAddSongView(APIView):
     authentication_classes = []
     permission_classes = [IsInternalService]
 
-    def post(self, request, guild_id: str, direction: str):
-        """Advance the playlist position. direction must be 'next' or 'prev'."""
-        if direction == "next":
-            item = GuildPlaylist.objects.next_item(guild_id)
-        elif direction == "prev":
-            item = GuildPlaylist.objects.prev_item(guild_id)
-        else:
-            return Response({"error": "direction must be 'next' or 'prev'"}, status=400)
-
-        if item is None:
-            return Response({"ok": True, "item": None})  # end/start of playlist
-
-        return Response(GuildPlaylistItemSerializer(item).data)
-
-
-class GuildPlaylistItemView(APIView):
-    authentication_classes = []
-    permission_classes = [IsInternalService]
-
-    def post(self, request, guild_id: str):
-        """Add a video to the queue"""
+    def patch(self, request, guild_id: str):
+        """Add a video to the queue. Expects { youtube_id, discord_id }."""
         youtube_id = request.data.get("youtube_id")
         if not youtube_id:
             return Response({"error": "youtube_id required"}, status=400)
@@ -230,25 +212,103 @@ class GuildPlaylistItemView(APIView):
             return Response({"error": "User has not authenticated with the web app"}, status=403)
 
         try:
-            item = GuildPlaylist.objects.add_item(guild_id, youtube_id, added_by=added_by)
+            GuildPlaylist.objects.add_item(guild_id, youtube_id, added_by=added_by)
         except YoutubeVideo.DoesNotExist:
             try:
-                item = GuildPlaylist.objects.add_item(guild_id, youtube_id, added_by=added_by, fetch=True)
+                GuildPlaylist.objects.add_item(guild_id, youtube_id, added_by=added_by, fetch=True)
             except Exception as e:
                 return Response({"error": f"Failed to fetch video from YouTube: {str(e)}"}, status=502)
 
-        return Response(GuildPlaylistItemSerializer(item).data, status=201)
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data, status=201)
 
-    def delete(self, request, guild_id: str, item_id: int):
-        """Remove a specific item from the queue"""
+
+class GuildPlaylistRemoveSongView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def patch(self, request, guild_id: str):
+        """Remove a specific item from the queue. Expects { item_id }."""
+        item_id = request.data.get("item_id")
+        if not item_id:
+            return Response({"error": "item_id required"}, status=400)
+
         try:
             GuildPlaylist.objects.remove_item(guild_id, item_id)
-            return Response({"ok": True})
         except GuildPlaylistItem.DoesNotExist:
             return Response({"error": "Item not found"}, status=404)
 
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data, status=200)
+
+
+class GuildPlaylistNextView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def get_data(self, request):
+        self.item_id = request.data.get("item_id")
+        self.video_id = request.data.get("video_id")
+        self.discord_id = request.data.get("discord_id")
+
     def patch(self, request, guild_id: str):
-        """Reorder queue items. Expects { "order": [item_id, item_id, ...] }"""
+        """
+        Advance to the next item.
+        - item_id in body: sets that PlaylistItem as current (unambiguous, preferred)
+        - video_id in body: sets next item by YoutubeVideo lookup
+        - discord_id: goes with video id
+        - neither: advances to the natural next item in order
+        """
+        self.get_data(request)
+        if self.item_id is not None and (self.video_id is not None or self.discord_id is not None):
+            return Response({"error": "if item_id is provided, video and user must be None"}, status=404)
+
+        # if item_id is populated
+        # the item exists in the playlist and is being moved to be the playing video
+        if self.item_id:
+            try:
+                playlist_item = GuildPlaylistItem.objects.get(id=self.item_id, playlist__guild__guild_id=guild_id)
+            except GuildPlaylistItem.DoesNotExist:
+                return Response({"error": f"Item {self.item_id} not found"}, status=404)
+            item = GuildPlaylist.objects.next_item(guild_id, playlist_item=playlist_item)
+
+        # if video_id and discord_id is populated
+        # the item is being put into the playlist and being set as the current song playing.
+        elif self.video_id and self.discord_id:
+            video = YouTubeService.get_or_fetch(self.video_id)
+            try:
+                discord_user = DiscordUser.objects.get(discord_id=self.discord_id)
+            except DiscordUser.DoesNotExist:
+                return Response({"error": f"DiscordUser {self.discord_id} not found"}, status=404)
+
+            item = GuildPlaylist.objects.next_item_as_video(guild_id, video=video, added_by=discord_user)
+
+        # default.
+        # returns the next item
+        else:
+            item = GuildPlaylist.objects.next_item(guild_id)
+
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
+
+
+class GuildPlaylistPrevView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def patch(self, request, guild_id: str):
+        """Move to the previous item."""
+        GuildPlaylist.objects.prev_item(guild_id)
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
+
+
+class GuildPlaylistReorderView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def patch(self, request, guild_id: str):
+        """Reorder queue items. Expects { "order": [item_id, item_id, ...] }."""
         item_ids = request.data.get("order")
         if not item_ids or not isinstance(item_ids, list):
             return Response({"error": "order must be a list of item IDs"}, status=400)
@@ -258,4 +318,5 @@ class GuildPlaylistItemView(APIView):
         except ValueError as e:
             return Response({"error": str(e)}, status=400)
 
-        return Response({"ok": True})
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data, status=200)

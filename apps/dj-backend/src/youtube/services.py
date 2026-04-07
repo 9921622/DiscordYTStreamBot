@@ -118,3 +118,11 @@ class YouTubeService:
             },
         )
         return video
+
+    @classmethod
+    def get_or_fetch(cls, youtube_id: str) -> YoutubeVideo:
+        try:
+            vid = YoutubeVideo.objects.get(youtube_id=youtube_id)
+        except YoutubeVideo.DoesNotExist:
+            vid = cls.fetch_and_cache_video(youtube_id)
+        return vid

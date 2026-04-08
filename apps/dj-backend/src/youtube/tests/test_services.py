@@ -116,21 +116,25 @@ class TestYouTubeService(TestCase):
     # fetch_and_cache
     # ----------------------------------------
 
+    @mock.patch("youtube.services.requests.head")
     @mock.patch("youtube.services.yt_dlp.YoutubeDL")
-    def test_fetch_and_cache_creates_video(self, mock_ydl_class):
+    def test_fetch_and_cache_creates_video(self, mock_ydl_class, mock_head):
         """Test that fetch_and_cache_video stores a new YoutubeVideo in the DB."""
         mock_info = {
             "id": "abc123",
             "title": "Test Video",
             "uploader": "Test Creator",
             "duration": 300,
-            "thumbnails": [{"url": "https://example.com/thumb.jpg"}],
+            "thumbnails": [
+                {"url": "https://example.com/thumb_low.jpg"},
+                {"url": "https://example.com/thumb_high.jpg"},
+            ],
             "url": "https://example.com/video.mp4",
         }
 
-        # Mock yt_dlp extract_info to return our fake video info
         mock_ydl_instance = mock_ydl_class.return_value.__enter__.return_value
         mock_ydl_instance.extract_info.return_value = mock_info
+        mock_head.return_value.status_code = 200
 
         video = YouTubeService.fetch_and_cache_video("abc123")
 
@@ -138,17 +142,17 @@ class TestYouTubeService(TestCase):
         self.assertEqual(video.title, "Test Video")
         self.assertEqual(video.creator, "Test Creator")
         self.assertEqual(video.duration, 300)
-        self.assertEqual(video.thumbnail, "https://example.com/thumb.jpg")
+        # Highest quality (last in list) is tried first and succeeds
+        self.assertEqual(video.thumbnail, "https://example.com/thumb_high.jpg")
         self.assertEqual(video.source_url, "https://example.com/video.mp4")
 
-        # Confirm it was saved in the database
         db_video = YoutubeVideo.objects.get(youtube_id="abc123")
         self.assertEqual(db_video.youtube_id, video.youtube_id)
 
+    @mock.patch("youtube.services.requests.head")
     @mock.patch("youtube.services.yt_dlp.YoutubeDL")
-    def test_fetch_and_cache_updates_existing_video(self, mock_ydl_class):
+    def test_fetch_and_cache_updates_existing_video(self, mock_ydl_class, mock_head):
         """Test that fetch_and_cache_video updates an existing video."""
-        # Existing video
         existing = YoutubeVideo.objects.create(
             youtube_id="abc123",
             title="Old Title",
@@ -163,12 +167,16 @@ class TestYouTubeService(TestCase):
             "title": "New Title",
             "uploader": "New Creator",
             "duration": 200,
-            "thumbnails": [{"url": "https://new.com/thumb.jpg"}],
+            "thumbnails": [
+                {"url": "https://new.com/thumb_low.jpg"},
+                {"url": "https://new.com/thumb_high.jpg"},
+            ],
             "url": "https://new.com/video.mp4",
         }
 
         mock_ydl_instance = mock_ydl_class.return_value.__enter__.return_value
         mock_ydl_instance.extract_info.return_value = mock_info
+        mock_head.return_value.status_code = 200
 
         video = YouTubeService.fetch_and_cache_video("abc123")
 
@@ -176,16 +184,55 @@ class TestYouTubeService(TestCase):
         self.assertEqual(video.title, "New Title")
         self.assertEqual(video.creator, "New Creator")
         self.assertEqual(video.duration, 200)
-        self.assertEqual(video.thumbnail, "https://new.com/thumb.jpg")
+        self.assertEqual(video.thumbnail, "https://new.com/thumb_high.jpg")
         self.assertEqual(video.source_url, "https://new.com/video.mp4")
 
+    @mock.patch("youtube.services.requests.head")
     @mock.patch("youtube.services.yt_dlp.YoutubeDL")
-    def test_fetch_and_cache_raises_exception_for_invalid_info(self, mock_ydl_class):
-        """Test that fetch_and_cache_video raises an exception if info is missing ID."""
+    def test_fetch_and_cache_falls_back_on_404(self, mock_ydl_class, mock_head):
+        """Test that _resolve_thumbnail skips 404 URLs and falls back to the next."""
+        mock_info = {
+            "id": "abc123",
+            "title": "Test Video",
+            "uploader": "Test Creator",
+            "duration": 300,
+            "thumbnails": [
+                {"url": "https://example.com/thumb_low.jpg"},
+                {"url": "https://example.com/thumb_high.jpg"},  # 404
+            ],
+            "url": "https://example.com/video.mp4",
+        }
+
         mock_ydl_instance = mock_ydl_class.return_value.__enter__.return_value
-        mock_ydl_instance.extract_info.return_value = {"title": "No ID Video"}
+        mock_ydl_instance.extract_info.return_value = mock_info
+        # High quality 404s, low quality succeeds
+        mock_head.side_effect = [
+            mock.Mock(status_code=404),
+            mock.Mock(status_code=200),
+        ]
 
-        with self.assertRaises(Exception) as context:
-            YouTubeService.fetch_and_cache_video("missing_id")
+        video = YouTubeService.fetch_and_cache_video("abc123")
+        self.assertEqual(video.thumbnail, "https://example.com/thumb_low.jpg")
 
-        self.assertIn("Invalid YouTube response", str(context.exception))
+    @mock.patch("youtube.services.requests.head")
+    @mock.patch("youtube.services.yt_dlp.YoutubeDL")
+    def test_fetch_and_cache_thumbnail_none_when_all_404(self, mock_ydl_class, mock_head):
+        """Test that thumbnail is None when all thumbnail URLs return 404."""
+        mock_info = {
+            "id": "abc123",
+            "title": "Test Video",
+            "uploader": "Test Creator",
+            "duration": 300,
+            "thumbnails": [
+                {"url": "https://example.com/thumb_low.jpg"},
+                {"url": "https://example.com/thumb_high.jpg"},
+            ],
+            "url": "https://example.com/video.mp4",
+        }
+
+        mock_ydl_instance = mock_ydl_class.return_value.__enter__.return_value
+        mock_ydl_instance.extract_info.return_value = mock_info
+        mock_head.return_value.status_code = 404
+
+        video = YouTubeService.fetch_and_cache_video("abc123")
+        self.assertIsNone(video.thumbnail)

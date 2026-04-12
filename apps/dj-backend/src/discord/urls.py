@@ -10,6 +10,7 @@ from .views import (
     GuildPlaylistAddSongView,
     GuildPlaylistRemoveSongView,
     GuildPlaylistNextView,
+    GuildPlaylistPlayNowView,
     GuildPlaylistPrevView,
     GuildPlaylistReorderView,
 )
@@ -26,6 +27,7 @@ urlpatterns = [
     path("guilds/<str:guild_id>/playlist/add-song/", GuildPlaylistAddSongView.as_view(), name="guild-playlist-add-song"),
     path("guilds/<str:guild_id>/playlist/remove-song/", GuildPlaylistRemoveSongView.as_view(), name="guild-playlist-remove-song"),
     path("guilds/<str:guild_id>/playlist/next/", GuildPlaylistNextView.as_view(), name="guild-playlist-next"),
+    path("guilds/<str:guild_id>/playlist/play-now/", GuildPlaylistPlayNowView.as_view(), name="guild-playlist-play-now"),
     path("guilds/<str:guild_id>/playlist/prev/", GuildPlaylistPrevView.as_view(), name="guild-playlist-prev"),
     path("guilds/<str:guild_id>/playlist/reorder/", GuildPlaylistReorderView.as_view(), name="guild-playlist-reorder"),
 ]

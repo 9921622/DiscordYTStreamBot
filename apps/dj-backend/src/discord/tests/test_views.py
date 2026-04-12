@@ -198,10 +198,7 @@ class GuildPlaylistNextViewTests(TestCase):
 
     def setUp(self):
         self.client = internal_client()
-        self.discord_user = baker.make(DiscordUser)
         self.url = reverse("discord:guild-playlist-next", kwargs={"guild_id": GUILD_ID})
-
-    # --- item_id path -------------------------------------------------------
 
     @mock.patch("discord.views.GuildPlaylistSerializer")
     @mock.patch("discord.views.GuildPlaylist.objects.get_playlist")
@@ -226,27 +223,6 @@ class GuildPlaylistNextViewTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
-    # --- video_id path ------------------------------------------------------
-
-    @mock.patch("discord.views.GuildPlaylistSerializer")
-    @mock.patch("discord.views.GuildPlaylist.objects.get_playlist")
-    @mock.patch("discord.views.GuildPlaylist.objects.next_item_as_video")
-    @mock.patch("discord.views.YoutubeVideo.objects.get")
-    def test_next_by_video_id(self, mock_video_get, mock_next, mock_get_playlist, mock_serializer):
-        video = mock.Mock()
-        mock_video_get.return_value = video
-        mock_get_playlist.return_value = mock.Mock()
-        mock_serializer.return_value.data = {}
-
-        response = self.client.patch(
-            self.url, {"video_id": "vid_abc", "discord_id": self.discord_user.discord_id}, format="json"
-        )
-
-        mock_next.assert_called_once_with(GUILD_ID, video=video, added_by=self.discord_user)
-        self.assertEqual(response.status_code, 200)
-
-    # --- natural advance (no body) ------------------------------------------
-
     @mock.patch("discord.views.GuildPlaylistSerializer")
     @mock.patch("discord.views.GuildPlaylist.objects.get_playlist")
     @mock.patch("discord.views.GuildPlaylist.objects.next_item")
@@ -258,6 +234,50 @@ class GuildPlaylistNextViewTests(TestCase):
 
         mock_next.assert_called_once_with(GUILD_ID)
         self.assertEqual(response.status_code, 200)
+
+    def test_requires_internal_auth(self):
+        response = APIClient().patch(self.url, {}, format="json")
+        self.assertEqual(response.status_code, 403)
+
+
+class GuildPlaylistPlayNowViewTests(TestCase):
+
+    def setUp(self):
+        self.client = internal_client()
+        self.discord_user = baker.make(DiscordUser)
+        self.url = reverse("discord:guild-playlist-play-now", kwargs={"guild_id": GUILD_ID})
+
+    @mock.patch("discord.views.GuildPlaylistSerializer")
+    @mock.patch("discord.views.GuildPlaylist.objects.get_playlist")
+    @mock.patch("discord.views.GuildPlaylist.objects.next_item_as_video")
+    @mock.patch("discord.views.YouTubeService.get_or_fetch")
+    def test_play_now(self, mock_get_or_fetch, mock_next, mock_get_playlist, mock_serializer):
+        video = mock.Mock()
+        mock_get_or_fetch.return_value = video
+        mock_get_playlist.return_value = mock.Mock()
+        mock_serializer.return_value.data = {}
+
+        response = self.client.patch(
+            self.url, {"video_id": "vid_abc", "discord_id": self.discord_user.discord_id}, format="json"
+        )
+
+        mock_next.assert_called_once_with(GUILD_ID, video=video, added_by=self.discord_user)
+        self.assertEqual(response.status_code, 200)
+
+    def test_play_now_missing_video_id_returns_400(self):
+        response = self.client.patch(self.url, {"discord_id": self.discord_user.discord_id}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_play_now_missing_discord_id_returns_400(self):
+        response = self.client.patch(self.url, {"video_id": "vid_abc"}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    @mock.patch("discord.views.YouTubeService.get_or_fetch")
+    def test_play_now_discord_user_not_found_returns_404(self, mock_get_or_fetch):
+        mock_get_or_fetch.return_value = mock.Mock()
+
+        response = self.client.patch(self.url, {"video_id": "vid_abc", "discord_id": "nonexistent"}, format="json")
+        self.assertEqual(response.status_code, 404)
 
     def test_requires_internal_auth(self):
         response = APIClient().patch(self.url, {}, format="json")

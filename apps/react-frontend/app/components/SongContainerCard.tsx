@@ -13,7 +13,7 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
     const { isPlaying, isPaused, currentItem } = useCurrentPlayback()
 
     const isCurrentSong = currentItem?.video?.youtube_id === song.youtube_id
-    const isThisSongPlaying = isCurrentSong && isPlaying
+    const isThisSongPlaying = isCurrentSong && isPlaying && !isPaused
     const isThisSongPaused  = isCurrentSong && isPaused
 
     function handlePlay() {

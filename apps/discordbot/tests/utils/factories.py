@@ -4,8 +4,8 @@ from utils.api_backend_wrapper import (
     YoutubeVideoSchema,
     VideoSourceSchema,
     DiscordUserSchema,
-    GuildQueueItemSchema,
-    GuildQueueSchema,
+    GuildPlaylistItemSchema,
+    GuildPlaylistSchema,
 )
 
 
@@ -23,11 +23,12 @@ class DiscordUserSchemaFactory(ModelFactory):
     __model__ = DiscordUserSchema
 
 
-class GuildQueueItemSchemaFactory(ModelFactory):
-    __model__ = GuildQueueItemSchema
+class GuildPlaylistItemSchemaFactory(ModelFactory):
+    __model__ = GuildPlaylistItemSchema
     video = YoutubeVideoSchemaFactory.build
 
 
-class GuildQueueSchemaFactory(ModelFactory):
-    __model__ = GuildQueueSchema
-    items = lambda: [GuildQueueItemSchemaFactory.build()]
+class GuildPlaylistSchemaFactory(ModelFactory):
+    __model__ = GuildPlaylistSchema
+    current_item = GuildPlaylistItemSchemaFactory.build
+    items = lambda: [GuildPlaylistItemSchemaFactory.build()]

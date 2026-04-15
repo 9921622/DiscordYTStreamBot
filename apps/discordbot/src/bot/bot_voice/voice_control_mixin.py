@@ -46,15 +46,7 @@ class VoiceControlMixin:
         vc = self.get_voice_client(guild_id)
 
         if not state or not vc:
-            return PlaybackStatus(
-                playing=False,
-                paused=False,
-                position=0.0,
-                volume=0.5,
-                video_id=None,
-                ended=False,
-                loop=False,
-            )
+            return PlaybackStatus.get_empty()
 
         return self._build_playback_status(vc, state)
 

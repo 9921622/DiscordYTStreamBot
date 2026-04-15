@@ -35,6 +35,18 @@ class PlaybackStatus(BaseModel):
     ended: bool
     loop: bool
 
+    @classmethod
+    def get_empty(cls):
+        return cls(
+            playing=False,
+            paused=False,
+            position=0.0,
+            volume=0.5,
+            video_id=None,
+            ended=False,
+            loop=False,
+        )
+
 
 class DiscordUser(DiscordUserSchema):
     """ """

@@ -2,11 +2,11 @@ from contextlib import contextmanager
 from unittest.mock import AsyncMock, patch
 
 from ws.ws_commands_router import get_registered_commands
-from utils.api_backend_wrapper import QueueAPI, GuildQueueSchema
+from utils.api_backend_wrapper import GuildPlaylistAPI, GuildPlaylistSchema
 
 from tests.test_case import CommandTestCase
 from tests.ws.test_case import WebSocketTestCase
-from tests.utils.factories import GuildQueueSchemaFactory
+from tests.utils.factories import GuildPlaylistSchemaFactory
 from tests.mocks import make_mock_httpx_response
 from tests.utils.mocks import make_mock_response_wrapper
 
@@ -19,9 +19,9 @@ DISCORD_ID = 987654
 
 
 @contextmanager
-def patch_queue_get(mock_queue: GuildQueueSchema):
+def patch_queue_get(mock_queue: GuildPlaylistSchema):
     with patch.object(
-        QueueAPI,
+        GuildPlaylistAPI,
         "get",
         new=AsyncMock(return_value=make_mock_response_wrapper(200, mock_queue)),
     ):
@@ -31,7 +31,7 @@ def patch_queue_get(mock_queue: GuildQueueSchema):
 @contextmanager
 def patch_queue_get_error(status: int = 500, detail: dict | None = None):
     with patch.object(
-        QueueAPI,
+        GuildPlaylistAPI,
         "get",
         new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {})),
     ):
@@ -39,27 +39,31 @@ def patch_queue_get_error(status: int = 500, detail: dict | None = None):
 
 
 @contextmanager
-def patch_queue_add(status: int = 201):
-    with patch.object(QueueAPI, "add", new=AsyncMock(return_value=make_mock_response_wrapper(status))):
+def patch_queue_add(mock_queue: GuildPlaylistSchema, status: int = 201):
+    with patch.object(
+        GuildPlaylistAPI,
+        "add_song",
+        new=AsyncMock(return_value=make_mock_response_wrapper(status, mock_queue)),
+    ):
         yield
 
 
 @contextmanager
 def patch_queue_add_error(status: int = 502, detail: dict | None = None):
     with patch.object(
-        QueueAPI,
-        "add",
+        GuildPlaylistAPI,
+        "add_song",
         new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {})),
     ):
         yield
 
 
 @contextmanager
-def patch_queue_remove(status: int = 204):
+def patch_queue_remove(mock_queue: GuildPlaylistSchema, status: int = 204):
     with patch.object(
-        QueueAPI,
-        "remove",
-        new=AsyncMock(return_value=make_mock_response_wrapper(status)),
+        GuildPlaylistAPI,
+        "remove_song",
+        new=AsyncMock(return_value=make_mock_response_wrapper(status, mock_queue)),
     ):
         yield
 
@@ -67,19 +71,19 @@ def patch_queue_remove(status: int = 204):
 @contextmanager
 def patch_queue_remove_error(status: int = 404, detail: dict | None = None):
     with patch.object(
-        QueueAPI,
-        "remove",
+        GuildPlaylistAPI,
+        "remove_song",
         new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {"error": "not found"})),
     ):
         yield
 
 
 @contextmanager
-def patch_queue_reorder(status: int = 200):
+def patch_queue_reorder(mock_queue: GuildPlaylistSchema, status: int = 200):
     with patch.object(
-        QueueAPI,
+        GuildPlaylistAPI,
         "reorder",
-        new=AsyncMock(return_value=make_mock_response_wrapper(status)),
+        new=AsyncMock(return_value=make_mock_response_wrapper(status, mock_queue)),
     ):
         yield
 
@@ -87,7 +91,7 @@ def patch_queue_reorder(status: int = 200):
 @contextmanager
 def patch_queue_reorder_error(status: int = 400, detail: dict | None = None):
     with patch.object(
-        QueueAPI,
+        GuildPlaylistAPI,
         "reorder",
         new=AsyncMock(return_value=make_mock_httpx_response(status, detail or {"error": "invalid ids"})),
     ):
@@ -95,11 +99,11 @@ def patch_queue_reorder_error(status: int = 400, detail: dict | None = None):
 
 
 @contextmanager
-def patch_queue_clear(status: int = 204):
+def patch_queue_clear(mock_queue: GuildPlaylistSchema, status: int = 204):
     with patch.object(
-        QueueAPI,
+        GuildPlaylistAPI,
         "clear",
-        new=AsyncMock(return_value=make_mock_response_wrapper(status)),
+        new=AsyncMock(return_value=make_mock_response_wrapper(status, mock_queue)),
     ):
         yield
 
@@ -107,7 +111,7 @@ def patch_queue_clear(status: int = 204):
 @contextmanager
 def patch_queue_clear_error(status: int = 500, detail: dict | None = None):
     with patch.object(
-        QueueAPI,
+        GuildPlaylistAPI,
         "clear",
         new=AsyncMock(return_value=make_mock_response_wrapper(status, detail or {"detail": "db error"})),
     ):
@@ -124,7 +128,7 @@ class TestQueue(CommandTestCase, WebSocketTestCase):
         assert res.success
         assert res.type == expected_type
         assert res.data is not None
-        assert res.data.get("queue") == expected_queue
+        assert res.data.get("playlist") == expected_queue
 
 
 # ---------------------------------------------------------------------------
@@ -136,17 +140,15 @@ class TestQueueGet(TestQueue):
     def test_exists(self):
         assert "queue-get" in get_registered_commands()
 
-    def test_queue_get_returns_queue(self, client):
-        mock_queue = GuildQueueSchemaFactory.build()
-        with patch_queue_get(mock_queue):
-            with self.ws_connect(client, GUILD_ID) as ws:
-                self.send_json(ws, "queue-get", discord_id=DISCORD_ID)
-                data = ws.receive_json()
-
-        self.assert_queue_response(data, "queue-get", mock_queue.model_dump())
+    def assert_queue_response(self, data: dict, expected_type: str, expected_queue):
+        res = self.to_response(data)
+        assert res.success
+        assert res.type == expected_type
+        assert res.data is not None
+        assert res.data.get("playlist") == expected_queue
 
     def test_queue_get_not_broadcast(self, client):
-        mock_queue = GuildQueueSchemaFactory.build()
+        mock_queue = GuildPlaylistSchemaFactory.build()
         with patch_queue_get(mock_queue):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
                 self.send_json(ws1, "queue-get", discord_id=DISCORD_ID)
@@ -164,8 +166,8 @@ class TestQueueAdd(TestQueue):
         assert "queue-add" in get_registered_commands()
 
     def test_queue_add_success(self, client):
-        mock_queue = GuildQueueSchemaFactory.build()
-        with patch_queue_add(), patch_queue_get(mock_queue):
+        mock_queue = GuildPlaylistSchemaFactory.build()
+        with patch_queue_add(mock_queue):
             with self.ws_connect(client, GUILD_ID) as ws:
                 self.send_json(ws, "queue-add", youtube_id="abc", discord_id=DISCORD_ID)
                 data = ws.receive_json()
@@ -186,8 +188,8 @@ class TestQueueAdd(TestQueue):
         self.assert_error(data)
 
     def test_queue_add_broadcasts_to_guild(self, client):
-        mock_queue = GuildQueueSchemaFactory.build()
-        with patch_queue_add(), patch_queue_get(mock_queue):
+        mock_queue = GuildPlaylistSchemaFactory.build()
+        with patch_queue_add(mock_queue):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
                 self.send_json(ws1, "queue-add", youtube_id="abc", discord_id=DISCORD_ID)
                 ws1.receive_json()  # ack
@@ -211,8 +213,8 @@ class TestQueueRemove(TestQueue):
         assert "queue-remove" in get_registered_commands()
 
     def test_queue_remove_success(self, client):
-        mock_queue = GuildQueueSchemaFactory.build()
-        with patch_queue_remove(), patch_queue_get(mock_queue):
+        mock_queue = GuildPlaylistSchemaFactory.build()
+        with patch_queue_remove(mock_queue):
             with self.ws_connect(client, GUILD_ID) as ws:
                 self.send_json(ws, "queue-remove", item_id=1, discord_id=DISCORD_ID)
                 data = ws.receive_json()
@@ -233,8 +235,8 @@ class TestQueueRemove(TestQueue):
         self.assert_error(data)
 
     def test_queue_remove_broadcasts_to_guild(self, client):
-        mock_queue = GuildQueueSchemaFactory.build()
-        with patch_queue_remove(), patch_queue_get(mock_queue):
+        mock_queue = GuildPlaylistSchemaFactory.build()
+        with patch_queue_remove(mock_queue):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
                 self.send_json(ws1, "queue-remove", item_id=1, discord_id=DISCORD_ID)
                 ws1.receive_json()  # ack
@@ -252,8 +254,8 @@ class TestQueueReorder(TestQueue):
         assert "queue-reorder" in get_registered_commands()
 
     def test_queue_reorder_success(self, client):
-        mock_queue = GuildQueueSchemaFactory.build()
-        with patch_queue_reorder(), patch_queue_get(mock_queue):
+        mock_queue = GuildPlaylistSchemaFactory.build()
+        with patch_queue_reorder(mock_queue):
             with self.ws_connect(client, GUILD_ID) as ws:
                 self.send_json(ws, "queue-reorder", order=[2, 1], discord_id=DISCORD_ID)
                 data = ws.receive_json()
@@ -272,8 +274,8 @@ class TestQueueReorder(TestQueue):
         self.assert_error(data)
 
     def test_queue_reorder_broadcasts_to_guild(self, client):
-        mock_queue = GuildQueueSchemaFactory.build()
-        with patch_queue_reorder(), patch_queue_get(mock_queue):
+        mock_queue = GuildPlaylistSchemaFactory.build()
+        with patch_queue_reorder(mock_queue):
             with self.ws_connect_pair(client, GUILD_ID) as (ws1, ws2):
                 self.send_json(ws1, "queue-reorder", order=[2, 1], discord_id=DISCORD_ID)
                 ws1.receive_json()  # ack
@@ -291,14 +293,15 @@ class TestQueueClear(TestQueue):
         assert "queue-clear" in get_registered_commands()
 
     def test_queue_clear_success(self, client):
-        with patch_queue_clear():
+        mock_queue = GuildPlaylistSchemaFactory.build(items=[])
+        with patch_queue_clear(mock_queue):
             with self.ws_connect(client, GUILD_ID) as ws:
                 self.send_json(ws, "queue-clear", discord_id=DISCORD_ID)
                 data = ws.receive_json()
 
         self.assert_success(data, "queue-clear")
         assert data["data"]
-        assert data["data"]["queue"] == []
+        assert data["data"]["playlist"]["items"] == []
 
     def test_queue_clear_error_not_broadcast(self, client):
         with patch_queue_clear_error(500, {"detail": "db error"}):

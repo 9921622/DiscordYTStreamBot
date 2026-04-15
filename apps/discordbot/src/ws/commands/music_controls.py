@@ -12,7 +12,6 @@ class BasePlayCommand(DiscordUserMixin, WebsocketCommand):
     def get_objects(self):
         super().get_objects()
         self.offset = self.data.get("offset", 0.0)
-        self.volume = self.data.get("volume", 0.5)
 
     async def _get_source_and_play(self, current_item):
         """Fetch the stream source for a playlist item and start playback in the voice channel."""
@@ -26,7 +25,6 @@ class BasePlayCommand(DiscordUserMixin, WebsocketCommand):
                 current_item.video.youtube_id,
                 rw_source.data.source_url,
                 offset=self.offset,
-                volume=self.volume,
             )
         except RuntimeError:
             return self.response_error("bot not connected to a voice channel")

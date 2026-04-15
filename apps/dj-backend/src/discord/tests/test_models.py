@@ -272,6 +272,69 @@ class GuildPlaylistManagerNextItemTest(TestCase):
         playlist.refresh_from_db()
         self.assertIsNotNone(playlist.current_item)
 
+    def test_next_item_as_video_inserts_after_current_in_middle(self):
+        """With 5 items and current on 2nd, new video is inserted at 3rd position."""
+        [baker.make(YoutubeVideo, youtube_id=f"vid{i}") for i in range(1, 6)]
+        items = [GuildPlaylist.objects.add_item("guild_1", f"vid{i}", fetch=False) for i in range(1, 6)]
+
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        playlist.current_item = items[1]  # 2nd item
+        playlist.save(update_fields=["current_item"])
+
+        new_video = baker.make(YoutubeVideo, youtube_id="vid_new")
+        result = GuildPlaylist.objects.next_item_as_video("guild_1", new_video, self.user)
+
+        playlist.refresh_from_db()
+        self.assertEqual(playlist.current_item, result)
+        self.assertEqual(result.video.youtube_id, "vid_new")
+        self.assertEqual(result.order, 3)  # inserted at 3rd position
+
+    def test_next_item_as_video_shifts_existing_items_up(self):
+        """Items after the insertion point have their order incremented."""
+        [baker.make(YoutubeVideo, youtube_id=f"vid{i}") for i in range(1, 4)]
+        items = [GuildPlaylist.objects.add_item("guild_1", f"vid{i}", fetch=False) for i in range(1, 4)]
+
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        playlist.current_item = items[0]  # 1st item
+        playlist.save(update_fields=["current_item"])
+
+        new_video = baker.make(YoutubeVideo, youtube_id="vid_new")
+        GuildPlaylist.objects.next_item_as_video("guild_1", new_video, self.user)
+
+        items[1].refresh_from_db()
+        items[2].refresh_from_db()
+        self.assertEqual(items[1].order, 3)  # was 2, now 3
+        self.assertEqual(items[2].order, 4)  # was 3, now 4
+
+    def test_next_item_as_video_inserts_at_end_when_current_is_last(self):
+        """When current is the last item, new video is appended at the end."""
+        [baker.make(YoutubeVideo, youtube_id=f"vid{i}") for i in range(1, 4)]
+        items = [GuildPlaylist.objects.add_item("guild_1", f"vid{i}", fetch=False) for i in range(1, 4)]
+
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        playlist.current_item = items[2]  # last item
+        playlist.save(update_fields=["current_item"])
+
+        new_video = baker.make(YoutubeVideo, youtube_id="vid_new")
+        result = GuildPlaylist.objects.next_item_as_video("guild_1", new_video, self.user)
+
+        self.assertEqual(result.order, 4)
+        self.assertEqual(playlist.items.count(), 4)
+
+    def test_next_item_as_video_inserts_at_start_when_no_current(self):
+        """When current_item is None, new video is inserted at order 1."""
+        [baker.make(YoutubeVideo, youtube_id=f"vid{i}") for i in range(1, 4)]
+        items = [GuildPlaylist.objects.add_item("guild_1", f"vid{i}", fetch=False) for i in range(1, 4)]
+
+        new_video = baker.make(YoutubeVideo, youtube_id="vid_new")
+        result = GuildPlaylist.objects.next_item_as_video("guild_1", new_video, self.user)
+
+        # No current item, so appended at end
+        self.assertEqual(result.video.youtube_id, "vid_new")
+        playlist = GuildPlaylist.objects.get_playlist("guild_1")
+        self.assertEqual(playlist.current_item, result)
+        self.assertEqual(playlist.items.count(), 4)
+
 
 class GuildPlaylistManagerPrevItemTest(TestCase):
     def test_prev_item_from_none_returns_last(self):

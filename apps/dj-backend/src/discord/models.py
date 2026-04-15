@@ -101,9 +101,22 @@ class GuildPlaylistManager(models.Manager):
         return next_item
 
     def next_item_as_video(self, guild_id: str, video: YoutubeVideo, added_by: DiscordUser):
-        item = self.add_item(guild_id, youtube_id=video.youtube_id, added_by=added_by, fetch=False)
-        result = self.next_item(guild_id, item)
+        playlist = self.get_playlist(guild_id)
 
+        # Determine insertion order (after current, or at end)
+        if playlist.current_item is not None:
+            insert_after = playlist.current_item.order
+            # Shift all items after current up by 1
+            playlist.items.filter(order__gt=insert_after).update(order=models.F("order") + 1)
+            new_order = insert_after + 1
+        else:
+            new_order = playlist.items.aggregate(models.Max("order"))["order__max"] or 0
+            new_order += 1
+
+        video_obj = YoutubeVideo.objects.get(youtube_id=video.youtube_id)
+        item = GuildPlaylistItem.objects.create(playlist=playlist, video=video_obj, order=new_order, added_by=added_by)
+
+        result = self.next_item(guild_id, item)
         assert result is not None, f"next_item returned None after adding item {item.id}"
         return result
 

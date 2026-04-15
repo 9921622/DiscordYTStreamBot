@@ -1,6 +1,6 @@
 import discord
 
-from bot.models import MemberList, Member, PlaybackStatus
+from bot.models import DiscordUserList, DiscordUser, PlaybackStatus
 
 
 class VoiceControlMixin:
@@ -46,30 +46,21 @@ class VoiceControlMixin:
         vc = self.get_voice_client(guild_id)
 
         if not state or not vc:
-            return PlaybackStatus(
-                playing=False,
-                paused=False,
-                position=0.0,
-                volume=0.5,
-                video_id=None,
-                ended=False,
-                loop=False,
-            )
+            return PlaybackStatus.get_empty()
 
         return self._build_playback_status(vc, state)
 
-    def vc_get_members(self, guild_id: int) -> MemberList:
+    def vc_get_members(self, guild_id: int) -> DiscordUser:
         guild = self.get_guild(guild_id)
         if not guild or not guild.voice_client or not guild.voice_client.channel:
-            return MemberList([])
+            return DiscordUserList([])
 
-        return MemberList(
+        return DiscordUserList(
             [
-                Member(
+                DiscordUser(
                     discord_id=str(m.id),
-                    username=m.name,
                     global_name=m.display_name,
-                    avatar=str(m.display_avatar.url),
+                    avatar_url=str(m.display_avatar.url),
                 )
                 for m in guild.voice_client.channel.members
                 if not m.bot

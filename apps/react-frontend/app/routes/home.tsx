@@ -8,16 +8,15 @@ import Navbar from "~/components/Navbar";
 import Musicbar from "~/components/musicbar/Musicbar";
 import SongContainer from "~/components/SongContainer";
 import SideBarContent from "~/components/SideBar";
-import SongQueue from "~/components/SongQueue";
 import HorizontalAccordion from "~/components/utilities/HorizontalAccordion";
 import { BotProvider, useBotContext } from "~/contexts/BotContext";
-import { UserProvider, useUser } from "~/contexts/UserContext";
+import { UserProvider } from "~/contexts/UserContext";
 import { SocketProvider, useSocketContext } from "~/contexts/SocketContext";
-import { PlaybackVideoProvider } from "~/contexts/PlaybackVideoContext";
-import { PlaybackQueueProvider } from "~/contexts/PlaybackQueueContext";
-import SongQueueClosed from "~/components/SongQueueClosed";
 import { LibraryBig, ListMusic, PanelLeftClose, PanelRightClose } from "lucide-react";
 import type { WSResponse } from "~/api/backend-types";
+import { PlaylistProvider } from "~/contexts/PlaylistContext";
+import { PlaybackStatusProvider } from "~/contexts/PlaybackStatusContext";
+import PlaylistSidebar from "~/components/playlistsidebar/PlaylistSidebar";
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -81,7 +80,7 @@ function QueuePanel() {
                 closeIcon={<PanelRightClose size={16} />}
                 openIcon={<ListMusic size={16} />}
             >
-                <SongQueue />
+                <PlaylistSidebar />
             </HorizontalAccordion>
         </aside>
     );
@@ -91,6 +90,11 @@ function QueuePanel() {
 
 function HomePage() {
     const songs = useSongs();
+
+    const { on } = useSocketContext()
+    useEffect(() => on("*", (resp: WSResponse) => {
+		console.log("Received socket event:", resp)
+	}), [on])
 
     return (
         <div className="flex flex-col h-screen bg-zinc-950">
@@ -151,11 +155,13 @@ export default function Home() {
         <UserProvider>
             <BotProvider>
                 <SocketProviderWrapper>
-                    <PlaybackVideoProvider>
-                        <PlaybackQueueProvider>
-                            <HomePage />
-                        </PlaybackQueueProvider>
-                    </PlaybackVideoProvider>
+
+                    <PlaylistProvider>
+                    <PlaybackStatusProvider>
+                    <HomePage />
+                    </PlaybackStatusProvider>
+                    </PlaylistProvider>
+
                 </SocketProviderWrapper>
             </BotProvider>
         </UserProvider>

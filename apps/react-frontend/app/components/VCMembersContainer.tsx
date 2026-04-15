@@ -5,6 +5,7 @@ import { useSocketContext } from "~/contexts/SocketContext";
 import type { WSResponse } from "~/api/backend-types";
 import { Headphones } from "lucide-react";
 import { useUser } from "~/contexts/UserContext";
+import MemberAvatar from "./MemberAvatar";
 
 const AVATAR_SIZE = 28;
 const AVATAR_GAP = 8;
@@ -78,8 +79,7 @@ export default function VCMembersContainer() {
                 {members.map((member, i) => (
                     <div
                         key={member.discord_id}
-                        className="tooltip flex-shrink-0"
-                        data-tip={member.global_name}
+                        className="flex-shrink-0 inline-flex items-center"
                         style={{
                             marginLeft: i === 0 ? 0 : stacked ? -clampedOverlap : AVATAR_GAP,
                             zIndex: members.length - i,
@@ -88,18 +88,12 @@ export default function VCMembersContainer() {
                             animationDelay: `${i * 30}ms`,
                         }}
                     >
-                        <img
+                        <MemberAvatar
                             src={member.avatar_url}
                             alt={member.global_name}
-                            style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
-                            className={`
-                                rounded-full flex-shrink-0
-                                transition-transform duration-150
-                                hover:scale-110 hover:z-50
-                                ${stacked
-                                    ? "ring-[2px] ring-base-200 shadow-sm"
-                                    : ""}
-                            `}
+                            tooltip={member.global_name}
+                            size={AVATAR_SIZE}
+                            ring={stacked}
                         />
                     </div>
                 ))}

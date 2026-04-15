@@ -1,5 +1,5 @@
 import { useBotContext } from "~/contexts/BotContext"
-import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
+import { usePlaylistContext } from "~/contexts/PlaylistContext";
 
 import ArtistInfo from "./MusicbarArtistInfo";
 import SongProgressBar from "./MusicbarSongProgressBar";
@@ -9,7 +9,7 @@ import VolumeControl from "./MusicbarVolumeControl";
 import { useEffect, useRef, useState } from "react";
 
 export default function Musicbar() {
-    const { video, videoLoading, videoError } = usePlaybackVideoContext()
+    const { currentVideo, currentVideoLoading } = usePlaylistContext()  // TODO: useCurrentPlayback
     const { botInChannel } = useBotContext()
     const barRef = useRef<HTMLDivElement>(null)
     const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
@@ -73,16 +73,8 @@ export default function Musicbar() {
         setMousePos(null)
     }
 
-    if (videoError) return (
-        <div className="fixed bottom-0 w-full flex items-center justify-center px-4 py-5 bg-[#0f0f0f]">
-            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">
-                <span>⚠️</span>
-                <span>{videoError}</span>
-            </div>
-        </div>
-    )
 
-    const disabled = !video || !botInChannel
+    const disabled = !currentVideo || !botInChannel
 
     return (
         <div
@@ -120,7 +112,7 @@ export default function Musicbar() {
             )}
 
             {/* Animated blurred background */}
-            {video?.thumbnail && (
+            {currentVideo?.thumbnail && (
                 <>
                     <style>{`
                         @keyframes bgDrift {
@@ -133,7 +125,7 @@ export default function Musicbar() {
                     <div
                         className="absolute inset-0 transition-all duration-1000"
                         style={{
-                            backgroundImage: `url(${video.thumbnail})`,
+                            backgroundImage: `url(${currentVideo.thumbnail})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                             filter: 'blur(28px) brightness(0.5) saturate(2)',
@@ -144,17 +136,17 @@ export default function Musicbar() {
                     <div className="absolute inset-0 bg-black/50" />
                 </>
             )}
-            {!video?.thumbnail && <div className="absolute inset-0 bg-[#0f0f0f]" />}
+            {!currentVideo?.thumbnail && <div className="absolute inset-0 bg-[#0f0f0f]" />}
 
             {/* Left — artist info */}
             <div className="relative z-10 flex items-center gap-3 w-100 min-w-0 flex-shrink-0">
-                <ArtistInfo video={video} loading={videoLoading} />
+                <ArtistInfo video={currentVideo} loading={currentVideoLoading} />
             </div>
 
             {/* Center — controls + progress */}
             <div className={`absolute left-1/2 -translate-x-1/2 z-10 ${disabled ? "cursor-not-allowed" : ""}`}>
                 <div className={`flex flex-col items-center gap-2 w-[700px] ${disabled ? "opacity-30 pointer-events-none" : ""}`}>
-                    {!botInChannel && video && (
+                    {!botInChannel && currentVideo && (
                         <p className="text-[11px] text-amber-400/80 tracking-wide">Bot is not in your voice channel</p>
                     )}
                     <SongControls className="w-full justify-center" />
@@ -164,7 +156,7 @@ export default function Musicbar() {
 
             {/* Right — tags + volume */}
             <div className="relative z-10 flex items-center gap-3 ml-auto flex-shrink-0">
-                <MusicbarTags tags={video?.tags ?? []} />
+                <MusicbarTags tags={currentVideo?.tags ?? []} />
                 <VolumeControl />
             </div>
         </div>

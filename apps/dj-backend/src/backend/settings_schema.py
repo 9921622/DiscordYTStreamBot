@@ -24,7 +24,6 @@ class AppSettings(BaseSettings):
     DB_PORT: str
 
     # Discord
-    DISCORD_OAUTH_REDIRECT_URL: str  # this is the login page where it should redirect after oauth
     DISCORD_CLIENT_SECRET: str
     DISCORD_CLIENT_ID: str
 
@@ -36,6 +35,7 @@ class AppSettings(BaseSettings):
     def parse_allowed_hosts(cls, v):
         if isinstance(v, str):
             import json
+
             v = json.loads(v)
         return [host.removeprefix("https://").removeprefix("http://") for host in v]
 
@@ -44,6 +44,7 @@ class AppSettings(BaseSettings):
     def parse_list(cls, v):
         if isinstance(v, str):
             import json
+
             return json.loads(v)
         return v
 

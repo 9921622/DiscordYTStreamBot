@@ -1,27 +1,26 @@
-import { useBotContext } from "~/contexts/BotContext";
-import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
-import type { YoutubeVideo } from "~/api/youtube/youtube-types";
-import { Plus } from "lucide-react";
-import { PlayPauseIcon } from "./utilities/Icons";
-
+import { useBotContext } from "~/contexts/BotContext"
+import { usePlaylistContext } from "~/contexts/PlaylistContext"
+import { usePlaybackStatusContext } from "~/contexts/PlaybackStatusContext"
+import { useCurrentPlayback } from "~/hooks/useCurrentPlayback"
+import type { YoutubeVideo } from "~/api/youtube/youtube-types"
+import { Plus } from "lucide-react"
+import { PlayPauseIcon } from "./utilities/Icons"
 
 export default function SongCard({ song }: { song: YoutubeVideo }) {
-    const { botInChannel } = useBotContext();
-    const { videoPlay, videoPause, video: currentVideo, videoPlaybackStatus } = usePlaybackVideoContext();
-    const { queueAdd } = usePlaybackQueueContext();
+    const { botInChannel } = useBotContext()
+    const { add, playNow } = usePlaylistContext()
+    const { videoPause } = usePlaybackStatusContext()
+    const { isPlaying, isPaused, currentItem } = useCurrentPlayback()
 
-    const isCurrentSong = currentVideo?.youtube_id === song.youtube_id;
-    const isPlaying = (isCurrentSong && videoPlaybackStatus?.playing && !videoPlaybackStatus?.paused) || false;
-    const isPaused = isCurrentSong && videoPlaybackStatus?.paused;
+    const isCurrentSong = currentItem?.video?.youtube_id === song.youtube_id
+    const isThisSongPlaying = isCurrentSong && isPlaying
+    const isThisSongPaused  = isCurrentSong && isPaused
 
     function handlePlay() {
-        if (isPlaying) {
-            videoPause();
-        } else if (isPaused) {
-            videoPause();
+        if (isCurrentSong) {
+            videoPause()
         } else {
-            videoPlay(song);
+            playNow(song)
         }
     }
 
@@ -39,14 +38,12 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
 
-            {/* Gradient overlay — always visible at bottom, stronger on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
-            {/* Top-right: queue button — appears on hover */}
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                     className="btn btn-ghost btn-circle btn-xs bg-black/50 hover:bg-black/70 text-white"
-                    onClick={() => queueAdd(song, !!videoPlaybackStatus?.playing)}
+                    onClick={() => add(song)}
                     disabled={!botInChannel}
                     title="Add to queue"
                 >
@@ -54,7 +51,6 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                 </button>
             </div>
 
-            {/* Bottom: title + play button */}
             <div className="absolute bottom-0 left-0 right-0 p-2.5 flex items-end justify-between gap-2">
                 <div className="min-w-0 flex-1">
                     <h2 className="text-white text-xs font-semibold line-clamp-2 leading-snug">
@@ -69,20 +65,20 @@ export default function SongCard({ song }: { song: YoutubeVideo }) {
                     className={[
                         "btn btn-circle btn-lg flex-shrink-0 transition-transform duration-200 transform hover:scale-105",
                         "opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0",
-                        isPlaying ? "btn-secondary" : "btn-primary",
+                        isThisSongPlaying ? "btn-secondary" : "btn-primary",
                     ].join(" ")}
                     onClick={handlePlay}
                     disabled={!botInChannel}
-                    title={isPlaying ? "Pause" : isPaused ? "Resume" : "Play"}
+                    title={isThisSongPlaying ? "Pause" : isThisSongPaused ? "Resume" : "Play"}
                 >
                     <div className="transform transition-transform duration-200 scale-100">
                         <PlayPauseIcon
                             className="w-5 h-5 flex-shrink-0 text-white"
-                            isPlaying={isPlaying}
+                            isPlaying={isThisSongPlaying}
                         />
                     </div>
                 </button>
             </div>
         </div>
-    );
+    )
 }

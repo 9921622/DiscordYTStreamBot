@@ -1,34 +1,35 @@
-import { useState, useRef, useEffect } from "react";
-import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import { ScalingVolumeIcon } from "../utilities/Icons";
+import { useState, useRef, useEffect } from "react"
+import { usePlaybackStatusContext } from "~/contexts/PlaybackStatusContext"
+import { ScalingVolumeIcon } from "../utilities/Icons"
 
 export default function VolumeControl() {
-    const { videoPlaybackStatus, videoVolume } = usePlaybackVideoContext();
-    const volume = videoPlaybackStatus?.volume ?? 0.5;
+    const { volume, videoVolume } = usePlaybackStatusContext()
 
-    const [localVolume, setLocalVolume] = useState(Math.round(volume * 100));
-    const [hovered, setHovered] = useState(false);
-    const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const sliderRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (videoPlaybackStatus?.volume != null) {
-            setLocalVolume(Math.round(videoPlaybackStatus.volume * 100));
-        }
-    }, [videoPlaybackStatus?.volume]);
+    const [localVolume, setLocalVolume] = useState(Math.round(volume * 100))
+    const [hovered, setHovered] = useState(false)
+    const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const sliderRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
-        sliderRef.current?.style.setProperty('--vpct', `${localVolume}%`);
-    }, [localVolume]);
+        setLocalVolume(Math.round(volume * 100))
+    }, [volume])
 
-    const handleMouseEnter = () => {
-        if (hideTimer.current) clearTimeout(hideTimer.current);
-        setHovered(true);
-    };
-    const handleMouseLeave = () => {
-        hideTimer.current = setTimeout(() => setHovered(false), 200);
-    };
-    const handleRelease = (value: number) => videoVolume(value / 100);
+    useEffect(() => {
+        sliderRef.current?.style.setProperty("--vpct", `${localVolume}%`)
+    }, [localVolume])
+
+    function handleMouseEnter() {
+        if (hideTimer.current) clearTimeout(hideTimer.current)
+        setHovered(true)
+    }
+
+    function handleMouseLeave() {
+        hideTimer.current = setTimeout(() => setHovered(false), 200)
+    }
+
+    function handleRelease(value: number) {
+        videoVolume(value / 100)
+    }
 
     return (
         <>
@@ -90,9 +91,9 @@ export default function VolumeControl() {
                     <div
                         className="absolute bottom-[calc(100%+10px)] right-0 z-50 flex flex-col items-center gap-2 p-3 w-32 rounded-xl"
                         style={{
-                            background: 'rgba(22,22,22,0.97)',
-                            border: '0.5px solid rgba(255,255,255,0.12)',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                            background: "rgba(22,22,22,0.97)",
+                            border: "0.5px solid rgba(255,255,255,0.12)",
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
                         }}
                     >
                         <span className="text-[11px] text-white/40 tabular-nums">
@@ -109,7 +110,7 @@ export default function VolumeControl() {
                             onMouseUp={e => handleRelease(Number(e.currentTarget.value))}
                             onTouchEnd={e => handleRelease(Number(e.currentTarget.value))}
                             className="vol-slider"
-                            style={{ '--vpct': `${localVolume}%` } as React.CSSProperties}
+                            style={{ "--vpct": `${localVolume}%` } as React.CSSProperties}
                         />
                         <div className="flex justify-between w-full px-0.5">
                             <span className="text-[10px] text-white/25">0</span>
@@ -126,5 +127,5 @@ export default function VolumeControl() {
                 </button>
             </div>
         </>
-    );
+    )
 }

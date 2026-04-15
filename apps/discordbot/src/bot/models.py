@@ -1,6 +1,7 @@
 import time
 from dataclasses import dataclass
 from pydantic import BaseModel, RootModel
+from utils.api_backend_wrapper import DiscordUserSchema
 
 
 @dataclass
@@ -34,15 +35,22 @@ class PlaybackStatus(BaseModel):
     ended: bool
     loop: bool
 
+    @classmethod
+    def get_empty(cls):
+        return cls(
+            playing=False,
+            paused=False,
+            position=0.0,
+            volume=0.5,
+            video_id=None,
+            ended=False,
+            loop=False,
+        )
 
-class Member(BaseModel):
+
+class DiscordUser(DiscordUserSchema):
     """ """
 
-    discord_id: str
-    username: str
-    global_name: str
-    avatar: str
 
-
-class MemberList(RootModel[list[Member]]):
+class DiscordUserList(RootModel[list[DiscordUser]]):
     pass

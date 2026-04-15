@@ -14,12 +14,14 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from backend.mixins import RefreshTokenMixin
 from backend.permissions import IsInternalService
 from discord.api import DiscordAPIClient, DiscordCDNAPI
-from discord.models import DiscordUser, DiscordGuild, GuildQueueManager, GuildQueue, GuildQueueItem
+from discord.models import DiscordUser, DiscordGuild, GuildPlaylistManager, GuildPlaylist, GuildPlaylistItem
 from discord.serializers import (
+    DiscordUserSerializer,
     DiscordGuildSerializer,
-    GuildQueueSerializer,
-    GuildQueueItemSerializer,
+    GuildPlaylistSerializer,
+    GuildPlaylistItemSerializer,
 )
+from youtube.services import YouTubeService
 from youtube.models import YoutubeVideo
 
 import requests
@@ -50,12 +52,8 @@ def get_oauth_redirect(request):
     # https://docs.discord.com/developers/topics/oauth2#authorization-code-grant
     # request.build_absolute_uri() would return the internal Docker hostname (dj-backend:8000)
     # which Discord cannot reach — use the public-facing BACKEND_URL instead
-
-    # if using non docker. just change the backend url
-    from django.conf import settings
-
     path = reverse("discord:login")
-    return f"{settings.DISCORD_OAUTH_REDIRECT_URL}{path}"
+    return request.build_absolute_uri(path)
 
 
 class DiscordUserCreateUpdateMixin:
@@ -153,14 +151,16 @@ class DiscordProfileView(APIView):
 
     def get(self, request):
         discord_user = request.user.discord
-        return Response(
-            {
-                "discord_id": discord_user.discord_id,
-                "username": discord_user.username,
-                "global_name": discord_user.global_name,
-                "avatar_url": discord_user.get_avatar_uri(),
-            }
-        )
+        return Response(DiscordUserSerializer(discord_user).data)
+
+
+class DiscordUserView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def get(self, request, user_id: str):
+        discord_user = DiscordUser.objects.get(discord_id=user_id)
+        return Response(DiscordUserSerializer(discord_user).data)
 
 
 class DiscordGuildView(APIView):
@@ -176,28 +176,28 @@ class DiscordGuildView(APIView):
             return Response({"error": "Guild not found"}, status=404)
 
 
-class GuildQueueView(APIView):
+class GuildPlaylistView(APIView):
     authentication_classes = []
     permission_classes = [IsInternalService]
 
     def get(self, request, guild_id: str):
-        """Get the current queue for a guild"""
-        queue = GuildQueue.objects.get_for_guild(guild_id)
-        return Response(GuildQueueSerializer(queue).data)
+        """Get the current queue for a guild."""
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
 
     def delete(self, request, guild_id: str):
-        """Clear the queue"""
-        queue = GuildQueue.objects.get_for_guild(guild_id)
-        queue.clear()
-        return Response({"ok": True})
+        """Clear the queue."""
+        GuildPlaylist.objects.clear(guild_id)
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
 
 
-class GuildQueueItemView(APIView):
+class GuildPlaylistAddSongView(APIView):
     authentication_classes = []
     permission_classes = [IsInternalService]
 
-    def post(self, request, guild_id: str):
-        """Add a video to the queue"""
+    def patch(self, request, guild_id: str):
+        """Add a video to the queue. Expects { youtube_id, discord_id }."""
         youtube_id = request.data.get("youtube_id")
         if not youtube_id:
             return Response({"error": "youtube_id required"}, status=400)
@@ -212,32 +212,124 @@ class GuildQueueItemView(APIView):
             return Response({"error": "User has not authenticated with the web app"}, status=403)
 
         try:
-            item = GuildQueue.objects.add_item(guild_id, youtube_id, added_by=added_by)
+            GuildPlaylist.objects.add_item(guild_id, youtube_id, added_by=added_by)
         except YoutubeVideo.DoesNotExist:
             try:
-                item = GuildQueue.objects.add_item(guild_id, youtube_id, added_by=added_by, fetch=True)
+                GuildPlaylist.objects.add_item(guild_id, youtube_id, added_by=added_by, fetch=True)
             except Exception as e:
                 return Response({"error": f"Failed to fetch video from YouTube: {str(e)}"}, status=502)
 
-        return Response(GuildQueueItemSerializer(item).data, status=201)
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data, status=201)
 
-    def delete(self, request, guild_id: str, item_id: int):
-        """Remove a specific item from the queue"""
-        try:
-            GuildQueue.objects.remove_item(guild_id, item_id)
-            return Response({"ok": True})
-        except GuildQueueItem.DoesNotExist:
-            return Response({"error": "Item not found"}, status=404)
+
+class GuildPlaylistRemoveSongView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
 
     def patch(self, request, guild_id: str):
-        """Reorder queue items. Expects { "order": [item_id, item_id, ...] }"""
+        """Remove a specific item from the queue. Expects { item_id }."""
+        item_id = request.data.get("item_id")
+        if not item_id:
+            return Response({"error": "item_id required"}, status=400)
+
+        try:
+            GuildPlaylist.objects.remove_item(guild_id, item_id)
+        except GuildPlaylistItem.DoesNotExist:
+            return Response({"error": "Item not found"}, status=404)
+
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data, status=200)
+
+
+class GuildPlaylistNextView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def patch(self, request, guild_id: str):
+        """
+        Advance to the next item in the queue.
+        - item_id in body: sets that PlaylistItem as current
+        - neither: advances to the natural next item in order
+        """
+        item_id = request.data.get("item_id")
+
+        if item_id:
+            try:
+                playlist_item = GuildPlaylistItem.objects.get(id=item_id, playlist__guild__guild_id=guild_id)
+            except GuildPlaylistItem.DoesNotExist:
+                return Response({"error": f"Item {item_id} not found"}, status=404)
+            GuildPlaylist.objects.next_item(guild_id, playlist_item=playlist_item)
+        else:
+            GuildPlaylist.objects.next_item(guild_id)
+
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
+
+
+class GuildPlaylistPlayNowView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def patch(self, request, guild_id: str):
+        """
+        Immediately set an item as current and play it.
+        Accepts either an existing item_id (jumps to it) or a video_id (adds and plays).
+        Requires discord_id in body.
+        """
+        item_id = request.data.get("item_id")
+        video_id = request.data.get("video_id")
+        discord_id = request.data.get("discord_id")
+
+        if not discord_id:
+            return Response({"error": "discord_id is required"}, status=400)
+        if not item_id and not video_id:
+            return Response({"error": "either item_id or video_id is required"}, status=400)
+
+        try:
+            discord_user = DiscordUser.objects.get(discord_id=discord_id)
+        except DiscordUser.DoesNotExist:
+            return Response({"error": f"DiscordUser {discord_id} not found"}, status=404)
+
+        if item_id:
+            try:
+                item = GuildPlaylistItem.objects.get(id=item_id, playlist__guild__guild_id=guild_id)
+            except GuildPlaylistItem.DoesNotExist:
+                return Response({"error": f"Item {item_id} not found in playlist"}, status=404)
+            GuildPlaylist.objects.next_item(guild_id, playlist_item=item)
+        else:
+            video = YouTubeService.get_or_fetch(video_id)
+            GuildPlaylist.objects.next_item_as_video(guild_id, video=video, added_by=discord_user)
+
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
+
+
+class GuildPlaylistPrevView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def patch(self, request, guild_id: str):
+        """Move to the previous item."""
+        GuildPlaylist.objects.prev_item(guild_id)
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data)
+
+
+class GuildPlaylistReorderView(APIView):
+    authentication_classes = []
+    permission_classes = [IsInternalService]
+
+    def patch(self, request, guild_id: str):
+        """Reorder queue items. Expects { "order": [item_id, item_id, ...] }."""
         item_ids = request.data.get("order")
         if not item_ids or not isinstance(item_ids, list):
             return Response({"error": "order must be a list of item IDs"}, status=400)
 
         try:
-            GuildQueue.objects.reorder_items(guild_id, item_ids)
+            GuildPlaylist.objects.reorder_items(guild_id, item_ids)
         except ValueError as e:
             return Response({"error": str(e)}, status=400)
 
-        return Response({"ok": True})
+        queue = GuildPlaylist.objects.get_playlist(guild_id)
+        return Response(GuildPlaylistSerializer(queue).data, status=200)

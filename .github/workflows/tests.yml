@@ -78,7 +78,6 @@ jobs:
       DISCORD_CLIENT_SECRET: "test"
       DISCORD_CLIENT_ID: "123"
       INTERNAL_API_KEY: "test"
-      DISCORD_OAUTH_REDIRECT_URL: "http://localhost:3000/dj"
       DJANGO_ADMIN_USERNAME: "admin"
       DJANGO_ADMIN_PASSWORD: "test_admin_password"
       DB_HOST: "localhost"

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import DiscordUser, DiscordGuild, GuildQueue, GuildQueueItem
+from .models import DiscordUser, DiscordGuild, GuildPlaylist, GuildPlaylistItem
 
 
 @admin.register(DiscordUser)
@@ -38,19 +38,21 @@ class DiscordGuildAdmin(admin.ModelAdmin):
     search_fields = ["guild_id", "name"]
 
 
-class GuildQueueItemInline(admin.TabularInline):
-    model = GuildQueueItem
+class GuildPlaylistItemInline(admin.TabularInline):
+    model = GuildPlaylistItem
     extra = 0
     autocomplete_fields = ["video", "added_by"]
     ordering = ["order"]
+    readonly_fields = ["added_at"]
 
 
-@admin.register(GuildQueue)
-class GuildQueueAdmin(admin.ModelAdmin):
-    list_display = ["guild", "created_at", "updated_at", "queue_length"]
+@admin.register(GuildPlaylist)
+class GuildPlaylistAdmin(admin.ModelAdmin):
+    list_display = ["guild", "current_item", "created_at", "updated_at", "queue_length"]
     search_fields = ["guild__name", "guild__guild_id"]
     readonly_fields = ["created_at", "updated_at"]
-    inlines = [GuildQueueItemInline]
+    autocomplete_fields = ["current_item"]
+    inlines = [GuildPlaylistItemInline]
 
     def queue_length(self, obj):
         return obj.items.count()
@@ -58,16 +60,16 @@ class GuildQueueAdmin(admin.ModelAdmin):
     queue_length.short_description = "Items"
 
 
-@admin.register(GuildQueueItem)
-class GuildQueueItemAdmin(admin.ModelAdmin):
-    list_display = ["video", "queue", "order", "added_by", "added_at"]
+@admin.register(GuildPlaylistItem)
+class GuildPlaylistItemAdmin(admin.ModelAdmin):
+    list_display = ["video", "playlist", "order", "added_by", "added_at"]
     search_fields = [
         "video__title",
-        "queue__guild__name",
-        "queue__guild__guild_id",
+        "playlist__guild__name",
+        "playlist__guild__guild_id",
         "added_by__username",
     ]
-    list_filter = ["queue__guild"]
-    autocomplete_fields = ["video", "queue", "added_by"]
-    ordering = ["queue", "order"]
+    list_filter = ["playlist__guild"]
+    autocomplete_fields = ["video", "playlist", "added_by"]
+    ordering = ["playlist", "order"]
     readonly_fields = ["added_at"]

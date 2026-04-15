@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from utils.api_backend_wrapper import (
     ResponseWrapper,
-    GuildQueueSchema,
-    GuildQueueItemSchema,
+    GuildPlaylistSchema,
+    GuildPlaylistItemSchema,
     YoutubeVideoSchema,
     VideoSourceSchema,
 )
@@ -30,8 +30,8 @@ def make_video(youtube_id="vid123", title="Test Video") -> YoutubeVideoSchema:
     )
 
 
-def make_queue_item(item_id=1, youtube_id="vid123") -> GuildQueueItemSchema:
-    return GuildQueueItemSchema(
+def make_queue_item(item_id=1, youtube_id="vid123") -> GuildPlaylistItemSchema:
+    return GuildPlaylistItemSchema(
         id=item_id,
         video=make_video(youtube_id),
         order=0,
@@ -39,8 +39,8 @@ def make_queue_item(item_id=1, youtube_id="vid123") -> GuildQueueItemSchema:
     )
 
 
-def make_queue(items: list[GuildQueueItemSchema] | None = None) -> GuildQueueSchema:
-    return GuildQueueSchema(id=GUILD_ID, items=items or [])
+def make_queue(items: list[GuildPlaylistItemSchema] | None = None) -> GuildPlaylistSchema:
+    return GuildPlaylistSchema(id=GUILD_ID, items=items or [])
 
 
 class TestHookCase(CommandTestCase):
@@ -104,15 +104,13 @@ class TestOnSongStart(TestHookCase):
             mock_bot.vc_get_status.return_value = mock_status
             await hook.handle()
 
-        assert hook.send.call_count == 2
-        calls = [c[0][0] for c in hook.send.call_args_list]
+        assert hook.send.call_count == 1
+        call = hook.send.call_args[0][0]
 
-        assert calls[0].type == "song_start"
-        assert calls[0].success is True
-
-        assert calls[1].type == "status"
-        assert calls[1].success is True
-        assert "playback" in calls[1].data
+        assert call.type == "song_start"
+        assert call.success is True
+        assert "playback" in call.data
+        assert call.data["playback"] == {"playing": True}
 
 
 class TestOnSongEnd(TestHookCase):
@@ -122,10 +120,11 @@ class TestOnSongEnd(TestHookCase):
     @pytest.mark.asyncio
     async def test_sends_song_end_no_next(self):
         hook = self.make_hook(OnSongEnd)
-        empty_queue = make_queue([])
 
-        with patch("ws.hooks.QueueAPI") as mock_queue:
-            mock_queue.get = AsyncMock(return_value=make_mock_response_wrapper(200, empty_queue))
+        no_next_response = make_mock_response_wrapper(200, MagicMock(current_item=None))
+
+        with patch("ws.hooks.GuildPlaylistAPI") as mock_api:
+            mock_api.next = AsyncMock(return_value=no_next_response)
             await hook.handle()
 
         hook.send.assert_called_once()
@@ -137,25 +136,19 @@ class TestOnSongEnd(TestHookCase):
     async def test_sends_song_end_with_next(self):
         hook = self.make_hook(OnSongEnd)
         item = make_queue_item()
-        queue_with_item = make_queue([item])
-        empty_queue = make_queue([])
 
+        next_response = make_mock_response_wrapper(200, MagicMock(current_item=item))
         source_data = VideoSourceSchema(source_url="http://example.com/audio")
         source_wrapper = ResponseWrapper(response=make_mock_httpx_response(200), data=source_data)
+        playlist_response = make_mock_response_wrapper(200, MagicMock())
 
         with (
-            patch("ws.hooks.QueueAPI") as mock_queue,
+            patch("ws.hooks.GuildPlaylistAPI") as mock_api,
             patch("ws.hooks.VideoAPI") as mock_video,
             patch("ws.hooks.bot") as mock_bot,
         ):
-
-            mock_queue.get = AsyncMock(
-                side_effect=[
-                    make_mock_response_wrapper(200, queue_with_item),
-                    make_mock_response_wrapper(200, empty_queue),
-                ]
-            )
-            mock_queue.remove = AsyncMock(return_value=make_mock_response_wrapper(204))
+            mock_api.next = AsyncMock(return_value=next_response)
+            mock_api.get = AsyncMock(return_value=playlist_response)
             mock_video.get_source = AsyncMock(return_value=source_wrapper)
             mock_bot.vc_play = AsyncMock()
 
@@ -164,44 +157,29 @@ class TestOnSongEnd(TestHookCase):
         types = [c[0][0].type for c in hook.send.call_args_list]
         assert "song_end" in types
         assert "play" in types
-        assert "queue-remove" in types
 
         play_call = next(c[0][0] for c in hook.send.call_args_list if c[0][0].type == "play")
         assert play_call.data["video_id"] == item.video.youtube_id
 
-        mock_queue.remove.assert_called_once_with(GUILD_ID, item.id)
         mock_bot.vc_play.assert_called_once_with(GUILD_ID, item.video.youtube_id, source_data.source_url)
 
     @pytest.mark.asyncio
     async def test_play_next_skips_on_bad_source(self):
         hook = self.make_hook(OnSongEnd)
         item = make_queue_item()
-        queue_with_item = make_queue([item])
 
+        next_response = make_mock_response_wrapper(200, MagicMock(current_item=item))
         source_wrapper = ResponseWrapper(response=make_mock_httpx_response(500), data=None)
 
         with (
-            patch("ws.hooks.QueueAPI") as mock_queue,
+            patch("ws.hooks.GuildPlaylistAPI") as mock_api,
             patch("ws.hooks.VideoAPI") as mock_video,
             patch("ws.hooks.bot") as mock_bot,
         ):
-
-            mock_queue.get = AsyncMock(return_value=make_mock_response_wrapper(200, queue_with_item))
+            mock_api.next = AsyncMock(return_value=next_response)
             mock_video.get_source = AsyncMock(return_value=source_wrapper)
             mock_bot.vc_play = AsyncMock()
 
             await hook.handle()
 
         mock_bot.vc_play.assert_not_called()
-        mock_queue.remove = AsyncMock()
-        mock_queue.remove.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_get_queue_returns_empty_on_failure(self):
-        hook = self.make_hook(OnSongEnd)
-
-        with patch("ws.hooks.QueueAPI") as mock_queue:
-            mock_queue.get = AsyncMock(return_value=make_mock_response_wrapper(500, None))
-            items = await hook._get_queue()
-
-        assert items == []

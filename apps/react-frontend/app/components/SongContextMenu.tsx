@@ -1,10 +1,11 @@
-import React, { forwardRef, useEffect, useRef, useState } from "react";
-import type { YoutubeVideo } from "~/api/youtube/youtube-types";
-import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
-import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
-import { createPortal } from "react-dom";
-import { Heart, Plus } from "lucide-react";
-import { PlayPauseIcon } from "./utilities/Icons";
+import React, { forwardRef, useEffect, useRef, useState } from "react"
+import type { YoutubeVideo } from "~/api/youtube/youtube-types"
+import { createPortal } from "react-dom"
+import { Heart, Plus } from "lucide-react"
+import { PlayPauseIcon } from "./utilities/Icons"
+import { useCurrentPlayback } from "~/hooks/useCurrentPlayback"
+import { usePlaylistContext } from "~/contexts/PlaylistContext"
+import { usePlaybackStatusContext } from "~/contexts/PlaybackStatusContext"
 
 type SongContextMenuHelperProps = {
     x: number
@@ -15,33 +16,33 @@ type SongContextMenuHelperProps = {
 
 const SongContextMenuHelper = forwardRef<HTMLUListElement, SongContextMenuHelperProps>(
     ({ x, y, song, onClose }, ref) => {
-        const iconClass = "w-4 h-4 text-white";
-        const { video, videoPlay, videoPause, videoPlaybackStatus } = usePlaybackVideoContext()
-        const { queueAdd } = usePlaybackQueueContext()
+        const iconClass = "w-4 h-4 text-white"
+        const { add, playNow } = usePlaylistContext()
+        const { videoPause } = usePlaybackStatusContext()
+        const { isPlaying, currentItem } = useCurrentPlayback()
 
-        const isCurrentSong = video?.youtube_id === song.youtube_id;
-        const isPlaying = (isCurrentSong && videoPlaybackStatus?.playing && !videoPlaybackStatus?.paused) || false;
-        const isPaused = isCurrentSong && (videoPlaybackStatus?.paused || false);
+        const isCurrentSong = currentItem?.video?.youtube_id === song.youtube_id
+        const isThisSongPlaying = isCurrentSong && isPlaying
 
-        const options: {label: React.ReactNode; action: () => void }[] = [
+        const options: { label: React.ReactNode; action: () => void }[] = [
             {
                 label: (
                     <span className="flex items-center gap-2">
-                        <PlayPauseIcon isPlaying={isPlaying}/>
-                        { isPlaying ? "Pause" : "Play" }
+                        <PlayPauseIcon isPlaying={isThisSongPlaying} />
+                        {isThisSongPlaying ? "Pause" : "Play"}
                     </span>
                 ),
                 action: () => {
                     if (isCurrentSong)
                         videoPause()
                     else
-                        videoPlay(song)
+                        playNow(song)
                     onClose()
                 }
             },
             {
                 label: <span className="flex items-center gap-2"><Plus className={iconClass} /> Add to Queue</span>,
-                action: () => { queueAdd(song, !!videoPlaybackStatus?.playing); onClose() }
+                action: () => { add(song); onClose() }
             },
             {
                 label: <span className="flex items-center gap-2"><Heart className={iconClass} /> Add to Likes</span>,
@@ -54,8 +55,8 @@ const SongContextMenuHelper = forwardRef<HTMLUListElement, SongContextMenuHelper
                 ref={ref}
                 data-portal
                 className="fixed z-50 bg-zinc-800 border border-zinc-700 rounded-md shadow-lg py-1 w-44"
-                style={{ top: y, left: x }}>
-
+                style={{ top: y, left: x }}
+            >
                 {options.map((opt, i) => (
                     <li
                         key={song.youtube_id + i}
@@ -90,21 +91,18 @@ export default function SongContextMenu({ song, children }: SongContextMenuProps
     useEffect(() => {
         if (!menu) return
         function handleClick(e: MouseEvent) {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node))
                 setMenu(null)
-            }
         }
         window.addEventListener("mousedown", handleClick)
         return () => window.removeEventListener("mousedown", handleClick)
     }, [menu])
-
 
     return (
         <>
             <div onContextMenu={onContextMenu}>
                 {children}
             </div>
-
             {menu && createPortal(
                 <SongContextMenuHelper
                     ref={menuRef}

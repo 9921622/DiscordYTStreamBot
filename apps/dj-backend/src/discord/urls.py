@@ -1,29 +1,34 @@
-from django.urls import path, include
+from django.urls import path
 
 from .views import (
     DiscordOAuthView,
     DiscordLoginView,
     DiscordProfileView,
+    DiscordUserView,
     DiscordGuildView,
-    GuildQueueView,
-    GuildQueueItemView,
+    GuildPlaylistView,
+    GuildPlaylistAddSongView,
+    GuildPlaylistRemoveSongView,
+    GuildPlaylistNextView,
+    GuildPlaylistPlayNowView,
+    GuildPlaylistPrevView,
+    GuildPlaylistReorderView,
 )
 
 app_name = "discord"
+# fmt: off
 urlpatterns = [
     path("oauth", DiscordOAuthView.as_view(), name="oauth"),
     path("login", DiscordLoginView.as_view(), name="login"),
     path("profile", DiscordProfileView.as_view(), name="profile"),
-    path("guild/<str:guild_id>/", DiscordGuildView.as_view(), name="guild"),
-    path("guild/<str:guild_id>/queue/", GuildQueueView.as_view(), name="guild-queue"),
-    path(
-        "guild/<str:guild_id>/queue/items/",
-        GuildQueueItemView.as_view(),
-        name="guild-queue-items",
-    ),
-    path(
-        "guild/<str:guild_id>/queue/items/<int:item_id>/",
-        GuildQueueItemView.as_view(),
-        name="guild-queue-item",
-    ),
+    path("user/<str:user_id>/", DiscordUserView.as_view(), name="user"),
+    path("guilds/<str:guild_id>/", DiscordGuildView.as_view(), name="guild"),
+    path("guilds/<str:guild_id>/playlist/", GuildPlaylistView.as_view(), name="guild-playlist"),
+    path("guilds/<str:guild_id>/playlist/add-song/", GuildPlaylistAddSongView.as_view(), name="guild-playlist-add-song"),
+    path("guilds/<str:guild_id>/playlist/remove-song/", GuildPlaylistRemoveSongView.as_view(), name="guild-playlist-remove-song"),
+    path("guilds/<str:guild_id>/playlist/next/", GuildPlaylistNextView.as_view(), name="guild-playlist-next"),
+    path("guilds/<str:guild_id>/playlist/play-now/", GuildPlaylistPlayNowView.as_view(), name="guild-playlist-play-now"),
+    path("guilds/<str:guild_id>/playlist/prev/", GuildPlaylistPrevView.as_view(), name="guild-playlist-prev"),
+    path("guilds/<str:guild_id>/playlist/reorder/", GuildPlaylistReorderView.as_view(), name="guild-playlist-reorder"),
 ]
+# fmt: on

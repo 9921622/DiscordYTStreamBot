@@ -1,4 +1,5 @@
 import yt_dlp
+import requests
 from typing import List, Dict, Optional
 
 from youtube.models import YoutubeVideo
@@ -113,8 +114,36 @@ class YouTubeService:
                 "title": info.get("title"),
                 "creator": info.get("uploader"),
                 "duration": info.get("duration"),
-                "thumbnail": (info.get("thumbnails") or [{}])[-1].get("url"),
+                "thumbnail": cls._resolve_thumbnail(info.get("thumbnails") or []),
                 "source_url": cls.extract_source_url(info),
             },
         )
         return video
+
+    @staticmethod
+    def _resolve_thumbnail(thumbnails: list[dict]) -> str | None:
+        """
+        Walk thumbnails from highest quality to lowest, returning the first
+        URL that doesn't 404. Returns None if all fail or list is empty.
+
+        yt-dlp orders thumbnails ascending by quality, so we reverse.
+        """
+        for thumb in reversed(thumbnails):
+            url = thumb.get("url")
+            if not url:
+                continue
+            try:
+                resp = requests.head(url, timeout=5, allow_redirects=True)
+                if resp.status_code != 404:
+                    return url
+            except requests.RequestException:
+                continue
+        return None
+
+    @classmethod
+    def get_or_fetch(cls, youtube_id: str) -> YoutubeVideo:
+        try:
+            vid = YoutubeVideo.objects.get(youtube_id=youtube_id)
+        except YoutubeVideo.DoesNotExist:
+            vid = cls.fetch_and_cache_video(youtube_id)
+        return vid

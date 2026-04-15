@@ -35,3 +35,23 @@ export function ScalingVolumeIcon({ className, level }: {  className?: string, l
 
 	return <Icon className={className} />;
 }
+
+export function DragHandle() {
+    return (
+        <svg className="w-5 h-6 text-zinc-500 flex-shrink-0" fill="currentColor" viewBox="0 0 8 16">
+            <circle cx="2" cy="3"  r="1.2" /><circle cx="6" cy="3"  r="1.2" />
+            <circle cx="2" cy="8"  r="1.2" /><circle cx="6" cy="8"  r="1.2" />
+            <circle cx="2" cy="13" r="1.2" /><circle cx="6" cy="13" r="1.2" />
+        </svg>
+    )
+}
+
+export function EqualizerBars({ className = "" }: { className?: string }) {
+    return (
+        <div className={`flex gap-[2px] items-end h-4 ${className}`}>
+            <span className="w-[2px] bg-green-400 animate-eq-fast" />
+            <span className="w-[2px] bg-green-400 animate-eq [animation-delay:-0.2s]" />
+            <span className="w-[2px] bg-green-400 animate-eq-slow [animation-delay:-0.4s]" />
+        </div>
+    )
+}

@@ -13,12 +13,19 @@ class AudioMixin:
     def _create_audio_source(
         self, source_url: str, offset: float = 0.0, volume: float = 1.0
     ) -> discord.PCMVolumeTransformer:
+        before_options = (
+            "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 "
+            f"-ss {offset} "
+            "-thread_queue_size 512"  # larger input buffer
+        )
+        options = (
+            "-vn "
+            "-bufsize 128k "  # smaller output buffer, reduces memory pressure
+            "-ar 48000 "  # explicitly set sample rate, avoids resampling
+            "-ac 2"  # explicitly set stereo, avoids channel remixing
+        )
         return discord.PCMVolumeTransformer(
-            discord.FFmpegPCMAudio(
-                source_url,
-                before_options=(f"-reconnect 1 -reconnect_streamed 1 " f"-reconnect_delay_max 5 -ss {offset}"),
-                options="-vn",
-            ),
+            discord.FFmpegPCMAudio(source_url, before_options=before_options, options=options),
             volume=volume * self.VOLUME_SCALE,
         )
 

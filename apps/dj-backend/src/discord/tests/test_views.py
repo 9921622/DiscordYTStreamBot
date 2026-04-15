@@ -247,37 +247,83 @@ class GuildPlaylistPlayNowViewTests(TestCase):
         self.discord_user = baker.make(DiscordUser)
         self.url = reverse("discord:guild-playlist-play-now", kwargs={"guild_id": GUILD_ID})
 
+    # --- validation errors --------------------------------------------------
+
+    def test_missing_discord_id_returns_400(self):
+        response = self.client.patch(self.url, {"video_id": "vid_abc"}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_both_item_id_and_video_id_returns_400(self):
+        response = self.client.patch(self.url, {"discord_id": self.discord_user.discord_id}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_unknown_discord_user_returns_404(self):
+        response = self.client.patch(
+            self.url,
+            {"video_id": "vid_abc", "discord_id": "nonexistent"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+    # --- item_id path -------------------------------------------------------
+
+    @mock.patch("discord.views.GuildPlaylistSerializer")
+    @mock.patch("discord.views.GuildPlaylist.objects.get_playlist")
+    @mock.patch("discord.views.GuildPlaylist.objects.next_item")
+    @mock.patch("discord.views.GuildPlaylistItem.objects.get")
+    def test_play_now_by_item_id_jumps_to_item(self, mock_item_get, mock_next, mock_get_playlist, mock_serializer):
+        playlist_item = mock.Mock()
+        mock_item_get.return_value = playlist_item
+        mock_get_playlist.return_value = mock.Mock()
+        mock_serializer.return_value.data = {}
+
+        response = self.client.patch(
+            self.url,
+            {"item_id": 42, "discord_id": self.discord_user.discord_id},
+            format="json",
+        )
+
+        mock_item_get.assert_called_once_with(id=42, playlist__guild__guild_id=GUILD_ID)
+        mock_next.assert_called_once_with(GUILD_ID, playlist_item=playlist_item)
+        self.assertEqual(response.status_code, 200)
+
+    @mock.patch("discord.views.GuildPlaylistItem.objects.get")
+    def test_play_now_by_item_id_not_found_returns_404(self, mock_item_get):
+        mock_item_get.side_effect = GuildPlaylistItem.DoesNotExist
+
+        response = self.client.patch(
+            self.url,
+            {"item_id": 99, "discord_id": self.discord_user.discord_id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    # --- video_id path ------------------------------------------------------
+
     @mock.patch("discord.views.GuildPlaylistSerializer")
     @mock.patch("discord.views.GuildPlaylist.objects.get_playlist")
     @mock.patch("discord.views.GuildPlaylist.objects.next_item_as_video")
     @mock.patch("discord.views.YouTubeService.get_or_fetch")
-    def test_play_now(self, mock_get_or_fetch, mock_next, mock_get_playlist, mock_serializer):
+    def test_play_now_by_video_id_fetches_and_plays(
+        self, mock_get_or_fetch, mock_next, mock_get_playlist, mock_serializer
+    ):
         video = mock.Mock()
         mock_get_or_fetch.return_value = video
         mock_get_playlist.return_value = mock.Mock()
         mock_serializer.return_value.data = {}
 
         response = self.client.patch(
-            self.url, {"video_id": "vid_abc", "discord_id": self.discord_user.discord_id}, format="json"
+            self.url,
+            {"video_id": "vid_abc", "discord_id": self.discord_user.discord_id},
+            format="json",
         )
 
+        mock_get_or_fetch.assert_called_once_with("vid_abc")
         mock_next.assert_called_once_with(GUILD_ID, video=video, added_by=self.discord_user)
         self.assertEqual(response.status_code, 200)
 
-    def test_play_now_missing_video_id_returns_400(self):
-        response = self.client.patch(self.url, {"discord_id": self.discord_user.discord_id}, format="json")
-        self.assertEqual(response.status_code, 400)
-
-    def test_play_now_missing_discord_id_returns_400(self):
-        response = self.client.patch(self.url, {"video_id": "vid_abc"}, format="json")
-        self.assertEqual(response.status_code, 400)
-
-    @mock.patch("discord.views.YouTubeService.get_or_fetch")
-    def test_play_now_discord_user_not_found_returns_404(self, mock_get_or_fetch):
-        mock_get_or_fetch.return_value = mock.Mock()
-
-        response = self.client.patch(self.url, {"video_id": "vid_abc", "discord_id": "nonexistent"}, format="json")
-        self.assertEqual(response.status_code, 404)
+    # --- auth ---------------------------------------------------------------
 
     def test_requires_internal_auth(self):
         response = APIClient().patch(self.url, {}, format="json")

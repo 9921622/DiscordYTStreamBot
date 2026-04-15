@@ -273,23 +273,33 @@ class GuildPlaylistPlayNowView(APIView):
 
     def patch(self, request, guild_id: str):
         """
-        Add a video to the playlist and immediately set it as current.
-        Requires video_id and discord_id in body.
+        Immediately set an item as current and play it.
+        Accepts either an existing item_id (jumps to it) or a video_id (adds and plays).
+        Requires discord_id in body.
         """
+        item_id = request.data.get("item_id")
         video_id = request.data.get("video_id")
         discord_id = request.data.get("discord_id")
 
-        if not video_id or not discord_id:
-            return Response({"error": "video_id and discord_id are required"}, status=400)
-
-        video = YouTubeService.get_or_fetch(video_id)
+        if not discord_id:
+            return Response({"error": "discord_id is required"}, status=400)
+        if not item_id and not video_id:
+            return Response({"error": "either item_id or video_id is required"}, status=400)
 
         try:
             discord_user = DiscordUser.objects.get(discord_id=discord_id)
         except DiscordUser.DoesNotExist:
             return Response({"error": f"DiscordUser {discord_id} not found"}, status=404)
 
-        GuildPlaylist.objects.next_item_as_video(guild_id, video=video, added_by=discord_user)
+        if item_id:
+            try:
+                item = GuildPlaylistItem.objects.get(id=item_id, playlist__guild__guild_id=guild_id)
+            except GuildPlaylistItem.DoesNotExist:
+                return Response({"error": f"Item {item_id} not found in playlist"}, status=404)
+            GuildPlaylist.objects.next_item(guild_id, playlist_item=item)
+        else:
+            video = YouTubeService.get_or_fetch(video_id)
+            GuildPlaylist.objects.next_item_as_video(guild_id, video=video, added_by=discord_user)
 
         queue = GuildPlaylist.objects.get_playlist(guild_id)
         return Response(GuildPlaylistSerializer(queue).data)

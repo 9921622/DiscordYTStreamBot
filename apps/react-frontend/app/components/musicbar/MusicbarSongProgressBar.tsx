@@ -1,33 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { NumToTime } from "../utilities/misc";
-import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
+import { usePlaybackStatusContext } from "~/contexts/PlaybackStatusContext";
 import { useSocketContext } from "~/contexts/SocketContext";
 import { useUser } from "~/contexts/UserContext";
 import { useBotContext } from "~/contexts/BotContext";
+import { usePlaylistContext } from "~/contexts/PlaylistContext";
 
 export default function SongProgressBar({ className }: { className?: string }) {
     const discordUser = useUser()
     const { send } = useSocketContext();
-    const { guildID, botInChannel } = useBotContext();
-    const { video, videoPlaybackStatus } = usePlaybackVideoContext();
+    const { botInChannel } = useBotContext();
+    const { currentVideo } = usePlaylistContext()
+    const { playing, paused, position, duration } = usePlaybackStatusContext()
 
-    const isPlaying = videoPlaybackStatus?.playing ?? false;
-    const isPaused  = videoPlaybackStatus?.paused  ?? false;
-    const duration  = video?.duration ?? 0;
+    const isPlaying = playing;
+    const isPaused  = paused;
 
-    const [currentTime, setCurrentTime] = useState(videoPlaybackStatus?.position ?? 0);
+    const [currentTime, setCurrentTime] = useState(position ?? 0);
     const [sliderValue, setSliderValue] = useState(0);
     const [dragging, setDragging]       = useState(false);
     const sliderRef = useRef<HTMLInputElement>(null);
 
     const displayTime = dragging ? (sliderValue / 100) * duration : Math.min(duration, currentTime);
-    const pct = duration ? (sliderValue / 100) * 100 : 0;
 
     // sync on server push
     useEffect(() => {
-        if (videoPlaybackStatus?.position !== undefined)
-            setCurrentTime(videoPlaybackStatus.position);
-    }, [videoPlaybackStatus?.position]);
+        if (position !== undefined)
+            setCurrentTime(position);
+    }, [position]);
 
     // local tick
     useEffect(() => {
@@ -116,7 +116,7 @@ export default function SongProgressBar({ className }: { className?: string }) {
             `}</style>
             <div className={`${className} progress-row flex items-center gap-2.5`}>
                 <span className="text-[11px] text-white/35 tabular-nums w-8 text-right select-none">
-                    { video ? NumToTime(displayTime) : "-:--"}
+                    { currentVideo ? NumToTime(displayTime) : "-:--"}
                 </span>
                 <input
                     ref={sliderRef}

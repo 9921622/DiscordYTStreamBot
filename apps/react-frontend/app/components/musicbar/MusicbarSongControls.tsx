@@ -1,28 +1,18 @@
-import { usePlaybackVideoContext } from "~/contexts/PlaybackVideoContext";
+import { usePlaybackStatusContext } from "~/contexts/PlaybackStatusContext";
 import { PlayPauseIcon } from "../utilities/Icons";
-import { usePlaybackQueueContext } from "~/contexts/PlaybackQueueContext";
+import { usePlaylistContext } from "~/contexts/PlaylistContext";
 import { useSocketContext } from "~/contexts/SocketContext";
 import { Repeat, Shuffle, SkipBack, SkipForward } from "lucide-react";
 import { useUser } from "~/contexts/UserContext";
 import { useBotContext } from "~/contexts/BotContext";
 
 export default function SongControls({ className }: { className?: string }) {
-    const discordUser = useUser()
-    const { send } = useSocketContext();
-    const { guildID, botInChannel } = useBotContext();
-    const { videoPlaybackStatus, videoPause } = usePlaybackVideoContext()
-    const { queue, queueNext } = usePlaybackQueueContext()
+    const { paused, loop, videoPause, videoLoop } = usePlaybackStatusContext()
+    const { queue, next, prev } = usePlaylistContext()
 
-    const isPaused = videoPlaybackStatus?.paused ?? false;
-    const isLoop   = videoPlaybackStatus?.loop   ?? false;
+    const isPaused = paused;
+    const isLoop   = loop;
     const hasQueue = (queue?.length || 0) > 0;
-
-    const handleLoop = () => {
-        if (!botInChannel || !discordUser) return
-        send({ type: "loop", discord_id: discordUser.discord_id })
-    }
-    const onShuffle = () => {}
-    const onPrev = () => {}
 
     const baseBtn = `
         flex items-center justify-center w-8 h-8 rounded-full
@@ -36,6 +26,8 @@ export default function SongControls({ className }: { className?: string }) {
     `
     const dimBtn = `${baseBtn} text-white/20 cursor-default pointer-events-none`
 
+    const onShuffle = () => {}
+
     return (
         <div className={`${className} flex items-center gap-1.5`}>
             {/* Shuffle */}
@@ -43,8 +35,10 @@ export default function SongControls({ className }: { className?: string }) {
                 <Shuffle className="w-[15px] h-[15px]" />
             </button>
 
-            {/* Previous — disabled */}
-            <button className={dimBtn} onClick={onPrev} title="Previous">
+            {/* Previous  */}
+            <button className={hasQueue ? secondaryBtn : dimBtn}
+                    onClick={hasQueue ? prev : undefined}
+                    title="Previous">
                 <SkipBack className="w-[17px] h-[17px]" />
             </button>
 
@@ -56,7 +50,7 @@ export default function SongControls({ className }: { className?: string }) {
             {/* Next */}
             <button
                 className={hasQueue ? secondaryBtn : dimBtn}
-                onClick={hasQueue ? queueNext : undefined}
+                onClick={hasQueue ? next : undefined}
                 title="Next"
             >
                 <SkipForward className="w-[17px] h-[17px]" />
@@ -65,7 +59,7 @@ export default function SongControls({ className }: { className?: string }) {
             {/* Loop */}
             <button
                 className={`${baseBtn} transition-all duration-150 hover:bg-white/10 ${isLoop ? "text-white" : "text-white/30"}`}
-                onClick={handleLoop}
+                onClick={videoLoop}
                 title="Repeat"
             >
                 <div className="relative">

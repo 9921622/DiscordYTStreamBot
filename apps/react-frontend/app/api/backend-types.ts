@@ -14,7 +14,7 @@ export interface DiscordUser {
     global_name : string;
     avatar_url : string;
 }
-export interface DiscordGuildQueueItem {
+export interface DiscordGuildPlaylistItem {
     id: number
     video: YoutubeVideo
     order: number
@@ -22,10 +22,11 @@ export interface DiscordGuildQueueItem {
     added_at: string
 }
 
-export interface DiscordGuildQueue {
+export interface DiscordGuildPlaylist {
     id: number
     guild: string
-    items: DiscordGuildQueueItem[]
+    current_item : DiscordGuildPlaylistItem
+    items: DiscordGuildPlaylistItem[]
     created_at: string
     updated_at: string
 }

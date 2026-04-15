@@ -79,7 +79,7 @@ export default function VCMembersContainer() {
                 {members.map((member, i) => (
                     <div
                         key={member.discord_id}
-                        className="flex-shrink-0"
+                        className="flex-shrink-0 inline-flex items-center"
                         style={{
                             marginLeft: i === 0 ? 0 : stacked ? -clampedOverlap : AVATAR_GAP,
                             zIndex: members.length - i,

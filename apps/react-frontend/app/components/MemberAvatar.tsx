@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { createPortal } from "react-dom";
+
 interface AvatarProps {
     src: string
     alt: string
@@ -8,11 +11,16 @@ interface AvatarProps {
 }
 
 export default function MemberAvatar({ src, alt, tooltip, size = 28, className = "", ring = false }: AvatarProps) {
+    const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+
     return (
         <div
-            className={tooltip ? "tooltip" : undefined}
-            data-tip={tooltip}
-        >
+            className="inline-flex items-center relative"
+            onMouseEnter={e => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setPos({ x: r.left + r.width / 2, y: r.top - 6 });
+            }}
+            onMouseLeave={() => setPos(null)}>
             <img
                 src={src}
                 alt={alt}
@@ -25,6 +33,17 @@ export default function MemberAvatar({ src, alt, tooltip, size = 28, className =
                     ${className}
                 `.trim()}
             />
+            {pos && tooltip && createPortal(
+                <div
+                    className="fixed z-[9999] pointer-events-none -translate-x-1/2 -translate-y-full"
+                    style={{ left: pos.x, top: pos.y }}
+                >
+                    <div className="bg-base-300 text-base-content text-xs rounded px-2 py-1 shadow-lg whitespace-nowrap">
+                        {tooltip}
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
-    )
+    );
 }

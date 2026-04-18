@@ -1,12 +1,8 @@
 import type { Route } from "./+types/layout";
-import { useEffect, useState, type ReactNode } from "react";
-
-import { youtubeAPI } from "~/api/youtube/youtube-wrapper";
-import type { YoutubeVideo } from "~/api/youtube/youtube-types";
+import { useEffect, type ReactNode } from "react";
 
 import Navbar from "~/components/Navbar";
 import Musicbar from "~/components/musicbar/Musicbar";
-import SongContainer from "~/components/SongContainer";
 import SideBarContent from "~/components/SideBar";
 import HorizontalAccordion from "~/components/utilities/HorizontalAccordion";
 import { BotProvider, useBotContext } from "~/contexts/BotContext";
@@ -17,22 +13,13 @@ import type { WSResponse } from "~/api/backend-types";
 import { PlaylistProvider } from "~/contexts/PlaylistContext";
 import { PlaybackStatusProvider } from "~/contexts/PlaybackStatusContext";
 import PlaylistSidebar from "~/components/playlistsidebar/PlaylistSidebar";
+import { Outlet } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
     return [
         { title: `${import.meta.env.VITE_APP_NAME}` },
         { name: "description", content: `Welcome to ${import.meta.env.VITE_APP_NAME}!` },
     ];
-}
-
-function useSongs() {
-    const [songs, setSongs] = useState<YoutubeVideo[]>([]);
-
-    useEffect(() => {
-        youtubeAPI.video.list().then(setSongs).catch(() => {});
-    }, []);
-
-    return songs;
 }
 
 const MUSICBAR_HEIGHT = "var(--musicbar-height, 80px)";
@@ -54,23 +41,6 @@ function SidebarPanel() {
     );
 }
 
-function MainContent({ songs }: { songs: YoutubeVideo[] }) {
-    return (
-        <main className="flex-1 min-w-0 bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl overflow-y-auto shadow-lg">
-            <div className="p-6">
-                <header className="mb-5">
-                    <h1 className="text-2xl font-semibold tracking-tight">All Songs</h1>
-                    <p className="text-base-content/40 text-sm mt-0.5">
-                        {songs.length > 0 ? `${songs.length} tracks` : "Loading…"}
-                    </p>
-                </header>
-                <SongContainer songs={songs} />
-                <div className="h-4" />
-            </div>
-        </main>
-    );
-}
-
 function QueuePanel() {
     return (
         <aside className="bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl flex-shrink-0 h-full overflow-hidden shadow-lg">
@@ -88,8 +58,7 @@ function QueuePanel() {
 
 // Page =====================================================================
 
-function HomePage() {
-    const songs = useSongs();
+function LayoutPage() {
 
     const { on } = useSocketContext()
     useEffect(() => on("*", (resp: WSResponse) => {
@@ -113,7 +82,11 @@ function HomePage() {
             >
                 <div className="flex gap-3 h-full overflow-hidden">
                     <SidebarPanel />
-                    <MainContent songs={songs} />
+
+                    <main className="flex-1 min-w-0 bg-base-200/60 backdrop-blur-sm border border-base-content/5 rounded-xl overflow-y-auto shadow-lg">
+                        <Outlet />
+                    </main>
+
                     <QueuePanel />
                 </div>
             </div>
@@ -150,7 +123,7 @@ function SocketProviderWrapper({ children }: { children: ReactNode }) {
     );
 }
 
-export default function Home() {
+export default function Layout() {
     return (
         <UserProvider>
             <BotProvider>
@@ -158,7 +131,7 @@ export default function Home() {
 
                     <PlaylistProvider>
                     <PlaybackStatusProvider>
-                    <HomePage />
+                    <Layout />
                     </PlaybackStatusProvider>
                     </PlaylistProvider>
 

@@ -1,4 +1,4 @@
-import type { Route } from "./+types/home";
+import type { Route } from "./+types/layout";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { youtubeAPI } from "~/api/youtube/youtube-wrapper";

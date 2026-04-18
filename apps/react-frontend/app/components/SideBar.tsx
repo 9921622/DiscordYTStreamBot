@@ -4,12 +4,12 @@ import { Clock, Book, Heart, User, Disc, List, Home } from "lucide-react";
 export default function SideBarContent() {
 	const sidebarItems = [
         { label: "Home", icon: Home, href: "/" },
-		{ label: "History", icon: Clock },
-		{ label: "Library", icon: Book },
-		{ label: "Liked Songs", icon: Heart },
-		{ label: "Artists", icon: User },
-		{ label: "Albums", icon: Disc },
-		{ label: "Playlists", icon: List },
+		{ label: "History", icon: Clock, href: "/not-implemented" },
+		{ label: "Library", icon: Book, href: "/not-implemented" },
+		{ label: "Liked Songs", icon: Heart, href: "/not-implemented" },
+		{ label: "Artists", icon: User, href: "/not-implemented" },
+		{ label: "Albums", icon: Disc, href: "/not-implemented" },
+		{ label: "Playlists", icon: List, href: "/not-implemented" },
 	];
 
     return (

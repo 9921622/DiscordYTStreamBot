@@ -131,7 +131,7 @@ export default function Layout() {
 
                     <PlaylistProvider>
                     <PlaybackStatusProvider>
-                    <Layout />
+                    <LayoutPage />
                     </PlaybackStatusProvider>
                     </PlaylistProvider>
 

@@ -14,12 +14,12 @@ function useSongs() {
     return songs;
 }
 
-export default function HomePage() {
+export default function Home() {
     const songs = useSongs();
     return (
         <div className="p-6">
             <header className="mb-5">
-                <h1 className="text-2xl font-semibold tracking-tight">All Songs</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">All Cached Songs</h1>
                 <p className="text-base-content/40 text-sm mt-0.5">
                     {songs.length > 0 ? `${songs.length} tracks` : "Loading…"}
                 </p>

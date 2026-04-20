@@ -37,7 +37,9 @@ function ProfileDropdown({ profile }: { profile?: DiscordUser }) {
                 className="menu menu-sm dropdown-content bg-base-100 rounded-xl z-10 mt-2 w-44 p-1.5 shadow-lg border border-base-200"
             >
                 <li>
-                    <a className="rounded-lg text-sm">Settings</a>
+                    <a className="rounded-lg text-sm" onClick={() => navigate("/settings")}>
+                        Settings
+                    </a>
                 </li>
                 <li>
                     <a className="rounded-lg text-sm text-error" onClick={handleLogout}>

@@ -6,14 +6,14 @@ import Musicbar from "~/components/musicbar/Musicbar";
 import SideBarContent from "~/components/SideBar";
 import HorizontalAccordion from "~/components/utilities/HorizontalAccordion";
 import { BotProvider, useBotContext } from "~/contexts/BotContext";
-import { UserProvider } from "~/contexts/UserContext";
+import { UserProvider, useUserContext } from "~/contexts/UserContext";
 import { SocketProvider, useSocketContext } from "~/contexts/SocketContext";
 import { LibraryBig, ListMusic, PanelLeftClose, PanelRightClose } from "lucide-react";
 import type { WSResponse } from "~/api/backend-types";
 import { PlaylistProvider } from "~/contexts/PlaylistContext";
 import { PlaybackStatusProvider } from "~/contexts/PlaybackStatusContext";
 import PlaylistSidebar from "~/components/playlistsidebar/PlaylistSidebar";
-import { Outlet } from "react-router";
+import { Navigate, Outlet } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -126,17 +126,34 @@ function SocketProviderWrapper({ children }: { children: ReactNode }) {
 export default function Layout() {
     return (
         <UserProvider>
-            <BotProvider>
-                <SocketProviderWrapper>
-
-                    <PlaylistProvider>
-                    <PlaybackStatusProvider>
-                    <LayoutPage />
-                    </PlaybackStatusProvider>
-                    </PlaylistProvider>
-
-                </SocketProviderWrapper>
-            </BotProvider>
+            <LayoutGate />
         </UserProvider>
-    );
+    )
+}
+
+function LayoutGate() {
+    const { discordUser, loading } = useUserContext()
+
+    if (loading) return <LoadingScreen />
+    if (!discordUser) return <Navigate to="/login" replace />
+
+    return (
+        <BotProvider>
+            <SocketProviderWrapper>
+                <PlaylistProvider>
+                <PlaybackStatusProvider>
+                <LayoutPage />
+                </PlaybackStatusProvider>
+                </PlaylistProvider>
+            </SocketProviderWrapper>
+        </BotProvider>
+    )
+}
+
+function LoadingScreen() {
+    return (
+        <div className="flex items-center justify-center h-screen bg-zinc-950">
+            <span className="loading loading-spinner loading-lg text-primary" />
+        </div>
+    )
 }

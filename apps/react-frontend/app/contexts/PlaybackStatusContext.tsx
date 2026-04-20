@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import { useBotContext } from "./BotContext"
 import { useSocketContext } from "./SocketContext"
 import type { WSResponse } from "~/api/backend-types"
-import { useUser } from "./UserContext"
+import { useUserContext } from "./UserContext"
 
 
 /*
@@ -45,7 +45,7 @@ const PlaybackStatusContext = createContext<PlaybackStatusContextType>({
 })
 
 export function PlaybackStatusProvider({ children }: { children: ReactNode }) {
-    const discordUser = useUser()
+    const { discordUser  }= useUserContext()
     const { send, on, connected } = useSocketContext()
     const { botInChannel } = useBotContext()
 

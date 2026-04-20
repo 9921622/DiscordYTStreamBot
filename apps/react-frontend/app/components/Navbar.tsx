@@ -3,7 +3,7 @@ import { discordBotAPI } from "~/api/discord/discord-wrapper";
 import type { DiscordUser } from "~/api/backend-types";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { useUser } from "~/contexts/UserContext";
+import { useUserContext } from "~/contexts/UserContext";
 import { useBotContext } from "~/contexts/BotContext";
 
 function ProfileDropdown({ profile }: { profile?: DiscordUser }) {
@@ -52,7 +52,7 @@ function ProfileDropdown({ profile }: { profile?: DiscordUser }) {
 }
 
 function JoinChannel() {
-    const discordUser = useUser();
+    const { discordUser } = useUserContext();
     const { botInChannel, setBotInChannel } = useBotContext();
     const [loading, setLoading] = useState(false);
     const [inVC, setInVC] = useState<boolean | null>(null);
@@ -113,7 +113,7 @@ function JoinChannel() {
 }
 
 export default function Navbar() {
-    const discordUser = useUser();
+    const { discordUser } = useUserContext();
 
     return (
         <nav className="h-[52px] px-4 flex items-center gap-3 bg-inherit z-50">

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { discordBotAPI } from "~/api/discord/discord-wrapper"
 import type { DiscordUser } from "~/api/backend-types"
-import { useUser } from "./UserContext"
+import { useUserContext } from "./UserContext"
 
 interface BotContextType {
     botInChannel: boolean
@@ -17,7 +17,7 @@ const BotContext = createContext<BotContextType>({
 
 export function BotProvider({ children }: { children: ReactNode }) {
     // BotProvider must be rendered inside UserProvider
-    const discordUser = useUser()
+    const { discordUser } = useUserContext()
     const [botInChannel, setBotInChannel] = useState(false)
     const [guildID, setGuildID] = useState<string | null>(null)
 

@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { NumToTime } from "../utilities/misc";
 import { usePlaybackStatusContext } from "~/contexts/PlaybackStatusContext";
 import { useSocketContext } from "~/contexts/SocketContext";
-import { useUser } from "~/contexts/UserContext";
+import { useUserContext } from "~/contexts/UserContext";
 import { useBotContext } from "~/contexts/BotContext";
 import { usePlaylistContext } from "~/contexts/PlaylistContext";
 
 export default function SongProgressBar({ className }: { className?: string }) {
-    const discordUser = useUser()
+    const { discordUser  }= useUserContext()
     const { send } = useSocketContext();
     const { botInChannel } = useBotContext();
     const { currentVideo } = usePlaylistContext()

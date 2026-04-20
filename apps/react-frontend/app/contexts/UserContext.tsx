@@ -2,16 +2,30 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { backendAPI } from "~/api/backend-wrapper"
 import type { DiscordUser } from "~/api/backend-types"
 
-const UserContext = createContext<DiscordUser | undefined>(undefined)
+interface UserContextValue {
+    discordUser: DiscordUser | undefined
+    loading: boolean
+}
+
+const UserContext = createContext<UserContextValue>({ discordUser: undefined, loading: true })
 
 export function UserProvider({ children }: { children: ReactNode }) {
     const [discordUser, setDiscordUser] = useState<DiscordUser>()
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        backendAPI.discord.get_user().then(setDiscordUser).catch(() => {})
+        console.log("fetching user...")
+        backendAPI.discord.get_user()
+            .then(u => { console.log("user:", u); setDiscordUser(u) })
+            .catch(() => { console.log("user fetch failed") })
+            .finally(() => { console.log("loading done"); setLoading(false) })
     }, [])
 
-    return <UserContext.Provider value={discordUser}>{children}</UserContext.Provider>
+    return (
+        <UserContext.Provider value={{ discordUser, loading }}>
+            {children}
+        </UserContext.Provider>
+    )
 }
 
-export const useUser = () => useContext(UserContext)
+export const useUserContext = () => useContext(UserContext)

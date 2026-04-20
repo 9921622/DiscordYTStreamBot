@@ -4,7 +4,7 @@ import { useSocketContext } from "~/contexts/SocketContext"
 import type { DiscordUser, DiscordGuildPlaylistItem, DiscordGuildPlaylist } from "~/api/backend-types"
 import type { YoutubeVideo } from "~/api/youtube/youtube-types"
 import type { WSResponse } from "~/api/backend-types"
-import { useUser } from "./UserContext"
+import { useUserContext } from "./UserContext"
 
 /*
     for queue manipulation (add, remove, reorder) and tracking current video (for now playing, sync checks)
@@ -51,7 +51,7 @@ const PlaylistContext = createContext<PlaylistContextType>({
 })
 
 export function PlaylistProvider({ children }: { children: ReactNode }) {
-    const discordUser = useUser()
+    const { discordUser  }= useUserContext()
     const { guildID, botInChannel } = useBotContext()
     const { send, on, connected } = useSocketContext()
 

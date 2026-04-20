@@ -93,6 +93,7 @@ export function PlaybackStatusProvider({ children }: { children: ReactNode }) {
     useEffect(() => on("queue-next",    applyPlaylistResponse), [on])
     useEffect(() => on("queue-prev",    applyPlaylistResponse), [on])
     useEffect(() => on("play",          applyPlaylistResponse), [on])
+    useEffect(() => on("play_now",      applyPlaylistResponse), [on])
 
     function get_status(resp: WSResponse) {
         if (!resp.success || !resp.data) return

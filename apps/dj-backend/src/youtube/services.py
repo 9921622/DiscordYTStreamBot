@@ -2,6 +2,8 @@ import yt_dlp
 import requests
 from typing import List, Dict, Optional
 
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+
 from youtube.models import YoutubeVideo
 
 
@@ -35,6 +37,40 @@ class YouTubeService:
             "default_search": "ytsearch",
             "extract_flat": "in_playlist",
         }
+
+    @staticmethod
+    def _resolve_thumbnail(thumbnails: list[dict]) -> str | None:
+        """
+        Walk thumbnails from highest quality to lowest, returning the first
+        URL that doesn't 404. Returns None if all fail or list is empty.
+
+        yt-dlp orders thumbnails ascending by quality, so we reverse.
+        """
+        for thumb in reversed(thumbnails):
+            url = thumb.get("url")
+            if not url:
+                continue
+            try:
+                resp = requests.head(url, timeout=5, allow_redirects=True)
+                if resp.status_code != 404:
+                    return url
+            except requests.RequestException:
+                continue
+        return None
+
+    @staticmethod
+    def _clean_youtube_url(query: str) -> str:
+        """
+        If the query is a YouTube URL, strip all search params except `v`
+        (the video ID) to avoid playlist or tracking params influencing results.
+        """
+        parsed = urlparse(query)
+        if parsed.scheme in ("http", "https") and "youtube.com" in parsed.netloc:
+            params = parse_qs(parsed.query)
+            cleaned = {k: v for k, v in params.items() if k == "v"}
+            clean_query = parsed._replace(query=urlencode(cleaned, doseq=True))
+            return urlunparse(clean_query)
+        return query
 
     @classmethod
     def get_info(cls, url: str, ydl_opts: dict | None = None) -> dict:
@@ -72,6 +108,7 @@ class YouTubeService:
         """
         Search YouTube and return simplified video data.
         """
+        query = cls._clean_youtube_url(query)
         max_results = min(max_results, cls.MAX_RESULTS)
 
         results = []
@@ -119,26 +156,6 @@ class YouTubeService:
             },
         )
         return video
-
-    @staticmethod
-    def _resolve_thumbnail(thumbnails: list[dict]) -> str | None:
-        """
-        Walk thumbnails from highest quality to lowest, returning the first
-        URL that doesn't 404. Returns None if all fail or list is empty.
-
-        yt-dlp orders thumbnails ascending by quality, so we reverse.
-        """
-        for thumb in reversed(thumbnails):
-            url = thumb.get("url")
-            if not url:
-                continue
-            try:
-                resp = requests.head(url, timeout=5, allow_redirects=True)
-                if resp.status_code != 404:
-                    return url
-            except requests.RequestException:
-                continue
-        return None
 
     @classmethod
     def get_or_fetch(cls, youtube_id: str) -> YoutubeVideo:

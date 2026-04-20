@@ -44,8 +44,10 @@ async def join_user_voice_channel(request: Request, user_id: int):
     for guild in bot.guilds:
         member = guild.get_member(user_id)
         if member and member.voice and member.voice.channel:
-            await bot.vc_connect(member.voice.channel)
-            return {
-                "ok": True,
-            }
+            target_channel = member.voice.channel
+            vc = guild.voice_client
+            if vc and vc.channel == target_channel:
+                return {"ok": False, "error": "Already in that voice channel"}
+            await bot.vc_connect(target_channel)
+            return {"ok": True}
     return {"ok": False, "error": "User is not in a voice channel"}

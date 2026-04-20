@@ -1,10 +1,7 @@
 import { usePlaybackStatusContext } from "~/contexts/PlaybackStatusContext";
 import { PlayPauseIcon } from "../utilities/Icons";
 import { usePlaylistContext } from "~/contexts/PlaylistContext";
-import { useSocketContext } from "~/contexts/SocketContext";
 import { Repeat, Shuffle, SkipBack, SkipForward } from "lucide-react";
-import { useUser } from "~/contexts/UserContext";
-import { useBotContext } from "~/contexts/BotContext";
 
 export default function SongControls({ className }: { className?: string }) {
     const { paused, loop, videoPause, videoLoop } = usePlaybackStatusContext()

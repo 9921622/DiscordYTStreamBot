@@ -6,6 +6,7 @@ import type { YoutubeSearch, YoutubeVideo } from "~/api/youtube/youtube-types"
 import SongContextMenu from "./SongContextMenu"
 import { LoadingSpinner } from "./utilities/Icons"
 import { usePlaylistContext } from "~/contexts/PlaylistContext"
+import { useNavigate } from "react-router"
 
 function EmptyState({ query }: { query: string }) {
     return (
@@ -17,14 +18,18 @@ function EmptyState({ query }: { query: string }) {
 }
 
 function ShowMoreButton({ query }: { query: string }) {
+    const navigate = useNavigate();
     return (
         <div className="border-t border-zinc-800 mt-1 pt-1">
-            <button className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-md transition flex items-center justify-between gap-2">
+            <button
+                onClick={() => navigate(`/search?q=${encodeURIComponent(query)}`)}
+                className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-md transition flex items-center justify-between gap-2"
+            >
                 <span className="truncate">Show full results for "{query}"</span>
                 <ArrowRight size={13} strokeWidth={2} />
             </button>
         </div>
-    )
+    );
 }
 
 function useSearchResults(query: string) {
@@ -62,6 +67,7 @@ function useSearchResults(query: string) {
 }
 
 export default function SongSearchbar() {
+    const navigate = useNavigate();
     const { add } = usePlaylistContext()
     const [inputValue, setInputValue] = useState("")
     const [query, setQuery] = useState("")
@@ -106,6 +112,11 @@ export default function SongSearchbar() {
                     }}
                     onKeyDown={(e) => {
                         if (e.key === "Escape") {
+                            setIsOpen(false)
+                            inputRef.current?.blur()
+                        }
+                        if (e.key === "Enter" && query) {
+                            navigate(`/search?q=${encodeURIComponent(query)}`)
                             setIsOpen(false)
                             inputRef.current?.blur()
                         }

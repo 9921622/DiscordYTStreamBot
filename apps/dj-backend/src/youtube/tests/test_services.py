@@ -97,6 +97,54 @@ class TestYouTubeService(TestCase):
         )
 
     # ----------------------------------------
+    # search - YouTube URL cleaning
+    # ----------------------------------------
+    @mock.patch("youtube.services.yt_dlp.YoutubeDL")
+    def test_search_strips_extra_params_from_youtube_url(self, mock_ydl_class):
+        """YouTube URLs passed as query should have tracking/playlist params stripped."""
+        mock_ydl = MagicMock()
+        mock_ydl.extract_info.return_value = {"entries": []}
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        YouTubeService.search(
+            "https://www.youtube.com/watch?v=abc123&list=PLxxx&si=tracking&t=30",
+            max_results=5,
+        )
+
+        mock_ydl.extract_info.assert_called_once_with(
+            "ytsearch5:https://www.youtube.com/watch?v=abc123",
+            download=False,
+        )
+
+    @mock.patch("youtube.services.yt_dlp.YoutubeDL")
+    def test_search_plain_text_query_unchanged(self, mock_ydl_class):
+        """Non-URL queries should pass through to yt-dlp unmodified."""
+        mock_ydl = MagicMock()
+        mock_ydl.extract_info.return_value = {"entries": []}
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        YouTubeService.search("lofi hip hop", max_results=5)
+
+        mock_ydl.extract_info.assert_called_once_with(
+            "ytsearch5:lofi hip hop",
+            download=False,
+        )
+
+    @mock.patch("youtube.services.yt_dlp.YoutubeDL")
+    def test_search_youtube_url_without_extra_params_unchanged(self, mock_ydl_class):
+        """A clean YouTube URL (v= only) should pass through as-is."""
+        mock_ydl = MagicMock()
+        mock_ydl.extract_info.return_value = {"entries": []}
+        mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+        YouTubeService.search("https://www.youtube.com/watch?v=abc123", max_results=5)
+
+        mock_ydl.extract_info.assert_called_once_with(
+            "ytsearch5:https://www.youtube.com/watch?v=abc123",
+            download=False,
+        )
+
+    # ----------------------------------------
     # max_results cap
     # ----------------------------------------
     @mock.patch("youtube.services.yt_dlp.YoutubeDL")

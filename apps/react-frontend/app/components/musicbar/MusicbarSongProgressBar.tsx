@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { NumToTime } from "../utilities/misc";
 import { usePlaybackStatusContext } from "~/contexts/PlaybackStatusContext";
 import { useSocketContext } from "~/contexts/SocketContext";
-import { useUser } from "~/contexts/UserContext";
+import { useUserContext } from "~/contexts/UserContext";
 import { useBotContext } from "~/contexts/BotContext";
 import { usePlaylistContext } from "~/contexts/PlaylistContext";
 
 export default function SongProgressBar({ className }: { className?: string }) {
-    const discordUser = useUser()
+    const { discordUser  }= useUserContext()
     const { send } = useSocketContext();
     const { botInChannel } = useBotContext();
     const { currentVideo } = usePlaylistContext()
@@ -16,6 +16,8 @@ export default function SongProgressBar({ className }: { className?: string }) {
     const isPlaying = playing;
     const isPaused  = paused;
 
+    const startTimeRef = useRef<number>(0);
+    const startPositionRef = useRef<number>(0);
     const [currentTime, setCurrentTime] = useState(position ?? 0);
     const [sliderValue, setSliderValue] = useState(0);
     const [dragging, setDragging]       = useState(false);
@@ -25,14 +27,24 @@ export default function SongProgressBar({ className }: { className?: string }) {
 
     // sync on server push
     useEffect(() => {
-        if (position !== undefined)
+        if (position !== undefined) {
             setCurrentTime(position);
+            startTimeRef.current = Date.now();
+            startPositionRef.current = position;
+        }
     }, [position]);
 
     // local tick
     useEffect(() => {
         if (!isPlaying || isPaused || dragging) return;
-        const timer = setInterval(() => setCurrentTime(t => Math.min(duration, t + 1)), 1000);
+        startTimeRef.current = Date.now();
+        startPositionRef.current = currentTime;
+
+        const timer = setInterval(() => {
+            const elapsed = (Date.now() - startTimeRef.current) / 1000;
+            setCurrentTime(Math.min(duration, startPositionRef.current + elapsed));
+        }, 1000);
+
         return () => clearInterval(timer);
     }, [isPlaying, isPaused, dragging, duration]);
 

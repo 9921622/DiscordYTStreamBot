@@ -27,6 +27,12 @@ class VoiceAPI {
     return response.data
   }
 
+  async disconnect_vc(guild_id: string): Promise<{ ok: boolean }> {
+    const response = await axios.get(`${this.baseURL}/disconnect`, {
+      params: { guild_id }
+    })
+    return response.data
+  }
 }
 
 class DiscordBotAPI {

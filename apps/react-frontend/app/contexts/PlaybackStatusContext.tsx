@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import { useBotContext } from "./BotContext"
 import { useSocketContext } from "./SocketContext"
 import type { WSResponse } from "~/api/backend-types"
-import { useUser } from "./UserContext"
+import { useUserContext } from "./UserContext"
 
 
 /*
@@ -45,7 +45,7 @@ const PlaybackStatusContext = createContext<PlaybackStatusContextType>({
 })
 
 export function PlaybackStatusProvider({ children }: { children: ReactNode }) {
-    const discordUser = useUser()
+    const { discordUser  }= useUserContext()
     const { send, on, connected } = useSocketContext()
     const { botInChannel } = useBotContext()
 
@@ -93,6 +93,7 @@ export function PlaybackStatusProvider({ children }: { children: ReactNode }) {
     useEffect(() => on("queue-next",    applyPlaylistResponse), [on])
     useEffect(() => on("queue-prev",    applyPlaylistResponse), [on])
     useEffect(() => on("play",          applyPlaylistResponse), [on])
+    useEffect(() => on("play_now",      applyPlaylistResponse), [on])
 
     function get_status(resp: WSResponse) {
         if (!resp.success || !resp.data) return

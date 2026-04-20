@@ -3,7 +3,7 @@ import { discordBotAPI } from "~/api/discord/discord-wrapper";
 import type { DiscordUser } from "~/api/backend-types";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { useUser } from "~/contexts/UserContext";
+import { useUserContext } from "~/contexts/UserContext";
 import { useBotContext } from "~/contexts/BotContext";
 
 function ProfileDropdown({ profile }: { profile?: DiscordUser }) {
@@ -37,7 +37,9 @@ function ProfileDropdown({ profile }: { profile?: DiscordUser }) {
                 className="menu menu-sm dropdown-content bg-base-100 rounded-xl z-10 mt-2 w-44 p-1.5 shadow-lg border border-base-200"
             >
                 <li>
-                    <a className="rounded-lg text-sm">Settings</a>
+                    <a className="rounded-lg text-sm" onClick={() => navigate("/settings")}>
+                        Settings
+                    </a>
                 </li>
                 <li>
                     <a className="rounded-lg text-sm text-error" onClick={handleLogout}>
@@ -50,7 +52,7 @@ function ProfileDropdown({ profile }: { profile?: DiscordUser }) {
 }
 
 function JoinChannel() {
-    const discordUser = useUser();
+    const { discordUser } = useUserContext();
     const { botInChannel, setBotInChannel } = useBotContext();
     const [loading, setLoading] = useState(false);
     const [inVC, setInVC] = useState<boolean | null>(null);
@@ -110,8 +112,44 @@ function JoinChannel() {
     );
 }
 
+function DisconnectChannel() {
+    const { botInChannel, setBotInChannel } = useBotContext();
+    const { discordUser } = useUserContext();
+    const [loading, setLoading] = useState(false);
+
+    if (!botInChannel) return null;
+
+    const handleDisconnect = async () => {
+        if (!discordUser) return;
+        setLoading(true);
+        const vc = await discordBotAPI.voice.get_user_vc(discordUser.discord_id);
+        if (vc.guild_id) {
+            await discordBotAPI.voice.disconnect_vc(vc.guild_id);
+        }
+        setBotInChannel(false);
+        setLoading(false);
+    };
+
+    return (
+        <button
+            className="btn btn-sm rounded-full px-4 gap-1.5 font-medium border border-error/30 bg-transparent hover:bg-error/10 text-error"
+            onClick={handleDisconnect}
+            disabled={loading}
+        >
+            {loading ? (
+                <span className="loading loading-spinner loading-xs" />
+            ) : (
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M2 2l12 12M6 4.268A2 2 0 018 4a2 2 0 012 2v2.268M4.341 7A4 4 0 008 12a4 4 0 003.607-2.3M8 12v3M5 15h6" />
+                </svg>
+            )}
+            Disconnect
+        </button>
+    );
+}
+
 export default function Navbar() {
-    const discordUser = useUser();
+    const { discordUser } = useUserContext();
 
     return (
         <nav className="h-[52px] px-4 flex items-center gap-3 bg-inherit z-50">
@@ -130,6 +168,7 @@ export default function Navbar() {
             {/* Right side */}
             <div className="flex items-center gap-2 ml-auto shrink-0">
                 <JoinChannel />
+                <DisconnectChannel />
                 <div className="w-px h-5 bg-base-content/10" />
                 <ProfileDropdown profile={discordUser} />
             </div>
